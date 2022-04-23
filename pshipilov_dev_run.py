@@ -3,13 +3,13 @@ import logging
 import matplotlib.pyplot as plt
 import numpy as np
 
-from src.evo.scheme_2 import Scheme_2
-from src.config import Config
-from src.grid import esn_lorenz_grid_search
-from src.lorenz import get_lorenz_data, data_to_train, train_to_data
-from src.utils import valid_multi_f
+from pshipilov_dev.src.evo.scheme_2 import Scheme_2
+from pshipilov_dev.src.config import Config
+from pshipilov_dev.src.grid import esn_lorenz_grid_search
+from pshipilov_dev.src.lorenz import get_lorenz_data, data_to_train, train_to_data
+from pshipilov_dev.src.utils import valid_multi_f
 
-from ..skesn.esn import EsnForecaster
+from skesn.esn import EsnForecaster
 
 from deap import base, algorithms
 # from deap import creator
@@ -17,8 +17,8 @@ from deap import base, algorithms
 
 # from scoop import futures
 
-import src.dump as dump
-import src.log as log
+import pshipilov_dev.src.dump as dump
+import pshipilov_dev.src.log as log
 
 import random
 
@@ -32,7 +32,7 @@ joblib.pool.Pickler = Pickler
 
 from joblib.pool import CustomizablePicklingQueue
 
-from src.async_utils.customizable_pickler import make_methods, CustomizablePickler
+from pshipilov_dev.src.async_utils.customizable_pickler import make_methods, CustomizablePickler
 
 CustomizablePicklingQueue._make_methods = make_methods
 joblib.pool.CustomizablePickler = CustomizablePickler

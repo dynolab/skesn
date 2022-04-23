@@ -1,5 +1,6 @@
-from evo.abstract import Scheme
-from config import Config
+from .evo.abstract import Scheme
+from .config import Config
+
 from datetime import date
 
 import logging

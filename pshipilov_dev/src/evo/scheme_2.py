@@ -2,9 +2,10 @@ from typing import Tuple
 
 from .utils import map_crossing_f, map_select_f, wrap_scoring_f
 from .abstract import Scheme
-from src.lorenz import get_lorenz_data, data_to_train, train_to_data
-from src.config import Config
-from ....skesn.esn import EsnForecaster
+from ..lorenz import get_lorenz_data, data_to_train, train_to_data
+from ..config import Config
+
+from skesn.esn import EsnForecaster
 
 from deap import base, algorithms
 from deap import creator

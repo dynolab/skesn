@@ -2,9 +2,10 @@ from typing import Tuple
 import tqdm
 import numpy as np
 
-from config import Config
-from evo.utils import map_config_scoring_f
-from ...skesn.esn import EsnForecaster
+from skesn.esn import EsnForecaster
+
+from .config import Config
+from .evo.utils import map_config_scoring_f
 
 _lorenz_cfg = Config.Grid.ParamsSet.Lorenz
 LORENZ_PARAMS_SET: dict = {

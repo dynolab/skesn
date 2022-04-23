@@ -435,4 +435,4 @@ class Config:
         Config.load(cfg, raise_if_necessary)
 
 if not hasattr(Config, '__patched'):
-    Config.patch_from_file('configs/config.yaml')
+    Config.patch_from_file('pshipilov_dev/configs/config.yaml')

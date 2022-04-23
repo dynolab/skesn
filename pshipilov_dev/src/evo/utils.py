@@ -2,8 +2,9 @@ from deap import tools
 
 import numpy as np
 
-from skesn.esn import EsnForecaster
 from .. import dump
+
+from skesn.esn import EsnForecaster
 
 from ..config import Config
 from ..lorenz import get_lorenz_data, data_to_train, train_to_data

@@ -1,8 +1,8 @@
 import numpy as np
 
-from src.lorenz import train_to_data
+from .lorenz import train_to_data
 
-from ...skesn.esn import EsnForecaster
+from skesn.esn import EsnForecaster
 
 def valid_multi_f(valid_multi_n, model: EsnForecaster, valid_data):
     h = valid_multi_n
