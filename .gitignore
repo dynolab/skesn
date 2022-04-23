@@ -130,3 +130,9 @@ dmypy.json
 
 # VSCode
 .vscode/
+
+# Pavel Shipilov dev folders
+p.shipilov-dev/etc
+p.shipilov-dev/logs
+p.shipilov-dev/dumps
+p.shipilov-dev/notebooks

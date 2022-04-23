@@ -1,0 +1,115 @@
+logging:
+  level: info
+
+dumb:
+  enable: true
+  user: pavel
+  title: lorenz_grid_srch
+
+esn:
+  n_inputs: 3
+  n_reservoir: 300
+  spectral_radius: 1.1
+  sparsity: 0.1
+  noise: 0.001
+  lambda_r: 0.001
+  random_state: 4
+
+  inspect: false
+
+models:
+  lorenz:
+    n: 22000
+    ro: 28
+    dt: 0.0002
+    rand_seed: 4
+
+grid:
+  verbose: true
+  scoring: valid_multi # train, valid_one or valid_multi. Для valid_multi необходимо задать valid_multi_n > 1
+  valid_multi_n: 5
+  params_set:
+    lorenz:
+      n_reservoir:
+        start: 200
+        stop: 800
+        num: 7
+      spectral_radius:
+        start: 0.5
+        stop: 1.2
+        num: 7
+      sparsity:
+        start: 0.001
+        stop: 0.1
+        num: 10
+      noise:
+        start: 0.0000001
+        stop: 0.001
+        num: 5
+      lambda_r:
+        start: 0.000001
+        stop: 0.1
+        num: 10
+
+evo:
+  scheme_1:
+    m: 10
+    c: 0
+
+    # weights: [-1.0,-1.0,-1.0]
+    weights: [-1.0,]
+
+    common:
+      rand_seed: 1
+      max_gen_num: 200
+      population_size: 30
+
+      verbose: true
+
+      crossover_p: 0.9
+      mutation_p: 0.1
+
+      scoring: train
+
+      select: selTournament
+      crossing: cxTwoPoint
+      mutation: mutPolynomialBounded
+
+  scheme_2:
+    limits:  
+      n_reservoir:
+        min: 150
+        max: 800
+        is_int: true
+      spectral_radius:
+        min: 0.5
+        max: 1.2
+      sparsity:
+        min: 0.001
+        max: 0.1
+      noise:
+        min: 0.0000001
+        max: 0.001
+      lambda_r:
+        min: 0.000001
+        max: 0.1
+
+    # weights: [-1.0,-1.0,-1.0]
+    weights: [-1.0,]
+
+    common:
+      rand_seed: 2
+      max_gen_num: 200
+      population_size: 30
+
+      verbose: true
+
+      crossover_p: 0.9
+      mutation_p: 0.15
+
+      scoring: valid_multi
+      valid_multi_n: 5
+
+      select: selTournament
+      crossing: cxOnePoint
+      mutation_indpb: 0.25

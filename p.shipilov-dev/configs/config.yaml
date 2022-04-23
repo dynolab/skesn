@@ -1,0 +1,124 @@
+logging:
+  level: info
+
+dumb:
+  enable: true
+  user: pavel
+  title: lorenz_multi_test
+
+esn:
+  n_inputs: 3
+  random_state: 4
+
+  n_reservoir: 600
+  lambda_r: 0.001
+  noise: 1.0e-08
+  sparsity: 0.001
+  spectral_radius: 1.1473684210526316
+
+  inspect: false
+
+run:
+  mode: test_multi # please select mode: test_multi, evo_scheme_1, evo_scheme_2
+
+test:
+  multi_step:
+    step_n: 5
+    data_n: 40000
+
+models:
+  lorenz:
+    n: 22000
+    ro: 28
+    dt: 0.0002
+    rand_seed: 4
+
+grid:
+  verbose: true
+  scoring: valid_one # train, valid_one or valid_multi. Для valid_multi необходимо задать valid_multi_n > 1
+  valid_multi_n: 5
+  params_set:
+    lorenz:
+      # n_reservoir:
+      #   start: 200
+      #   stop: 800
+      #   num: 7
+      spectral_radius:
+        start: 0.2
+        stop: 1.2
+        num: 20
+      sparsity:
+        start: 0.001
+        stop: 0.5
+        num: 20
+      noise:
+        start: 0.00000001
+        stop: 0.001
+        num: 20
+      # lambda_r:
+      #   start: 0.000001
+      #   stop: 0.1
+      #   num: 10
+
+evo:
+  scheme_1:
+    m: 10
+    c: 0
+
+    # weights: [-1.0,-1.0,-1.0]
+    weights: [-1.0,]
+
+    common:
+      rand_seed: 1
+      max_gen_num: 200
+      population_size: 30
+
+      verbose: true
+
+      crossover_p: 0.9
+      mutation_p: 0.1
+
+      scoring: train
+
+      select: selTournament
+      crossing: cxTwoPoint
+      mutation: mutPolynomialBounded
+
+  scheme_2:
+    limits:  
+      # n_reservoir:
+      #   min: 150
+      #   max: 800
+      #   is_int: true
+      spectral_radius:
+        min: 0.2
+        max: 1.2
+      sparsity:
+        min: 0.001
+        max: 0.2
+      noise:
+        min: 0.00000001
+        max: 0.001
+      # lambda_r:
+      #   min: 0.000001
+      #   max: 0.1
+
+    # weights: [-1.0,-1.0,-1.0]
+    weights: [-1.0,]
+
+    common:
+      rand_seed: 2
+      max_gen_num: 200
+      population_size: 30
+
+      verbose: true
+
+      crossover_p: 0.9
+      mutation_p: 0.15
+
+      scoring: valid_multi
+      valid_multi_n: 5
+
+      select: selTournament
+      crossing: cxOnePoint
+      mutation_indpb: 0.25
