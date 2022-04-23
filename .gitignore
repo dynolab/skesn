@@ -130,6 +130,3 @@ dmypy.json
 
 # VSCode
 .vscode/
-
-# Special folder for debuging by Pavel Shipiliov
-p.shipilov-dev/
