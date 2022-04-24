@@ -16,6 +16,23 @@ class ConfigSection(object):
 
 # Config fields class implementations
 
+class EvaluateConfigField(ConfigSection):
+    @property
+    def Type(self) -> str: return self._type
+    @property
+    def Steps(self) -> int: return self._steps
+
+    def __init__(self) -> None:
+        self._type:  str = NecessaryField
+        self._steps: int = NecessaryField
+
+    def load(self, cfg: dict) -> None:
+        self._type   = Config.get_optional_value(cfg, 'level', LoggingConfigField.Level)
+        self._steps    = Config.get_optional_value(cfg, 'dir', LoggingConfigField.Dir)
+
+    def yaml(self) -> dict:
+        return {'type': self._type,'steps': self._steps,}
+
 class LoggingConfigField(ConfigSection):
     Level:          str  = 'info'
     Dir:            str  = ''
@@ -363,19 +380,21 @@ class TestConfigField(ConfigSection):
 # Main config class
 
 class Config:
-    Logging: LoggingConfigField = LoggingConfigField()
-    Test:    TestConfigField    = TestConfigField()
-    Dump:    DumpConfigField    = DumpConfigField()
-    Esn:     EsnConfigField     = EsnConfigField()
-    Evo:     EvoConfigField     = EvoConfigField()
-    Grid:    GridConfigField    = GridConfigField()
-    Models:  ModelsConfigField  = ModelsConfigField()
+    Logging:  LoggingConfigField  = LoggingConfigField()
+    Evaluate: EvaluateConfigField = EvaluateConfigField()
+    Test:     TestConfigField     = TestConfigField()
+    Dump:     DumpConfigField     = DumpConfigField()
+    Esn:      EsnConfigField      = EsnConfigField()
+    Evo:      EvoConfigField      = EvoConfigField()
+    Grid:     GridConfigField     = GridConfigField()
+    Models:   ModelsConfigField   = ModelsConfigField()
 
     def load(cfg: dict, raise_if_necessary: bool=True) -> None:
         Config.__raise_if_necessary = raise_if_necessary
 
         # Load main sections
         Config.Logging.load(Config.get_optional_value(cfg, 'logging', Config.Logging))
+        Config.Evaluate.load(Config.get_optional_value(cfg, 'evaluate', Config.Evaluate))
         Config.Test.load(Config.get_optional_value(cfg, 'test', Config.Test))
         Config.Dump.load(Config.get_optional_value(cfg, 'dumb', Config.Dump))
         Config.Esn.load(Config.get_necessary_value(cfg, 'esn', Config.Esn))
@@ -388,7 +407,7 @@ class Config:
 
     # Serialization config to yaml
     def yaml() -> dict:
-        return {'logging': Config.Logging.yaml(), 'run': Config.Run.yaml(), 'test': Config.Test.yaml(), 'dumb': Config.Dump.yaml(), 'esn': Config.Esn.yaml(),
+        return {'logging': Config.Logging.yaml(),'evaluate': Config.Evaluate.yaml(), 'run': Config.Run.yaml(), 'test': Config.Test.yaml(), 'dumb': Config.Dump.yaml(), 'esn': Config.Esn.yaml(),
                 'evo': Config.Evo.yaml(),'grid': Config.Grid.yaml(),'models': Config.Models.yaml(),}
 
     # Internal property for control raising exeption if field is not provided

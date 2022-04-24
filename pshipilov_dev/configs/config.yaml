@@ -2,10 +2,13 @@ logging:
   file: pshipilov_dev/logs/log
   level: info
 
+evaluate:
+  type: rmse
+  steps: 5
+
 dumb:
-  enable: true
   user: pavel
-  title: lorenz_multi_test
+  title: evo_srch_lorenz
 
 esn:
   n_inputs: 3
@@ -81,7 +84,7 @@ evo:
       mutation: mutPolynomialBounded
 
   scheme_2:
-    limits:  
+    limits:
       # n_reservoir:
       #   min: 150
       #   max: 800
