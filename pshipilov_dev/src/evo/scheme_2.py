@@ -50,7 +50,7 @@ class Scheme_2(Scheme):
         self._tool_box.register('mate', map_crossing_f(self._cfg.Common.Crossing))
         if self._cfg.Common.MutationIndpb > 0:
             self._tool_box.register('mutate', self._mutInd, indpb=self._cfg.Common.MutationIndpb)
-        else:    
+        else:
             self._tool_box.register('mutate', self._mutInd, indpb=1./len(self._hyper_params))
 
         self._stats = tools.Statistics(lambda ind: ind.fitness.values)
@@ -112,8 +112,8 @@ class Scheme_2(Scheme):
         self._noise = HyperParamInfo('noise', self._cfg.Limits.Noise.Min, self._cfg.Limits.Noise.Max, self._cfg.Limits.Noise.IsInt)
         # self._lambda_r = HyperParamInfo('lambda_r', self._cfg.Limits.LambdaR.Min, self._cfg.Limits.LambdaR.Max, self._cfg.Limits.LambdaR.IsInt)
         self._hyper_params = (
-            # self._n_reservoir, 
-            self._spectral_radius, 
+            # self._n_reservoir,
+            self._spectral_radius,
             self._sparsity,
             self._noise,
             # self._lambda_r,
@@ -142,10 +142,10 @@ class Scheme_2(Scheme):
 
     def _get_esn(self, ind: list) -> EsnForecaster:
         return EsnForecaster(
-            n_inputs=Config.Esn.NInputs, 
+            n_inputs=Config.Esn.NInputs,
             # n_reservoir=ind[self._n_reservoir.idx],
             n_reservoir=Config.Esn.NReservoir,
-            spectral_radius=ind[self._spectral_radius.idx], 
+            spectral_radius=ind[self._spectral_radius.idx],
             sparsity=ind[self._sparsity.idx],
             noise=ind[self._noise.idx],
             # lambda_r=ind[self._lambda_r.idx],

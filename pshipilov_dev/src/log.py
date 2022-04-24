@@ -11,7 +11,7 @@ import os.path
 def init() -> None:
     if os.path.isfile(Config.Logging.File):
         os.remove(Config.Logging.File)
-    
+
     # Create a log file
     f = open(Config.Logging.File, 'w')
     f.close()

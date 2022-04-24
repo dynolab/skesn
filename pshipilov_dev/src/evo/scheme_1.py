@@ -16,7 +16,7 @@ import dill
 import yaml
 import random
 import logging
-import scipy.fftpack 
+import scipy.fftpack
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -59,7 +59,7 @@ class Scheme_1(Scheme):
         self._hof = tools.HallOfFame(1, similar=np.allclose)
 
 
-        # Result 
+        # Result
         self._logbook: tools.Logbook
         # self._lastPopulation: list
 
@@ -139,9 +139,9 @@ class Scheme_1(Scheme):
 
     def _get_esn(self, ind):
         return EsnForecaster(
-            n_inputs=Config.Esn.NInputs, 
+            n_inputs=Config.Esn.NInputs,
             n_reservoir=Config.Esn.NReservoir,
-            spectral_radius=Config.Esn.SpectralRadius, 
+            spectral_radius=Config.Esn.SpectralRadius,
             sparsity=Config.Esn.Sparsity,
             noise=Config.Esn.Noise,
             lambda_r=Config.Esn.LambdaR,
@@ -186,9 +186,9 @@ class Scheme_1(Scheme):
 
 def _m_esn_fitness_valid_data_one_step(self: Scheme_1, ind: list) -> list:
     model = EsnForecaster(
-        n_inputs=Config.Esn.NInputs, 
+        n_inputs=Config.Esn.NInputs,
         n_reservoir=Config.Esn.NReservoir,
-        spectral_radius=Config.Esn.SpectralRadius, 
+        spectral_radius=Config.Esn.SpectralRadius,
         sparsity=Config.Esn.Sparsity,
         noise=Config.Esn.Noise,
         lambda_r=Config.Esn.LambdaR,

@@ -11,7 +11,6 @@ import yaml
 import os
 import os.path
 
-
 FORMAT_FILE = '{0}/frame_{1}_{2}_{3}'
 FORMAT_FILE_WITH_TITLE = '{0}/frame_{1}_{2}_{3}_{4}'
 

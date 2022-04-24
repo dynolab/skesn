@@ -76,6 +76,6 @@ def _ens_lenrenz_grid_search_impl(params_set: dict, score_f) -> dict:
 
 def esn_lorenz_grid_search():
     return _ens_lenrenz_grid_search_impl(
-        LORENZ_PARAMS_SET, 
+        LORENZ_PARAMS_SET,
         map_config_scoring_f(Config.Grid.Scoring, Config.Grid.ValidMultiN),
     )

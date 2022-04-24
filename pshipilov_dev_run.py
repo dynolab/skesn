@@ -74,7 +74,7 @@ def run_test_multi():
     params = {
         'n_inputs': Config.Esn.NInputs,
         'n_reservoir': Config.Esn.NReservoir,
-        'spectral_radius': Config.Esn.SpectralRadius, 
+        'spectral_radius': Config.Esn.SpectralRadius,
         'sparsity': Config.Esn.Sparsity,
         'noise': Config.Esn.Noise,
         'lambda_r': Config.Esn.LambdaR,
@@ -146,7 +146,6 @@ def create_parser() -> argparse.ArgumentParser:
 def main():
     parser = create_parser()
     args = parser.parse_args()
-    
 
     if args.mode == 'test_multi':
         run_test_multi()

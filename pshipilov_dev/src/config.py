@@ -56,7 +56,7 @@ class EsnConfigField(ConfigSection):
     LambdaR:        float = NecessaryField
     Inspect:        bool  = False
     RandomState:    int   = 0
-    
+
     def load(self, cfg: dict) -> None:
         EsnConfigField.NInputs        = Config.get_necessary_value(cfg, 'n_inputs', EsnConfigField.NInputs)
         EsnConfigField.NReservoir     = Config.get_necessary_value(cfg, 'n_reservoir', EsnConfigField.NReservoir)
@@ -158,7 +158,7 @@ class Scheme_1ConfigField(ConfigSection):
         Scheme_1ConfigField.M           = Config.get_necessary_value(cfg, 'm', Scheme_1ConfigField.M)
         Scheme_1ConfigField.C           = Config.get_necessary_value(cfg, 'c', Scheme_1ConfigField.C)
         Scheme_1ConfigField.Weights     = Config.get_necessary_value(cfg, 'weights', Scheme_1ConfigField.Weights)
-    
+
         Scheme_1ConfigField.Common.load(Config.get_necessary_value(cfg, 'common', Scheme_1ConfigField.Common))
 
     def yaml(self) -> dict:
@@ -393,7 +393,7 @@ class Config:
         return {'logging': Config.Logging.yaml(), 'run': Config.Run.yaml(), 'test': Config.Test.yaml(), 'dumb': Config.Dump.yaml(), 'esn': Config.Esn.yaml(),
                 'evo': Config.Evo.yaml(),'grid': Config.Grid.yaml(),'models': Config.Models.yaml(),}
 
-    # Internal property for control raising exeption if field is not provided 
+    # Internal property for control raising exeption if field is not provided
     __raise_if_necessary: bool = True
 
     # Internal helper func for patching

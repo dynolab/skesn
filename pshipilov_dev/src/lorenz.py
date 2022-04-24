@@ -6,7 +6,7 @@ def get_lorenz_data(ro, N, dt, seed):
     Y[:,0] = np.random.random(3)
 
     for i in range(1,N):
-        [x,y,z] = Y[:,i-1]    
+        [x,y,z] = Y[:,i-1]
         Y[0,i] = x + 10*(y-x)*dt
         Y[1,i] = y + (x*(ro-z)-y)*dt
         Y[2,i] = z + (x*y-8*z/3.)*dt
