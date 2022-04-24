@@ -28,7 +28,7 @@ class HyperParamInfo:
         self.is_int = is_int
 
 class Scheme_2(Scheme):
-    def __init__(self, toolbox: base.Toolbox) -> None:
+    def __init__(self, toolbox: base.Toolbox, args) -> None:
         # Config setup
         self._cfg = Config.Evo.Scheme_2
 

@@ -1,26 +1,22 @@
-import sys
-import logging
+from pshipilov_dev.src.evo.scheme_2 import Scheme_2
+from pshipilov_dev.src.evo.scheme_1 import Scheme_1
+from pshipilov_dev.src.grid import esn_lorenz_grid_search
+from pshipilov_dev.src.lorenz import get_lorenz_data, data_to_train
+from pshipilov_dev.src.utils import valid_multi_f
+
+import pshipilov_dev.src.log as log
+import pshipilov_dev.src.dump as dump
+import pshipilov_dev.src.config as cfg
+
+
+from skesn.esn import EsnForecaster
+
 import argparse
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-from pshipilov_dev.src.evo.scheme_2 import Scheme_2
-from pshipilov_dev.src.config import Config
-from pshipilov_dev.src.grid import esn_lorenz_grid_search
-from pshipilov_dev.src.lorenz import get_lorenz_data, data_to_train, train_to_data
-from pshipilov_dev.src.utils import valid_multi_f
-
-from skesn.esn import EsnForecaster
-
 from deap import base, algorithms
-# from deap import creator
-# from deap import tools
-
-# from scoop import futures
-
-import pshipilov_dev.src.dump as dump
-import pshipilov_dev.src.log as log
 
 import random
 
@@ -39,65 +35,84 @@ from pshipilov_dev.src.async_utils.customizable_pickler import make_methods, Cus
 CustomizablePicklingQueue._make_methods = make_methods
 joblib.pool.CustomizablePickler = CustomizablePickler
 
-# creator.create("FitnessESN", base.Fitness, weights=Config.Evo.Scheme_1.Weights)
-# creator.create("Individual", list, fitness=creator.FitnessESN)
-
 from joblib import Parallel, delayed
 
-import pickle
+# import pickle
 
-def CustomMap(f, *iters):
-    return Parallel(n_jobs=-1)(delayed(f)(*args) for args in zip(*iters))
+# Modes for running
+_MODE_TEST_MULTI = 'test_multi'
+_MODE_GRID = 'grid'
+_MODE_EVO_SCHEME_1 = 'evo_scheme_1'
+_MODE_EVO_SCHEME_2 = 'evo_scheme_2'
 
-random.seed(Config.Esn.RandomState)
-log.init()
+_KVARGS_ARGS = 'args'
 
-def run_scheme1():
-    scheme = Scheme_2(base.Toolbox())
+def _get_args_via_kvargs(**kvargs):
+    ret = None
+    if _KVARGS_ARGS in kvargs:
+        ret = kvargs[_KVARGS_ARGS]
+    return ret
+
+
+def run_scheme1(**kvargs):
+    args = _get_args_via_kvargs(**kvargs)
+    logger = log.get_logger_via_kvargs(**kvargs)
+
+    scheme = Scheme_1(base.Toolbox(), args)
     scheme.run()
     scheme.show_plot()
 
-    dump.do(scheme)
+    dump.do(logger=logger, evo_scheme=scheme)
 
-def run_scheme2():
-    scheme = Scheme_2(base.Toolbox())
+def run_scheme2(**kvargs):
+    args = _get_args_via_kvargs(**kvargs)
+    logger = log.get_logger_via_kvargs(**kvargs)
+
+    scheme = Scheme_2(base.Toolbox(), args)
     scheme.run()
     scheme.show_plot()
 
-    dump.do(scheme)
+    dump.do(logger=logger, evo_scheme=scheme)
 
-def run_grid():
-    best_params = esn_lorenz_grid_search()
-    dump.do(grid_srch_best_params=best_params)
+def run_grid(**kvargs):
+    args = _get_args_via_kvargs(**kvargs)
+    logger = log.get_logger_via_kvargs(**kvargs)
 
-def run_test_multi():
+    best_params = esn_lorenz_grid_search(args)
+
+    dump.do(logger=logger, grid_srch_best_params=best_params)
+
+def run_test_multi(**kvargs):
+    # args = get_args_via_kvargs(**kvargs)
+    logger = log.get_logger_via_kvargs(**kvargs)
+
     params = {
-        'n_inputs': Config.Esn.NInputs,
-        'n_reservoir': Config.Esn.NReservoir,
-        'spectral_radius': Config.Esn.SpectralRadius,
-        'sparsity': Config.Esn.Sparsity,
-        'noise': Config.Esn.Noise,
-        'lambda_r': Config.Esn.LambdaR,
-        'random_state': Config.Esn.RandomState,
+        'n_inputs': cfg.Config.Esn.NInputs,
+        'n_reservoir': cfg.Config.Esn.NReservoir,
+        'spectral_radius': cfg.Config.Esn.SpectralRadius,
+        'sparsity': cfg.Config.Esn.Sparsity,
+        'noise': cfg.Config.Esn.Noise,
+        'lambda_r': cfg.Config.Esn.LambdaR,
+        'random_state': cfg.Config.Esn.RandomState,
     }
-    logging.info(f'start test ESN...  params = {params}')
+    logger.info(f'start test ESN...  params = {params}')
     test_data = get_lorenz_data(
-        Config.Models.Lorenz.Ro,
-        Config.Test.MultiStep.DataN,
-        Config.Models.Lorenz.Dt,
-        Config.Models.Lorenz.RandSeed,
+        cfg.Config.Models.Lorenz.Ro,
+        cfg.Config.Test.MultiStep.DataN,
+        cfg.Config.Models.Lorenz.Dt,
+        cfg.Config.Models.Lorenz.RandSeed,
     )
-    train_data = test_data[..., :Config.Test.MultiStep.DataN//2:5]
-    valid_data = test_data[..., Config.Test.MultiStep.DataN//2:]
+    train_data = test_data[..., :cfg.Config.Test.MultiStep.DataN//2:5]
+    valid_data = test_data[..., cfg.Config.Test.MultiStep.DataN//2:]
 
     model = EsnForecaster(**params)
     model.fit(data_to_train(train_data).T)
-    err = valid_multi_f(Config.Test.MultiStep.StepN, model, valid_data)
-    logging.info(f'dumping test data...')
+    err = valid_multi_f(cfg.Config.Test.MultiStep.StepN, model, valid_data)
+    logger.info(f'dumping test data...')
     dump.do_np_arr(test_data=test_data)
-    logging.info(f'dumping hyperparameters...')
+    logger.info(f'dumping hyperparameters...')
     dump.do_var(hyperparameters=params,score={'score': float(err)})
-    logging.info(f'test has been done: err = {err} (multi step testing: step_n = 5)')
+    logger.info(f'test has been done: err = {err} (multi step testing: step_n = 5)')
 
     fig, axes = plt.subplots(3,figsize=(10,3))
 
@@ -118,16 +133,21 @@ def run_test_multi():
 
     fig.legend()
 
-def create_parser() -> argparse.ArgumentParser:
+def _create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument('-m',
         type=str,
         required=True,
-        choices=['test_multi', 'grid', 'evo_scheme_1', 'evo_scheme_2'],
+        choices=[_MODE_TEST_MULTI, _MODE_GRID, _MODE_EVO_SCHEME_1, _MODE_EVO_SCHEME_2],
         help='run mode'
     )
+    parser.add_argument('-с', "--config-path",
+        type=str,
+        required=True,
+        help='config path'
+    )
     parser.add_argument('-v', '--verbose',
-        action='store_false',
+        action='store_true',
         help='print all logs'
     )
     parser.add_argument('--log-dir',
@@ -144,19 +164,30 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 def main():
-    parser = create_parser()
+    parser = _create_parser()
     args = parser.parse_args()
 
-    if args.mode == 'test_multi':
-        run_test_multi()
-    elif args.mode == 'grid':
-        run_grid()
-    elif args.mode == 'evo_scheme_1':
-        run_scheme2()
-    elif args.mode == 'evo_scheme_2':
-        run_scheme2()
+    cfg.init(args)
+    log.init(args)
+    dump.init(args)
+
+    logger = log.get_logger(name='main')
+
+    if args.mode == _MODE_TEST_MULTI:
+        run_test_multi(args=args, logger=logger)
+    elif args.mode == _MODE_GRID:
+        run_grid(args=args, logger=logger)
+    elif args.mode == _MODE_EVO_SCHEME_1:
+        run_scheme2(args=args, logger=logger)
+    elif args.mode == _MODE_EVO_SCHEME_2:
+        run_scheme2(args=args, logger=logger)
     else:
         raise('unknown running mode')
+
+def CustomMap(f, *iters):
+    return Parallel(n_jobs=-1)(delayed(f)(*args) for args in zip(*iters))
+
+random.seed(cfg.Config.Esn.RandomState)
 
 if __name__ == '__main__':
     # scheme.get_toolbox().register("map", CustomMap)

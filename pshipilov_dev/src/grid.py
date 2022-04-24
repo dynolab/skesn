@@ -16,7 +16,7 @@ LORENZ_PARAMS_SET: dict = {
     # 'lambda_r':        np.logspace(_lorenz_cfg.LambdaR.Start, _lorenz_cfg.LambdaR.Stop, _lorenz_cfg.LambdaR.Num),
 }
 
-def _ens_lenrenz_grid_search_impl(params_set: dict, score_f) -> dict:
+def _ens_lenrenz_grid_search_impl(args, params_set: dict, score_f) -> dict:
     best_params = {
         # 'n_reservoir': int(params_set['n_reservoir'][0]),
         'spectral_radius': float(params_set['spectral_radius'][0]),
@@ -74,8 +74,9 @@ def _ens_lenrenz_grid_search_impl(params_set: dict, score_f) -> dict:
         'score': float(best_score),
     }
 
-def esn_lorenz_grid_search():
+def esn_lorenz_grid_search(args):
     return _ens_lenrenz_grid_search_impl(
+        args,
         LORENZ_PARAMS_SET,
         map_config_scoring_f(Config.Grid.Scoring, Config.Grid.ValidMultiN),
     )

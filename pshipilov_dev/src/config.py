@@ -17,35 +17,35 @@ class ConfigSection(object):
 # Config fields class implementations
 
 class LoggingConfigField(ConfigSection):
-    Level:   str  = 'info'
-    File:    str  = 'logs/log'
-    Console: bool = True
-    Enable:  bool = True
+    Level:          str  = 'info'
+    Dir:            str  = ''
+    DisableConsole: bool = False
+    Disable:        bool = False
 
     def load(self, cfg: dict) -> None:
         LoggingConfigField.Level   = Config.get_optional_value(cfg, 'level', LoggingConfigField.Level)
-        LoggingConfigField.File    = Config.get_optional_value(cfg, 'file', LoggingConfigField.File)
-        LoggingConfigField.Console = Config.get_optional_value(cfg, 'console', LoggingConfigField.Console)
-        LoggingConfigField.Enable  = Config.get_optional_value(cfg, 'enable', LoggingConfigField.Enable)
+        LoggingConfigField.Dir    = Config.get_optional_value(cfg, 'dir', LoggingConfigField.Dir)
+        LoggingConfigField.DisableConsole = Config.get_optional_value(cfg, 'disable_console', LoggingConfigField.DisableConsole)
+        LoggingConfigField.Disable = Config.get_optional_value(cfg, 'disable', LoggingConfigField.Disable)
 
     def yaml(self) -> dict:
-        return {'level': LoggingConfigField.Level,'file': LoggingConfigField.File,'console': LoggingConfigField.Console,
-                'enable': LoggingConfigField.Enable,}
+        return {'level': LoggingConfigField.Level,'dir': LoggingConfigField.Dir,'disable_console': LoggingConfigField.DisableConsole,
+                'disable': LoggingConfigField.Disable,}
 
 class DumpConfigField(ConfigSection):
-    Enable: bool = True
-    User:   str  = 'auto'
-    Dir:    str  = 'dumps'
-    Title:  str  = ''
+    User:    str  = 'auto'
+    Dir:     str  = ''
+    Title:   str  = ''
+    Disable: bool = False
 
     def load(self, cfg: dict) -> None:
-        DumpConfigField.Enable = Config.get_optional_value(cfg, 'enable', DumpConfigField.Enable)
+        DumpConfigField.Disable = Config.get_optional_value(cfg, 'disable', DumpConfigField.Disable)
         DumpConfigField.User   = Config.get_optional_value(cfg, 'user', DumpConfigField.User)
         DumpConfigField.Dir    = Config.get_optional_value(cfg, 'dir', DumpConfigField.Dir)
         DumpConfigField.Title  = Config.get_optional_value(cfg, 'title', DumpConfigField.Title)
 
     def yaml(self) -> dict:
-        return {'title': DumpConfigField.Title, 'enable': DumpConfigField.Enable, 'user': DumpConfigField.User,'dirname': DumpConfigField.Dir,}
+        return {'title': DumpConfigField.Title, 'disable': DumpConfigField.Disable, 'user': DumpConfigField.User,'dirname': DumpConfigField.Dir,}
 
 class EsnConfigField(ConfigSection):
     NInputs:        int   = NecessaryField
@@ -279,12 +279,10 @@ class ParamsSetGridPropField(ConfigSection):
 class GridConfigField(ConfigSection):
     Scoring:     str                    = NecessaryField
     ValidMultiN: int                    = -1
-    Verbose:     bool                   = False
     ParamsSet:   ParamsSetGridPropField = ParamsSetGridPropField()
 
     def load(self, cfg: dict) -> None:
         GridConfigField.Scoring = Config.get_necessary_value(cfg, 'scoring', GridConfigField.Scoring)
-        GridConfigField.Verbose = Config.get_optional_value(cfg, 'verbose', GridConfigField.Verbose)
         GridConfigField.ValidMultiN = Config.get_optional_value(cfg, 'valid_multi_n', GridConfigField.ValidMultiN)
         GridConfigField.ParamsSet.load(Config.get_necessary_value(cfg, 'params_set', GridConfigField.ParamsSet))
 
@@ -294,8 +292,8 @@ class GridConfigField(ConfigSection):
             raise(Exception('If "grid.scoring" = "valid_multi" then had to bind "grid.valid_multi_n" > 1'))
 
     def yaml(self) -> dict:
-        return {'params_set': GridConfigField.ParamsSet.yaml(),'valid_multi_n': GridConfigField.ValidMultiN, 'verbose': GridConfigField.Verbose, 'scoring': GridConfigField.Scoring,}
-        # return {'valid_multi_n': GridConfigField.ValidMultiN, 'verbose': GridConfigField.Verbose, 'scoring': GridConfigField.Scoring,}
+        return {'params_set': GridConfigField.ParamsSet.yaml(),'valid_multi_n': GridConfigField.ValidMultiN, 'scoring': GridConfigField.Scoring,}
+        # return {'valid_multi_n': GridConfigField.ValidMultiN, 'scoring': GridConfigField.Scoring,}
 
 class LorenzModelsPropConfigField(ConfigSection):
     @property
@@ -419,5 +417,8 @@ class Config:
     def patch_from_dict(cfg: dict, raise_if_necessary: bool=True) -> None:
         Config.load(cfg, raise_if_necessary)
 
-if not hasattr(Config, '__patched'):
-    Config.patch_from_file('pshipilov_dev/configs/config.yaml')
+def init(args):
+    if args is None or not hasattr(args, 'config_path'):
+        raise 'cant provide config path'
+    if not hasattr(Config, '__patched'):
+        Config.patch_from_file(args.config_path)
