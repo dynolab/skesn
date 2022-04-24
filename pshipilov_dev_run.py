@@ -1,4 +1,6 @@
+import sys
 import logging
+import argparse
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -116,14 +118,43 @@ def run_test_multi():
 
     fig.legend()
 
+def create_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-m',
+        type=str,
+        required=True,
+        choices=['test_multi', 'grid', 'evo_scheme_1', 'evo_scheme_2'],
+        help='run mode'
+    )
+    parser.add_argument('-v', '--verbose',
+        action='store_false',
+        help='print all logs'
+    )
+    parser.add_argument('--log-dir',
+        type=str,
+        nargs='?',
+        help='directory for writing log files'
+    )
+    parser.add_argument('--dump-dir',
+        type=str,
+        nargs='?',
+        help='directory for writing dump files'
+    )
+
+    return parser
+
 def main():
-    if Config.Run.Mode == 'test_multi':
+    parser = create_parser()
+    args = parser.parse_args()
+    
+
+    if args.mode == 'test_multi':
         run_test_multi()
-    elif Config.Run.Mode == 'grid':
+    elif args.mode == 'grid':
         run_grid()
-    elif Config.Run.Mode == 'evo_scheme_1':
+    elif args.mode == 'evo_scheme_1':
         run_scheme2()
-    elif Config.Run.Mode == 'evo_scheme_2':
+    elif args.mode == 'evo_scheme_2':
         run_scheme2()
     else:
         raise('unknown running mode')

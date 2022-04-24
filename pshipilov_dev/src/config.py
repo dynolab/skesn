@@ -349,19 +349,6 @@ class MultiStepTestPropConfigField(ConfigSection):
     def yaml(self) -> dict:
         return {'data_n': self._data_n, 'step_n': self._step_n,}
 
-class RunConfigField(ConfigSection):
-    @property
-    def Mode(self): return self._mode
-
-    def __init__(self) -> None:
-        self._mode: str = ''
-
-    def load(self, cfg: dict) -> None:
-        self._mode = Config.get_optional_value(cfg, 'mode', self._mode)
-
-    def yaml(self) -> dict:
-        return {'mode': self._mode,}
-
 class TestConfigField(ConfigSection):
     @property
     def MultiStep(self): return self._multi_step
@@ -379,7 +366,6 @@ class TestConfigField(ConfigSection):
 
 class Config:
     Logging: LoggingConfigField = LoggingConfigField()
-    Run:     RunConfigField     = RunConfigField()
     Test:    TestConfigField    = TestConfigField()
     Dump:    DumpConfigField    = DumpConfigField()
     Esn:     EsnConfigField     = EsnConfigField()
@@ -392,7 +378,6 @@ class Config:
 
         # Load main sections
         Config.Logging.load(Config.get_optional_value(cfg, 'logging', Config.Logging))
-        Config.Run.load(Config.get_necessary_value(cfg, 'run', Config.Run))
         Config.Test.load(Config.get_optional_value(cfg, 'test', Config.Test))
         Config.Dump.load(Config.get_optional_value(cfg, 'dumb', Config.Dump))
         Config.Esn.load(Config.get_necessary_value(cfg, 'esn', Config.Esn))

@@ -17,11 +17,6 @@ esn:
   sparsity: 0.001
   spectral_radius: 1.1473684210526316
 
-  inspect: false
-
-run:
-  mode: test_multi # please select mode: test_multi, evo_scheme_1, evo_scheme_2
-
 test:
   multi_step:
     step_n: 5
