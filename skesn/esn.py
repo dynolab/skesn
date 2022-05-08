@@ -5,6 +5,9 @@ from skesn.base import BaseForecaster
 from skesn.misc import correct_dimensions, identity
 from skesn.weight_generators import standart_weights_generator
 
+from enum import Enum
+update_modes = Enum("update_modes", "synchronization transfer_learning refit")
+
 
 ACTIVATIONS = {
     'identity': {
@@ -13,10 +16,33 @@ ACTIVATIONS = {
     },
     'tanh': {
         'direct': np.tanh,
-        'inverse': np.tanh,  # TODO: fix it
+        'inverse': np.arctanh,  
+    },
+    'relu': {
+        'direct': lambda x: np.maximum(0.,x),
+        'inverse': lambda x: np.maximum(0.,x),
+    },
+    'leaky_relu': {
+        'direct': lambda x: np.maximum(0.,x) + np.minimum(0.,x)*0.001,
+        'inverse': lambda x: np.maximum(0.,x) + np.minimum(0.,x)*0.001,
+    },
+    'flat_relu': {
+        'direct': lambda x: np.minimum(np.maximum(0.,x), 1.),
+        'inverse': lambda x: np.minimum(np.maximum(0.,x), 1.),
+    },
+    'gauss': {
+        'direct': lambda x: np.exp(-x**2/2),
+        'inverse': lambda x: -(np.log(x) * 2)**0.5,
+    },
+    'rel_gauss': {
+        'direct': lambda x: np.maximum(np.minimum(x/2+0.5, 0.5),-0.5)+np.maximum(np.minimum(-x/2+0.5, 0.5),-0.5),
+        'inverse': lambda x: -2*x+2
+    },
+    'sin': {
+        'direct': np.sin,
+        'inverse': np.arcsin
     },
 }
-
 
 class EsnForecaster(BaseForecaster):
     """Echo State Network time-forecaster.
@@ -79,7 +105,7 @@ class EsnForecaster(BaseForecaster):
         # a seed or None (in which case we use numpy's builtin RandomState)
         if isinstance(random_state, np.random.RandomState):
             self.random_state_ = random_state
-        elif random_state:
+        elif random_state is not None:
             try:
                 self.random_state_ = np.random.RandomState(random_state)
             except TypeError as e:
@@ -112,12 +138,7 @@ class EsnForecaster(BaseForecaster):
         BaseForecaster.
         Generates random recurrent matrix weights and fits the readout weights
         to the available time series (endogeneous time series).
-        The model can be fitted based on a single time series (batch_size == 1)
-        or a sequence of disconnected time series (batch_size > 1).
-        Optionally, a multivariate control signal (exogeneous time series)
-        can be passed which we will also be included into fitting process.
-        Note that in this case, the control signal must also be passed during
-        prediction.
+        After that the function of calculating the optimal matrix W_out is called.
 
         Writes to self:
             Sets fitted model attributes ending in "_".
@@ -141,65 +162,15 @@ class EsnForecaster(BaseForecaster):
         """
         endo_states, exo_states = \
             self._treat_dimensions_and_bias(y, X, representation='3D')
-        n_batches = endo_states.shape[0]
-        n_timesteps = endo_states.shape[1]
-        n_endo = endo_states.shape[2]
-        n_exo = 0 if exo_states is None else exo_states.shape[-1]
         self.W_in_, self.W_, self.W_c_ = \
             initialization_strategy(self.random_state_,
                                     self.n_reservoir,
                                     self.sparsity,
                                     self.spectral_radius,
-                                    n_endo,
-                                    n_exo=n_exo)
-        reservoir_states = np.zeros((n_batches, n_timesteps, self.n_reservoir))
-
-        if inspect:
-            print("fitting...")
-            pbar = tqdm(total=n_batches*n_timesteps,
-                        position=0,
-                        leave=True)
-
-        for b in range(n_batches):
-            for n in range(1, n_timesteps):
-                if exo_states is None:
-                    reservoir_states[b, n, :] = \
-                        self._iterate_reservoir_state(reservoir_states[b, n - 1],
-                                                      endo_states[b, n - 1, :])
-                else:
-                    reservoir_states[b, n, :] = \
-                        self._iterate_reservoir_state(reservoir_states[b, n - 1],
-                                                      endo_states[b, n - 1, :],
-                                                      exo_states[b, n, :])
-                if inspect:
-                    pbar.update(1)
-        if inspect:
-            pbar.close()
-
-        reservoir_states = np.reshape(reservoir_states,
-                                      (-1, reservoir_states.shape[-1]))
-        endo_states = np.reshape(endo_states,
-                                 (-1, endo_states.shape[-1]))
-        if inspect:
-            print("solving...")
-        if self.regularization == 'l2':
-            idenmat = self.lambda_r * np.identity(self.n_reservoir)
-            U = np.dot(reservoir_states.T, reservoir_states) + idenmat
-            self.W_out_ = np.linalg.solve(U, reservoir_states.T @ endo_states).T
-        elif self.regularization == 'noise' or self.regularization is None:
-            # same formulas as above but with lambda = 0
-            U = np.dot(reservoir_states.T, reservoir_states)
-            self.W_out_ = np.linalg.solve(U, reservoir_states.T @ endo_states).T
-        else:
-            raise ValueError(f'Unknown regularization: {self.regularization}')
-        # remember the last state for later:
-        self.last_reservoir_state_ = reservoir_states[-1, :]
-        self.last_endo_state_ = endo_states[-1, :]
-        if exo_states is None:
-            self.last_exo_state_ = 0
-        else:
-            raise NotImplementedError('forgot to implement')
-        return self
+                                    endo_states,
+                                    exo_states=exo_states)
+        
+        return self._update_via_refit(endo_states, exo_states, inspect)
 
     def _predict(self, n_timesteps, X=None, inspect=False):
         """Forecast time series at further time steps.
@@ -272,7 +243,7 @@ class EsnForecaster(BaseForecaster):
         else:
             return endo_states[1:]
 
-    def _update(self, y, X=None, mode='synchronization'):
+    def _update(self, y, X=None, mode='synchronization', inspect=False):
         """Update the model to incremental training data.
         Depending on the mode, it can be done as synchronization
         or transfer learning.
@@ -295,10 +266,92 @@ class EsnForecaster(BaseForecaster):
         -------
         self
         """
-        if mode == 'synchronization':
-            self._update_via_synchronization(y, X, mode='synchronization')
-        elif mode == 'transfer_learning':
-            self._update_via_transfer_learning(y, X, mu=1e-8, inspect=False)
+        if mode == update_modes.synchronization:
+            return self._update_via_synchronization(y, X)
+        elif mode == update_modes.transfer_learning:
+            return self._update_via_transfer_learning(y, X, mu=1e-8, inspect=inspect)
+        elif mode == update_modes.refit:
+            endo_states, exo_states = \
+                self._treat_dimensions_and_bias(y, X, representation='3D')
+            return self._update_via_refit(endo_states, exo_states, inspect)
+
+    def _update_via_refit(self, endo_states, exo_states=None, inspect=False):
+        """Refit forecaster to training data. 
+        The model can be fitted based on a single time series (batch_size == 1)
+        or a sequence of disconnected time series (batch_size > 1).
+        Optionally, a multivariate control signal (exogeneous time series)
+        can be passed which we will also be included into fitting process.
+        Note that in this case, the control signal must also be passed during
+        prediction.
+
+        Writes to self:
+            Sets fitted model attributes ending in "_".
+
+        Parameters
+        ----------
+        endo_states : array-like, shape (batch_size x n_timesteps x n_inputs)
+            Time series to which to fit the forecaster
+            or a sequence of them (batches).
+        exo_states : array-like or function, shape (batch_size x n_timesteps x n_controls), optional (default=None)
+            Exogeneous time series to fit to or a sequence of them (batches).
+            Can also be understood as a control signal
+        inspect : bool
+            Whether to show a visualisation of the collected reservoir states
+
+        Returns
+        -------
+        self : returns an instance of self.
+        """
+        n_batches = endo_states.shape[0]
+        n_timesteps = endo_states.shape[1]
+        reservoir_states = np.zeros((n_batches, n_timesteps, self.n_reservoir))
+
+        if inspect:
+            print("fitting...")
+            pbar = tqdm(total=n_batches*n_timesteps,
+                        position=0,
+                        leave=True)
+
+        for b in range(n_batches):
+            for n in range(1, n_timesteps):
+                if exo_states is None:
+                    reservoir_states[b, n, :] = \
+                        self._iterate_reservoir_state(reservoir_states[b, n - 1],
+                                                      endo_states[b, n - 1, :])
+                else:
+                    reservoir_states[b, n, :] = \
+                        self._iterate_reservoir_state(reservoir_states[b, n - 1],
+                                                      endo_states[b, n - 1, :],
+                                                      exo_states[b, n, :])
+                if inspect:
+                    pbar.update(1)
+        if inspect:
+            pbar.close()
+
+        reservoir_states = np.reshape(reservoir_states,
+                                      (-1, reservoir_states.shape[-1]))
+        endo_states = np.reshape(endo_states,
+                                 (-1, endo_states.shape[-1]))
+        if inspect:
+            print("solving...")
+        if self.regularization == 'l2':
+            idenmat = self.lambda_r * np.identity(self.n_reservoir)
+            U = np.dot(reservoir_states.T, reservoir_states) + idenmat
+            self.W_out_ = np.linalg.solve(U, reservoir_states.T @ endo_states).T
+        elif self.regularization == 'noise' or self.regularization is None:
+            # same formulas as above but with lambda = 0
+            U = np.dot(reservoir_states.T, reservoir_states)
+            self.W_out_ = np.linalg.solve(U, reservoir_states.T @ endo_states).T
+        else:
+            raise ValueError(f'Unknown regularization: {self.regularization}')
+        # remember the last state for later:
+        self.last_reservoir_state_ = reservoir_states[-1, :]
+        self.last_endo_state_ = endo_states[-1, :]
+        if exo_states is None:
+            self.last_exo_state_ = 0
+        else:
+            raise NotImplementedError('forgot to implement')
+        return self
 
     def _update_via_synchronization(self, y, X=None):
         """Update the model to incremental training data
