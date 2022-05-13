@@ -53,6 +53,7 @@ def optimal_weights_generator(verbose = 2, range_generator = np.linspace,
         # Generate optimal W_in and W_c
         # -----------------------------
         W_c = None
+        if(verbose > 0): print("\n------------Reservoir searching------------")
         if(find_optimal_input):
             if(verbose > 0): print("Input matrix generation...")
 
@@ -153,6 +154,7 @@ def optimal_weights_generator(verbose = 2, range_generator = np.linspace,
         W = W[idx]
 
         if(verbose > 0): print("Optimal scale: %lf" % (spectral_radius[idx,0,0]))
+        if(verbose > 0): print("-------------------------------------------\n")
 
         # Draw plots
         if(verbose > 1): 
