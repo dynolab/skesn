@@ -14,3 +14,12 @@ def valid_multi_f(valid_multi_n, model: EsnForecaster, valid_data):
         predict = train_to_data(model.predict(idxs[i] - idxs[i - 1], True, False).T)
         err[i - 1] = ((([[v] for v in valid_data[:,i]] - predict)**2).mean()**0.5)
     return err.mean()
+
+def get_necessary_arg(args, name1, name2=None):
+    if hasattr(args, name1):
+        return getattr(args, name1)
+    elif name2 is not None:
+        if hasattr(args, name2):
+            return getattr(args, name2)
+        raise 'unknown arg names: {0}, {1}'.format(name1, name2)
+    raise 'unknown arg name: {0}'.format(name1)

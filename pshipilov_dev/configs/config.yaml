@@ -3,8 +3,11 @@ logging:
   level: info
 
 evaluate:
-  type: rmse
+  model: lorenz
+  metric: mse
   steps: 5
+  opts:
+    sparsity_train: 10
 
 dumb:
   user: pavel
@@ -64,60 +67,53 @@ evo:
     m: 10
     c: 0
 
-    # weights: [-1.0,-1.0,-1.0]
-    weights: [-1.0,]
-
-    common:
+    evo_spec:
       rand_seed: 1
       max_gen_num: 200
       population_size: 30
 
-      verbose: true
+      weights: [-1.0,]
 
-      crossover_p: 0.9
-      mutation_p: 0.1
-
-      scoring: train
-
-      select: selTournament
-      crossing: cxTwoPoint
-      mutation: mutPolynomialBounded
+      select:
+        method: selTournament
+        args:
+        - key: tournsize
+          val: 3
+      mate:
+        method: cxTwoPoint
+        probability: 0.9
+      mutate:
+        method: mutPolynomialBounded
+        probability: 0.1
+        indpb: 0.25
 
   scheme_2:
+    rand_seed: 2
+    max_gen_num: 200
+    population_size: 30
+
+    fitness_weights: [-1.0,]
+
+    select:
+      method: selTournament
+      args:
+      - key: tournsize
+        val: 3
+    mate:
+      method: cxSimulatedBinaryBounded
+      probability: 0.9
+      args:
+      - key: eta
+        val: 20.0
+    mutate:
+      method: mutPolynomialBounded
+      probability: 0.15
+      indpb: 0.25
+
     limits:
-      # n_reservoir:
-      #   min: 150
-      #   max: 800
-      #   is_int: true
-      spectral_radius:
-        min: 0.2
-        max: 1.2
-      sparsity:
-        min: 0.001
-        max: 0.2
-      noise:
-        min: 0.00000001
-        max: 0.001
-      # lambda_r:
-      #   min: 0.000001
-      #   max: 0.1
-
-    # weights: [-1.0,-1.0,-1.0]
-    weights: [-1.0,]
-
-    common:
-      rand_seed: 2
-      max_gen_num: 200
-      population_size: 30
-
-      verbose: true
-
-      crossover_p: 0.9
-      mutation_p: 0.15
-
-      scoring: valid_multi
-      valid_multi_n: 5
-
-      select: selTournament
-      crossing: cxOnePoint
-      mutation_indpb: 0.25
+    - min: 0.2
+      max: 1.2
+    - min: 0.001
+      max: 0.8
+    - min: 0.00000001
+      max: 0.01

@@ -138,7 +138,7 @@ class BaseForecaster(BaseEstimator):
         self.check_is_fitted()
 
         # this is how it is supposed to be after the refactor is complete and effective
-        y_pred = self._predict(n_timesteps=n_timesteps, X=X, **kwargs)        
+        y_pred = self._predict(n_timesteps=n_timesteps, X=X, **kwargs)
         return y_pred
 
     def fit_predict(

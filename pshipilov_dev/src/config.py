@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, List, Union
 
 import yaml
 
@@ -16,22 +16,43 @@ class ConfigSection(object):
 
 # Config fields class implementations
 
-class EvaluateConfigField(ConfigSection):
+class EvaluateOptsConfigField(ConfigSection):
     @property
-    def Type(self) -> str: return self._type
-    @property
-    def Steps(self) -> int: return self._steps
+    def SparsityTrain(self) -> int: return self._sparsity_train
 
     def __init__(self) -> None:
-        self._type:  str = NecessaryField
-        self._steps: int = NecessaryField
+        self._sparsity_train: int = 0
 
     def load(self, cfg: dict) -> None:
-        self._type   = Config.get_optional_value(cfg, 'level', LoggingConfigField.Level)
-        self._steps    = Config.get_optional_value(cfg, 'dir', LoggingConfigField.Dir)
+        self._sparsity_train = Config.get_optional_value(cfg, 'sparsity_train', self._sparsity_train)
 
     def yaml(self) -> dict:
-        return {'type': self._type,'steps': self._steps,}
+        return {'sparsity_train': self._sparsity_train,}
+
+class EvaluateConfigField(ConfigSection):
+    @property
+    def Metric(self) -> str: return self._metric
+    @property
+    def Model(self) -> str: return self._model
+    @property
+    def Steps(self) -> int: return self._steps
+    @property
+    def Opts(self) -> EvaluateOptsConfigField: return self._opts
+
+    def __init__(self) -> None:
+        self._metric:  str                   = NecessaryField
+        self._model: str                     = NecessaryField
+        self._steps: int                     = 1
+        self._opts:  EvaluateOptsConfigField = EvaluateOptsConfigField()
+
+    def load(self, cfg: dict) -> None:
+        self._metric  = Config.get_necessary_value(cfg, 'metric', self._metric)
+        self._model = Config.get_necessary_value(cfg, 'model', self._model)
+        self._steps = Config.get_optional_value(cfg, 'steps', self._steps)
+        self._opts = Config.get_optional_value(cfg, 'opts', self._opts)
+
+    def yaml(self) -> dict:
+        return {'metric': self._metric,'model': self._model,'steps': self._steps,'opts': self._opts.yaml()}
 
 class LoggingConfigField(ConfigSection):
     Level:          str  = 'info'
@@ -89,161 +110,235 @@ class EsnConfigField(ConfigSection):
                 'sparsity': EsnConfigField.Sparsity, 'noise': EsnConfigField.Noise, 'lambda_r': EsnConfigField.LambdaR, 'inspect': EsnConfigField.Inspect,
                 'random_state': EsnConfigField.RandomState,}
 
-class CommonEvoPropConfigField(ConfigSection):
+class EvoOperatorArg(ConfigSection):
     @property
-    def MaxGenNum(self): return self._max_gen_num
-    @property
-    def PopulationSize(self): return self._population_size
-    @property
-    def RandSeed(self): return self._rand_seed
+    def Key(self) -> str: return self._key
 
     @property
-    def CrossoverP(self): return self._crossover_p
+    def Val(self) -> Any: return self._val
+
+    def __init__(self) -> None:
+        self._key: str = NecessaryField
+        self._val: Any = NecessaryField
+
+    def load(self, cfg: dict) -> None:
+        self._key = Config.get_necessary_value(cfg, 'key', self._key)
+        self._val = Config.get_necessary_value(cfg, 'val', self._val)
+
+    def yaml(self) -> dict:
+        return {
+            'key': self._key,'val': self._val,
+        }
+
+class EvoOperatorBaseConfigField(ConfigSection):
     @property
-    def MutationP(self): return self._mutation_p
+    def Method(self) -> str: return self._method
 
     @property
-    def Scoring(self): return self._scoring
+    def Args(self) -> List[EvoOperatorArg]: return self._args
+
+    def __init__(self) -> None:
+        self._method: str                  = NecessaryField
+        self._args:   List[EvoOperatorArg] = []
+
+    def load(self, cfg: dict) -> None:
+        self._method = Config.get_necessary_value(cfg, 'method', self._method)
+        self._args = []
+        args = Config.get_optional_value(cfg, 'args', self._args)
+        if len(args) > 0:
+            for arg in args:
+                item = EvoOperatorArg()
+                item.load(arg)
+                self._args.append(item)
+
+    def yaml(self) -> dict:
+        return {
+            'method': self._method,'args': [item.yaml() for item in self._args],
+        }
+
+class EvoSelectConfigField(EvoOperatorBaseConfigField):
+    def __init__(self) -> None:
+        super().__init__()
+
+    def load(self, cfg: dict) -> None:
+        super().load(cfg)
+
+    def yaml(self) -> dict:
+        ret = super().yaml()
+        ret.update()
+        return ret
+
+class EvoMateConfigField(EvoOperatorBaseConfigField):
     @property
-    def ValidMultiN(self): return self._valid_multi_n
+    def Probability(self) -> float: return self._probability
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._probability: float = NecessaryField
+
+    def load(self, cfg: dict) -> None:
+        super().load(cfg)
+        self._probability = Config.get_necessary_value(cfg, 'probability', self._probability)
+
+    def yaml(self) -> dict:
+        ret = super().yaml()
+        ret.update({
+            'probability': self._probability,
+        })
+        return ret
+
+class EvoMutateConfigField(EvoOperatorBaseConfigField):
+    @property
+    def Probability(self) -> float: return self._probability
 
     @property
-    def Select(self): return self._select
+    def Indpb(self) -> float: return self._indpb
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._probability: float = NecessaryField
+        self._indpb:       float = 0.
+
+    def load(self, cfg: dict) -> None:
+        super().load(cfg)
+        self._probability = Config.get_necessary_value(cfg, 'probability', self._probability)
+        self._indpb       = Config.get_optional_value(cfg, 'indpb', self._indpb)
+
+    def yaml(self) -> dict:
+        ret = super().yaml()
+        ret.update({
+            'probability': self._probability,
+            'indpb': self._indpb,
+        })
+        return ret
+
+class EvoLimitGenConfigField(ConfigSection):
     @property
-    def Crossing(self): return self._crossing
+    def Min(self) -> Union[int,float,None]: return self._min
     @property
-    def Mutation(self): return self._mutation
+    def Max(self) -> Union[int,float,None]: return self._max
+    @property
+    def IsInt(self) -> bool: return self._is_int
+
+    def __init__(self) -> None:
+        self._min:    Union[int,float,None] = None
+        self._max:    Union[int,float,None] = None
+        self._is_int: bool                  = False
+
+    def load(self, cfg: dict) -> None:
+        self._min    = Config.get_optional_value(cfg, 'min', self._min)
+        self._max    = Config.get_optional_value(cfg, 'max', self._max)
+        self._is_int = Config.get_optional_value(cfg, 'is_int', self._is_int)
+
+    def yaml(self) -> dict:
+        return {
+            'min': self._min,'max': self._max,'is_int': self._is_int,
+        }
+
+class EvoSchemeConfigField(ConfigSection):
+    @property
+    def MaxGenNum(self) -> int: return self._max_gen_num
+    @property
+    def PopulationSize(self) -> int: return self._population_size
+    @property
+    def RandSeed(self) -> int: return self._rand_seed
+    @property
+    def HromoLen(self) -> int: return self._hromo_len
 
     @property
-    def MutationIndpb(self): return self._mutation_indpb
-
+    def FitnessWeights(self) -> List[float]: return self._fitness_weights
 
     @property
-    def Verbose(self): return self._verbose
+    def Select(self) -> EvoSelectConfigField: return self._select
+    @property
+    def Mate(self) -> EvoMateConfigField: return self._mate
+    @property
+    def Mutate(self) -> EvoMutateConfigField: return self._mutate
 
+    @property
+    def Limits(self) -> List[EvoLimitGenConfigField]: return self._limits
+
+    @property
+    def Verbose(self) -> bool: return self._verbose
 
     def __init__(self) -> None:
         self._max_gen_num:     int = NecessaryField
         self._population_size: int = NecessaryField
         self._rand_seed:       int = NecessaryField
+        self._hromo_len:       int = NecessaryField
 
-        self._crossover_p:     float = NecessaryField
-        self._mutation_p:      float = NecessaryField
+        self._fitness_weights: list = NecessaryField
 
-        self._select:          str = ''
-        self._crossing:        str = ''
-        self._mutation:        str = ''
+        self._select: EvoSelectConfigField = EvoSelectConfigField()
+        self._mate:   EvoMateConfigField   = EvoMateConfigField()
+        self._mutate: EvoMutateConfigField = EvoMutateConfigField()
 
-        self._mutation_indpb:  float = -1
+        self._limits: List[EvoLimitGenConfigField] = []
 
-        self._scoring:         str = NecessaryField
-        self._valid_multi_n:   int = -1
-
-        self._verbose:         bool = False
+        self._verbose = False
 
     def load(self, cfg: dict) -> None:
         self._max_gen_num     = Config.get_necessary_value(cfg, 'max_gen_num', self._max_gen_num)
         self._population_size = Config.get_necessary_value(cfg, 'population_size', self._population_size)
         self._rand_seed       = Config.get_necessary_value(cfg, 'rand_seed', self._rand_seed)
+        self._hromo_len       = Config.get_necessary_value(cfg, 'hromo_len', self._hromo_len)
 
-        self._crossover_p     = Config.get_necessary_value(cfg, 'crossover_p', self._crossover_p)
-        self._mutation_p      = Config.get_necessary_value(cfg, 'mutation_p', self._mutation_p)
+        self._fitness_weights = Config.get_necessary_value(cfg, 'fitness_weights', self._fitness_weights)
 
-        self._verbose         = Config.get_necessary_value(cfg, 'verbose', self._verbose)
+        self._select.load(Config.get_necessary_value(cfg, 'select', self._select))
+        self._mate.load(Config.get_necessary_value(cfg, 'mate', self._mate))
+        self._mutate.load(Config.get_necessary_value(cfg, 'mutate', self._mutate))
 
-        self._scoring         = Config.get_necessary_value(cfg, 'scoring', self._scoring)
-        self._valid_multi_n   = Config.get_optional_value(cfg, 'valid_multi_n', self._valid_multi_n)
+        self._limits = Config.get_optional_value(cfg, 'limits', self._limits)
 
-        self._select          = Config.get_optional_value(cfg, 'select', self._select)
-        self._crossing        = Config.get_optional_value(cfg, 'crossing', self._crossing)
-        self._mutation        = Config.get_optional_value(cfg, 'mutation', self._mutation)
-
-        self._mutation_indpb  = Config.get_optional_value(cfg, 'mutation_indpb', self._mutation_indpb)
+        self._verbose = Config.get_optional_value(cfg, 'verbose', self._verbose)
 
     def yaml(self) -> dict:
-        return {'max_gen_num': self._max_gen_num, 'population_size': self._population_size, 'rand_seed': self._rand_seed,
-                'crossover_p': self._crossover_p, 'mutation_p': self._mutation_p, 'verbose': self._verbose,'scoring': self._scoring,'valid_multi_n': self._valid_multi_n,
-                'select': self._select, 'crossing': self._crossing, 'mutation': self._mutation,'mutation_indpb': self._mutation_indpb}
+        return {'max_gen_num': self._max_gen_num, 'population_size': self._population_size, 'rand_seed': self._rand_seed, 'hromo_len': self._hromo_len,
+            'fitness_weights': self._fitness_weights,
+            'select': self._select,'mate': self._mate,'mutate': self._mutate,
+            'limits': self._limits,}
 
 class Scheme_1ConfigField(ConfigSection):
-    M:         int                      = NecessaryField
-    C:         int                      = NecessaryField
-    Weights:   list                     = NecessaryField
-    Common:    CommonEvoPropConfigField = CommonEvoPropConfigField()
-
-    def load(self, cfg: dict) -> None:
-        Scheme_1ConfigField.M           = Config.get_necessary_value(cfg, 'm', Scheme_1ConfigField.M)
-        Scheme_1ConfigField.C           = Config.get_necessary_value(cfg, 'c', Scheme_1ConfigField.C)
-        Scheme_1ConfigField.Weights     = Config.get_necessary_value(cfg, 'weights', Scheme_1ConfigField.Weights)
-
-        Scheme_1ConfigField.Common.load(Config.get_necessary_value(cfg, 'common', Scheme_1ConfigField.Common))
-
-    def yaml(self) -> dict:
-        return {'M': Scheme_1ConfigField.M, 'C': Scheme_1ConfigField.C, 'weights': Scheme_1ConfigField.Weights,
-                'common': Scheme_1ConfigField.Common.yaml(),}
-
-class LimitsParamPropConfigField(ConfigSection):
     @property
-    def Min(self): return self._min
+    def M(self) -> int: return self._m
     @property
-    def Max(self): return self._max
+    def C(self) -> int: return self._c
     @property
-    def IsInt(self): return self._is_int
+    def EvoSpec(self) -> EvoSchemeConfigField: return self._evo_spec
 
     def __init__(self) -> None:
-        self._min:    float = 0 # NecessaryField
-        self._max:    float = 0 # NecessaryField
-        self._is_int: bool  = False
+        self._m:    int =  NecessaryField
+        self._c:    int =  NecessaryField
+
+        self._evo_spec: EvoSchemeConfigField = EvoSchemeConfigField()
 
     def load(self, cfg: dict) -> None:
-        self._min = Config.get_optional_value(cfg, 'min', self._min)
-        self._max = Config.get_optional_value(cfg, 'max', self._max)
-        self._is_int = Config.get_optional_value(cfg, 'is_int', self._is_int)
+        self._m = Config.get_necessary_value(cfg, 'm', self._m)
+        self._c = Config.get_necessary_value(cfg, 'c', self._c)
+
+        self._evo_spec.load(Config.get_necessary_value(cfg, 'evo_spec', self._evo_spec))
 
     def yaml(self) -> dict:
-        return {'min': self._min,'max': self._max,'is_int': self._is_int,}
-
-class LimitsScheme_2PropConfigField(ConfigSection):
-    NReservoir:     LimitsParamPropConfigField = LimitsParamPropConfigField()
-    SpectralRadius: LimitsParamPropConfigField = LimitsParamPropConfigField()
-    Sparsity:       LimitsParamPropConfigField = LimitsParamPropConfigField()
-    Noise:          LimitsParamPropConfigField = LimitsParamPropConfigField()
-    LambdaR:        LimitsParamPropConfigField = LimitsParamPropConfigField()
-
-    def load(self, cfg: dict) -> None:
-        LimitsScheme_2PropConfigField.NReservoir.load(Config.get_optional_value(cfg, 'n_reservoir', {}))
-        LimitsScheme_2PropConfigField.SpectralRadius.load(Config.get_optional_value(cfg, 'spectral_radius', {}))
-        LimitsScheme_2PropConfigField.Sparsity.load(Config.get_optional_value(cfg, 'sparsity', {}))
-        LimitsScheme_2PropConfigField.Noise.load(Config.get_optional_value(cfg, 'noise', {}))
-        LimitsScheme_2PropConfigField.LambdaR.load(Config.get_optional_value(cfg, 'lambda_r', {}))
-
-    def yaml(self) -> dict:
-        return {'n_reservoir': LimitsScheme_2PropConfigField.NReservoir.yaml(),'spectral_radius': LimitsScheme_2PropConfigField.SpectralRadius.yaml(),'sparsity': LimitsScheme_2PropConfigField.Sparsity.yaml(),
-            'noise': LimitsScheme_2PropConfigField.Noise.yaml(),'lambda_r': LimitsScheme_2PropConfigField.LambdaR.yaml(),}
-
-class Scheme_2ConfigField(ConfigSection):
-    Weights:   list                          = NecessaryField
-    Common:    CommonEvoPropConfigField      = CommonEvoPropConfigField()
-    Limits:    LimitsScheme_2PropConfigField = LimitsScheme_2PropConfigField()
-
-    def load(self, cfg: dict) -> None:
-        Scheme_2ConfigField.Weights     = Config.get_necessary_value(cfg, 'weights', Scheme_2ConfigField.Weights)
-        Scheme_2ConfigField.Common.load(Config.get_necessary_value(cfg, 'common', Scheme_2ConfigField.Common))
-        Scheme_2ConfigField.Limits.load(Config.get_necessary_value(cfg, 'limits', Scheme_2ConfigField.Limits))
-
-    def yaml(self) -> dict:
-        return {'weights': Scheme_2ConfigField.Weights,'common': Scheme_2ConfigField.Common.yaml(),'limits': Scheme_2ConfigField.Limits.yaml(),}
+        return {'m': self._m, 'c': self._c,
+                'evo_spec': self._evo_spec.yaml(),}
 
 class EvoConfigField(ConfigSection):
-    Scheme_1: Scheme_1ConfigField = Scheme_1ConfigField()
-    Scheme_2: Scheme_2ConfigField = Scheme_2ConfigField()
+    @property
+    def Scheme_1(self) -> Scheme_1ConfigField: return self._scheme_1
+    @property
+    def Scheme_2(self) -> EvoSchemeConfigField: return self._scheme_2
+
+    def __init__(self) -> None:
+        self._scheme_1: Scheme_1ConfigField = Scheme_1ConfigField()
+        self._scheme_2: EvoSchemeConfigField = EvoSchemeConfigField()
 
     def load(self, cfg: dict) -> None:
-        EvoConfigField.Scheme_1.load(Config.get_necessary_value(cfg, 'scheme_1', EvoConfigField.Scheme_1))
-        EvoConfigField.Scheme_2.load(Config.get_necessary_value(cfg, 'scheme_2', EvoConfigField.Scheme_2))
+        self._scheme_1.load(Config.get_necessary_value(cfg, 'scheme_1', self._scheme_1))
+        self._scheme_2.load(Config.get_necessary_value(cfg, 'scheme_2', self._scheme_2))
 
     def yaml(self) -> dict:
-        return {'scheme_1': EvoConfigField.Scheme_1.yaml(),'scheme_2': EvoConfigField.Scheme_2.yaml(),}
+        return {'scheme_1': self._scheme_1.yaml(),'scheme_2': self._scheme_2.yaml(),}
 
 class ParamLorenzPropField(ConfigSection):
     @property
@@ -294,23 +389,13 @@ class ParamsSetGridPropField(ConfigSection):
         return {'lorenz': ParamsSetGridPropField.Lorenz.yaml(),}
 
 class GridConfigField(ConfigSection):
-    Scoring:     str                    = NecessaryField
-    ValidMultiN: int                    = -1
     ParamsSet:   ParamsSetGridPropField = ParamsSetGridPropField()
 
     def load(self, cfg: dict) -> None:
-        GridConfigField.Scoring = Config.get_necessary_value(cfg, 'scoring', GridConfigField.Scoring)
-        GridConfigField.ValidMultiN = Config.get_optional_value(cfg, 'valid_multi_n', GridConfigField.ValidMultiN)
         GridConfigField.ParamsSet.load(Config.get_necessary_value(cfg, 'params_set', GridConfigField.ParamsSet))
 
-        # Other validation
-        if GridConfigField.Scoring == 'valid_multi' \
-            and GridConfigField.ValidMultiN < 2:
-            raise(Exception('If "grid.scoring" = "valid_multi" then had to bind "grid.valid_multi_n" > 1'))
-
     def yaml(self) -> dict:
-        return {'params_set': GridConfigField.ParamsSet.yaml(),'valid_multi_n': GridConfigField.ValidMultiN, 'scoring': GridConfigField.Scoring,}
-        # return {'valid_multi_n': GridConfigField.ValidMultiN, 'scoring': GridConfigField.Scoring,}
+        return {'params_set': GridConfigField.ParamsSet.yaml(),}
 
 class LorenzModelsPropConfigField(ConfigSection):
     @property
@@ -437,6 +522,8 @@ class Config:
         Config.load(cfg, raise_if_necessary)
 
 def init(args):
+    if args is not None and hasattr(args, 'disable_config'):
+        return
     if args is None or not hasattr(args, 'config_path'):
         raise 'cant provide config path'
     if not hasattr(Config, '__patched'):

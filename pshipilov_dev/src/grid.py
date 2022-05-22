@@ -5,7 +5,7 @@ import numpy as np
 from skesn.esn import EsnForecaster
 
 from .config import Config
-from .evo.utils import map_config_scoring_f
+from .evo.utils import map_evaluate_f
 
 _lorenz_cfg = Config.Grid.ParamsSet.Lorenz
 LORENZ_PARAMS_SET: dict = {
@@ -78,5 +78,5 @@ def esn_lorenz_grid_search(args):
     return _ens_lenrenz_grid_search_impl(
         args,
         LORENZ_PARAMS_SET,
-        map_config_scoring_f(Config.Grid.Scoring, Config.Grid.ValidMultiN),
+        map_evaluate_f(Config.Grid.Scoring, Config.Grid.ValidMultiN),
     )

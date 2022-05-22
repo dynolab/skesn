@@ -4,65 +4,62 @@ import numpy as np
 
 from .. import dump
 
+import sklearn.metrics as metrics
+
 from skesn.esn import EsnForecaster
 
 from ..config import Config
 from ..lorenz import get_lorenz_data, data_to_train, train_to_data
 
-__dumped: bool = False
+def normalize_name(name: str):
+    return name.lower().strip()
 
-def map_config_scoring_f(scoring: str, valid_data, train_data, valid_multi_n=None):
-    global __dumped
+def _get_data_set():
+    if Config.Evaluate.Model == 'lorenz':
+        return get_lorenz_data(
+            Config.Models.Lorenz.Ro,
+            Config.Models.Lorenz.N,
+            Config.Models.Lorenz.Dt,
+            Config.Models.Lorenz.RandSeed,
+        )
+    raise 'unknown evaluate model'
 
-    data = get_lorenz_data(
-        Config.Models.Lorenz.Ro,
-        Config.Models.Lorenz.N,
-        Config.Models.Lorenz.Dt,
-        Config.Models.Lorenz.RandSeed,
-    )
-    train_data = data[..., :Config.Models.Lorenz.N//2:10]
+def _split_data_set(data: np.ndarray):
+    train_data: np.ndarray = None
+    if Config.Evaluate.Opts.SparsityTrain > 0:
+        train_data = data[..., :Config.Models.Lorenz.N//2:Config.Evaluate.Opts.SparsityTrain]
+    else:
+        train_data = data[..., :Config.Models.Lorenz.N//2]
     valid_data = data[..., Config.Models.Lorenz.N//2:]
-    fit_data = data_to_train(train_data).T
+    return train_data, valid_data
 
-    if not __dumped:
+# Args:
+# evaluate_kvargs must contains:
+# disable_dump: bool = default(False) - disabled dump train and valid data sets
+def wrap_esn_evaluate_f(esn_creator_by_ind_f, **evaluate_kvargs):
+    train_data, valid_data = _split_data_set(_get_data_set())
+    if not evaluate_kvargs.get('disable_dump', False):
         dump.do_np_arr(train_data=train_data, valid_data=valid_data)
-        __dumped = True
 
-    if scoring == 'train':
-        def _train_f(model: EsnForecaster):
-            return model.fit(fit_data).mean()**0.5,
-        return _train_f
-    elif scoring == 'valid_one':
-        def _valid_one_f(model: EsnForecaster):
-            model.fit(fit_data)
-            max_i = len(valid_data[0])
-            err = np.ndarray(max_i)
-            for i in range(max_i):
-                predict = train_to_data(model.predict(1, True, Config.Esn.Inspect).T)
-                err[i] = (([[v] for v in valid_data[:,i]] - predict)**2).mean()**0.5
-            return err.mean(),
-        return _valid_one_f
-    elif scoring == 'valid_multi':
-        h = valid_multi_n
-        if h is None:
-            raise Exception('argument "valid_multi_n" had to provided when "valid_multi" is bound')
-        n = valid_data.shape[1] // h
-        idxs = [int(idx) for idx in np.linspace(0, valid_data.shape[1], n, True)]
-        def _valid_multi_f(model: EsnForecaster):
-            model.fit(fit_data)
-            err = np.ndarray(len(idxs) - 1)
-            for i in range(1, len(idxs)):
-                predict = train_to_data(model.predict(idxs[i] - idxs[i - 1], True, False).T)
-                err[i - 1] = ((([[v] for v in valid_data[:,i]] - predict)**2).mean()**0.5)
-            return err.mean(),
-        return _valid_multi_f
+    evaluate_f = map_evaluate_f(
+        map_metric_f(),
+        data_to_train(train_data).T,
+        valid_data,
+        **evaluate_kvargs,
+    )
 
-    raise(Exception(f'"scoring" has unknown value ({scoring})'))
+    return lambda ind: evaluate_f(esn_creator_by_ind_f(ind))
 
-def wrap_scoring_f(model_creator_by_ind: list, scoring: str, **scoring_opts):
-    return lambda ind: map_config_scoring_f(scoring, **scoring_opts)(model_creator_by_ind(ind))
+# Mapping functions
 
-def map_select_f(select: str, *args, **kvargs):
+def map_metric_f():
+    norm_name = normalize_name(Config.Evaluate.Metric)
+
+    if norm_name == 'mse':
+        return metrics.mean_squared_error
+    raise 'unknown evaluate metric'
+
+def map_select_f(select: str):
     if not isinstance(select, str):
         raise Exception(f'select should be a string')
     if not select.startswith('sel'):
@@ -71,7 +68,7 @@ def map_select_f(select: str, *args, **kvargs):
         return getattr(tools, select)
     raise Exception(f'unknown select "{select}"')
 
-def map_crossing_f(crossing: str, *args, **kvargs):
+def map_mate_f(crossing: str):
     if not isinstance(crossing, str):
         raise Exception(f'crossing should be a string')
     if not crossing.startswith('cx'):
@@ -80,8 +77,7 @@ def map_crossing_f(crossing: str, *args, **kvargs):
         return getattr(tools, crossing)
     raise Exception(f'unknown crossing "{crossing}"')
 
-
-def map_mutate_f(mutate: str, *args, **kvargs):
+def map_mutate_f(mutate: str):
     if not isinstance(mutate, str):
         raise Exception(f'mutate should be a string')
     if not mutate.startswith('mut'):
@@ -89,3 +85,26 @@ def map_mutate_f(mutate: str, *args, **kvargs):
     if hasattr(tools, mutate):
         return getattr(tools, mutate)
     raise Exception(f'unknown mutate "{mutate}"')
+
+def map_evaluate_f(metric_f, fit_data: np.ndarray, valid_data: np.ndarray, **evaluate_kvargs):
+    if Config.Evaluate.Steps < 0:
+        raise 'bad evaluate.steps config field value, must be greater then 0'
+
+    if Config.Evaluate.Steps > 1:
+        n = valid_data.shape[1] // Config.Evaluate.Steps
+        idxs = [int(idx) for idx in np.linspace(0, valid_data.shape[1], n, True)]
+        def _valid_multi_f(model: EsnForecaster):
+            model.fit(fit_data)
+            predict_data = np.ndarray(len(idxs) - 1)
+            for i in range(1, len(idxs)):
+                predict_data[i - 1] = train_to_data(model.predict(idxs[i] - idxs[i - 1], True, False).T)
+            return metric_f(valid_data, predict_data),
+        return _valid_multi_f
+
+    def _valid_one_f(model: EsnForecaster):
+        model.fit(fit_data)
+        predict_data = np.ndarray(len(valid_data[0]))
+        for i in range(len(valid_data[0])):
+            predict_data[i] = train_to_data(model.predict(1, True, Config.Esn.Inspect).T)
+        return metric_f(valid_data, predict_data),
+    return _valid_one_f
