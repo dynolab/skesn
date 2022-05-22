@@ -1,4 +1,4 @@
-from typing import Any, List, Union
+from typing import Any, List, Union, Type
 
 import yaml
 
@@ -15,6 +15,9 @@ class ConfigSection(object):
         pass
 
 # Config fields class implementations
+
+def _yaml_config_section_arr(arr: List[ConfigSection]):
+    return [item.yaml() for item in arr]
 
 class EvaluateOptsConfigField(ConfigSection):
     @property
@@ -143,17 +146,11 @@ class EvoOperatorBaseConfigField(ConfigSection):
 
     def load(self, cfg: dict) -> None:
         self._method = Config.get_necessary_value(cfg, 'method', self._method)
-        self._args = []
-        args = Config.get_optional_value(cfg, 'args', self._args)
-        if len(args) > 0:
-            for arg in args:
-                item = EvoOperatorArg()
-                item.load(arg)
-                self._args.append(item)
+        self._args   = Config.get_optional_arr_value(cfg, 'args', EvoOperatorArg, self._args)
 
     def yaml(self) -> dict:
         return {
-            'method': self._method,'args': [item.yaml() for item in self._args],
+            'method': self._method,'args': _yaml_config_section_arr(self._args),
         }
 
 class EvoSelectConfigField(EvoOperatorBaseConfigField):
@@ -289,7 +286,7 @@ class EvoSchemeConfigField(ConfigSection):
         self._mate.load(Config.get_necessary_value(cfg, 'mate', self._mate))
         self._mutate.load(Config.get_necessary_value(cfg, 'mutate', self._mutate))
 
-        self._limits = Config.get_optional_value(cfg, 'limits', self._limits)
+        self._limits = Config.get_optional_arr_value(cfg, 'limits', EvoLimitGenConfigField, self._limits)
 
         self._verbose = Config.get_optional_value(cfg, 'verbose', self._verbose)
 
@@ -297,7 +294,7 @@ class EvoSchemeConfigField(ConfigSection):
         return {'max_gen_num': self._max_gen_num, 'population_size': self._population_size, 'rand_seed': self._rand_seed, 'hromo_len': self._hromo_len,
             'fitness_weights': self._fitness_weights,
             'select': self._select,'mate': self._mate,'mutate': self._mutate,
-            'limits': self._limits,}
+            'limits': _yaml_config_section_arr(self._limits),}
 
 class Scheme_1ConfigField(ConfigSection):
     @property
@@ -505,12 +502,35 @@ class Config:
             return default
         return cfg[key]
 
-    def get_necessary_value(cfg: dict, key: str, default: Any=None) -> Any:
+    def get_necessary_value(cfg: dict, key: str, str, default: Any=None) -> Any:
         if key not in cfg:
             if not Config.__raise_if_necessary:
                 return default
             raise Exception(f'Failed config load, key \"{key}\" is necessary')
         return cfg[key]
+
+    def get_optional_arr_value(cfg: dict, key: str, bind_item_type: Type=dict, default: Any=None) -> Any:
+        if key not in cfg:
+            return default
+        arr = cfg[key]
+        if len(arr) == 0:
+            return []
+
+        ret = [0] * len(arr)
+        for i in range(len(arr)):
+            if issubclass(bind_item_type, ConfigSection):
+                ret[i] = bind_item_type()
+                ret[i].load(arr[i])
+            else:
+                ret[i] = arr[i]
+        return ret
+
+    def get_necessary_arr_value(cfg: dict, key: str, bind_item_type: Type=dict, default: Any=None) -> Any:
+        if key not in cfg:
+            if not Config.__raise_if_necessary:
+                return default
+            raise Exception(f'Failed config load, key \"{key}\" is necessary')
+        return Config.get_optional_arr_value(cfg, key, bind_item_type)
 
     # Pathcing functions
 

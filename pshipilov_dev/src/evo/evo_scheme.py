@@ -31,8 +31,8 @@ class EvoScheme(Scheme):
     def __init__(self,
         name: str,
         cfg: EvoSchemeConfigField,
-        ind_creator_f,
         evaluate_f,
+        ind_creator_f=None,
         tool_box: base.Toolbox=None,
         ) -> None:
 
@@ -51,8 +51,14 @@ class EvoScheme(Scheme):
         creator.create("Individual", list, fitness=creator.Fitness)
 
         self._tool_box = base.Toolbox() if tool_box is None else tool_box
+
+        if ind_creator_f is None:
+            self._tool_box.register('new_ind', self._ind_creator_def_f)
+        else:
+            self._tool_box.register('new_ind', ind_creator_f)
+
         if not hasattr(self._tool_box, 'new_population'):
-            self._tool_box.register('new_population', tools.initRepeat, list, ind_creator_f, n=self._cfg.PopulationSize)
+            self._tool_box.register('new_population', tools.initRepeat, list, self._tool_box.new_ind, n=self._cfg.PopulationSize)
 
         if not hasattr(self._tool_box, 'evaluate'):
             self._tool_box.register('evaluate', evaluate_f)
@@ -101,7 +107,7 @@ class EvoScheme(Scheme):
         # Matplotlib setup
         # f._fig, self._ax = plt.subplots()
 
-    def run(self) -> None:
+    def run(self, callback=None) -> None:
         self._logger.info('Evo scheme "%s" is running...', self._name)
 
         self._lastPopulation, self._logbook = algorithms.eaSimple(
@@ -112,7 +118,7 @@ class EvoScheme(Scheme):
             ngen=self._cfg.MaxGenNum,
             stats=self._stats,
             verbose=self._cfg.Verbose,
-            # callback=lambda population, gen: print(1),
+            callback=callback,
         )
 
         self._logger.info('Evo scheme "%s"  has bean done', self._name)
@@ -146,3 +152,17 @@ class EvoScheme(Scheme):
 
     def get_toolbox(self) -> base.Toolbox:
         return self._tool_box
+
+    # Internal
+
+    def _ind_creator_def_f(self) -> list:
+        ret = [0] * self._cfg.HromoLen
+        for i in range(self._cfg.HromoLen):
+            if len(self._cfg.Limits) > 0:
+                if self._cfg.Limits[i].IsInt:
+                    ret[i] = self._rand.randint(self._cfg.Limits[i].Min, self._cfg.Limits[i].Max)
+                else:
+                    ret[i] = self._rand.uniform(self._cfg.Limits[i].Min, self._cfg.Limits[i].Max)
+            else:
+                ret[i] = self._rand.rand()
+        return creator.Individual(ret)

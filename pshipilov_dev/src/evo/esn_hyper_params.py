@@ -26,7 +26,6 @@ class EvoSchemeEsnHyperParams(EsnEvoScheme):
             name,
             cfg,
             esn_cfg,
-            self._new_individual,
             utils.wrap_esn_evaluate_f(self._get_esn),
         )
 
@@ -49,15 +48,6 @@ class EvoSchemeEsnHyperParams(EsnEvoScheme):
             param.idx = i
 
     # DEAP
-
-    def _new_individual(self):
-        ret = [0] * len(self._hyper_params)
-        for param in self._hyper_params:
-            if param.is_int:
-                ret[param.idx] = self._rand.randint(param.min, param.max)
-            else:
-                ret[param.idx] = self._rand.uniform(param.min, param.max)
-        return creator.Individual(ret)
 
     def _mutInd(self, ind: list, indpb: float):
         for i in range(len(ind)):

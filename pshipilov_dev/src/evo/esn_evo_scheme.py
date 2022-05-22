@@ -9,8 +9,8 @@ class EsnEvoScheme(EvoScheme):
         name: str,
         cfg: config.EvoSchemeConfigField,
         esn_cfg: config.EsnConfigField,
-        ind_creator_f,
         esn_creator_f,
+        ind_creator_f=None,
         ) -> None:
 
         self._esn_cfg = esn_cfg
@@ -18,6 +18,6 @@ class EsnEvoScheme(EvoScheme):
         super().__init__(
             name,
             cfg,
-            ind_creator_f,
             esn_creator_f,
+            ind_creator_f,
         )

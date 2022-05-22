@@ -1,5 +1,5 @@
 class Scheme(object):
-    def run(self) -> None: pass
+    def run(self, callback=None) -> None: pass
 
     def show_plot(self) -> None: pass
 
