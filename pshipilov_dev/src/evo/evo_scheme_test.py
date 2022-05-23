@@ -6,17 +6,20 @@ from pshipilov_dev.src.config import EvoSchemeConfigField
 from pshipilov_dev.src.evo.evo_scheme import EvoScheme
 
 
-import math
-import time
 import logging
 import numpy as np
 
 from deap import creator
 from typing import List, Tuple
 
-# Test 1 implementations
+# Const
 
-def _test1_wrap_ind_creator_f(cfg: EvoSchemeConfigField):
+_FIG_HEIGHT_INCHES = 5
+_FIG_WEIGHT_INCHES = 5
+
+# Test 0 implementations
+
+def _test0_wrap_ind_creator_f(cfg: EvoSchemeConfigField):
     def _ind_creator_f():
         ret = [0] * cfg.HromoLen
         for i in range(cfg.HromoLen):
@@ -24,7 +27,7 @@ def _test1_wrap_ind_creator_f(cfg: EvoSchemeConfigField):
         return creator.Individual(ret)
     return _ind_creator_f
 
-def _test1_wrap_evaluate_f(cfg: EvoSchemeConfigField):
+def _test0_wrap_evaluate_f(cfg: EvoSchemeConfigField):
     def _evaluate_f(ind: list) -> Tuple[int]:
         ret = 0
         for x in ind:
@@ -32,7 +35,7 @@ def _test1_wrap_evaluate_f(cfg: EvoSchemeConfigField):
         return ret,
     return _evaluate_f
 
-def _test1_validate_result_f(cfg: EvoSchemeConfigField, last_popultaion: list) -> Tuple[bool, List]:
+def _test0_validate_result_f(cfg: EvoSchemeConfigField, last_popultaion: list) -> Tuple[bool, List]:
     expected = cfg.HromoLen
     for ind in last_popultaion:
         actual = 0
@@ -42,9 +45,9 @@ def _test1_validate_result_f(cfg: EvoSchemeConfigField, last_popultaion: list) -
             return True, ind
     return False, None
 
-def _wrap_test1_evo_callback(cfg: EvoSchemeConfigField):
+def _test0_wrap_evo_callback(cfg: EvoSchemeConfigField):
     fig, ax = plt.subplots()
-    fig.set_size_inches(10, 10)
+    fig.set_size_inches(_FIG_WEIGHT_INCHES, _FIG_HEIGHT_INCHES)
 
     def _evo_callback(population, gen):
         ax.clear()
@@ -66,54 +69,92 @@ def _wrap_test1_evo_callback(cfg: EvoSchemeConfigField):
 
     return _evo_callback
 
+# Test 1 implementations
+
+_TEST_1_EPS = 1e-2
+_TEST_1_EXPECTED = ((512.,404.2319),)
+
+def _test1_wrap_evaluate_f(cfg: EvoSchemeConfigField):
+    def _evaluate_f(ind: list) -> Tuple[float]:
+        x, y = ind
+        return -(y+47)*np.sin(np.sqrt(np.fabs(x/2+(y+47)))-x*np.sin(np.sqrt(np.fabs(x-(y+47))))),
+    return _evaluate_f
+
+def _test1_validate_result_f(cfg: EvoSchemeConfigField, last_popultaion: list) -> Tuple[bool, List]:
+    for ind in last_popultaion:
+        expected_x, expected_y = ind
+        for coords in _TEST_1_EXPECTED:
+            actual_x, actual_y = coords
+            if np.fabs(expected_x - actual_x) < _TEST_1_EPS and\
+                np.fabs(expected_y - actual_y) < _TEST_1_EPS:
+                return True, ind
+    return False, None
+
+def _test1_wrap_evo_callback(cfg: EvoSchemeConfigField):
+    fig, ax = plt.subplots()
+    fig.set_size_inches(_FIG_WEIGHT_INCHES, _FIG_HEIGHT_INCHES)
+
+    x_min, x_max = cfg.Limits[0].Min, cfg.Limits[0].Max
+    y_min, y_max = cfg.Limits[1].Min, cfg.Limits[1].Max
+
+    x, y = np.arange(x_min, x_max, 1), np.arange(y_min, y_max, 1)
+    x_grid, y_grid = np.meshgrid(x, y)
+    eval_f = _test1_wrap_evaluate_f(cfg)
+    f_expected, = eval_f([x_grid, y_grid])
+
+    def _evo_callback(population, gen):
+        ax.clear()
+
+        ax.set_xlim(x_min - x_min * 0.05, x_max + x_max * 0.05)
+        ax.set_ylim(y_min - y_min * 0.05, y_max + y_max * 0.05)
+
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+
+        ax.set_title(f'generation = {gen}')
+
+        # ax.contour(x_grid, y_grid, f_expected, levels=5)
+        ax.scatter(*zip(*population), color='green', s=2, zorder=0)
+        ax.scatter(*zip(*_TEST_1_EXPECTED), marker='X', color='red', zorder=1)
+
+        plt.pause(0.01)
+
+    return _evo_callback
+
 # Test 2 implementations
 
 def _test2_wrap_evaluate_f(cfg: EvoSchemeConfigField):
-    def _evaluate_f(ind: list) -> Tuple[float]:
-        x, y = ind[0], ind[1]
-        return -(y+47)*math.sin(math.sqrt(math.fabs(x/2+(y+47)))-x*math.sin(math.sqrt(math.fabs(x-(y+47))))),
-    return _evaluate_f
-
-def _test2_validate_result_f(cfg: EvoSchemeConfigField, last_popultaion: list) -> Tuple[bool, List]:
-    pass
-
-def _test2_evo_callback(population, gen):
-    pass
-
-# Test 3 implementations
-
-def _test3_wrap_evaluate_f(cfg: EvoSchemeConfigField):
     def _evaluate_f(ind: list) -> Tuple[float]:
         x, y = ind
         return (x**2+y-11)**2+(x+y**2-7)**2,
     return _evaluate_f
 
-_TEST_3_EXPECTED = (
+_TEST_2_EPS = 1e-2
+_TEST_2_EXPECTED = (
     (3.,2.),(-2.805118,3.131312),
     (-3.779310,-3.283186),(3.584458,-1.848126),
 )
 
-def _test3_validate_result_f(cfg: EvoSchemeConfigField, last_popultaion: list) -> Tuple[bool, List]:
-    eps=1e-3
+def _test2_validate_result_f(cfg: EvoSchemeConfigField, last_popultaion: list) -> Tuple[bool, List]:
     for ind in last_popultaion:
         expected_x, expected_y = ind
-        for coords in _TEST_3_EXPECTED:
+        for coords in _TEST_2_EXPECTED:
             actual_x, actual_y = coords
-            if math.fabs(expected_x - actual_x) < eps and\
-                math.fabs(expected_y - actual_y) < eps:
+            if np.fabs(expected_x - actual_x) < _TEST_2_EPS and\
+                np.fabs(expected_y - actual_y) < _TEST_2_EPS:
                 return True, ind
     return False, None
 
-def _wrap_test3_evo_callback(cfg: EvoSchemeConfigField):
+def _test2_wrap_evo_callback(cfg: EvoSchemeConfigField):
     fig, ax = plt.subplots()
-    fig.set_size_inches(10, 10)
+    fig.set_size_inches(_FIG_WEIGHT_INCHES, _FIG_HEIGHT_INCHES)
 
     x_min, x_max = cfg.Limits[0].Min, cfg.Limits[0].Max
     y_min, y_max = cfg.Limits[1].Min, cfg.Limits[1].Max
 
     x, y = np.arange(x_min, x_max, 0.1), np.arange(y_min, y_max, 0.1)
     x_grid, y_grid = np.meshgrid(x, y)
-    eval_f = _test3_wrap_evaluate_f(cfg)
+    eval_f = _test2_wrap_evaluate_f(cfg)
     f_expected, = eval_f([x_grid, y_grid])
 
     def _evo_callback(population, gen):
@@ -129,7 +170,7 @@ def _wrap_test3_evo_callback(cfg: EvoSchemeConfigField):
 
         ax.contour(x_grid, y_grid, f_expected)
         ax.scatter(*zip(*population), color='green', s=2, zorder=0)
-        ax.scatter(*zip(*_TEST_3_EXPECTED), marker='X', color='red', zorder=1)
+        ax.scatter(*zip(*_TEST_2_EXPECTED), marker='X', color='red', zorder=1)
 
         plt.pause(0.01)
 
@@ -141,13 +182,15 @@ _WRAP_IND_CRATOR_F_ARG = 'wrap_ind_creator_f'
 _WRAP_EVALUATR_F_ARG = 'wrap_evaluate_f'
 _WRAP_EVO_CALLBACK = 'wrap_evo_callback'
 _VALIDATE_RESULT_F = 'valitate_result_f'
+_DISABLE = 'disable'
 
 _TESTS = [
     {
+        # _DISABLE: True,
         _NAME_ARG: 'one_max',
         _CFG_ARG: {
             'rand_seed': 1,
-            'max_gen_num': 200,
+            'max_gen_num': 150,
             'population_size': 50,
             'hromo_len': 100,
 
@@ -169,17 +212,17 @@ _TESTS = [
                # 'indpb': 0.25,
             },
         },
-        _WRAP_IND_CRATOR_F_ARG: _test1_wrap_ind_creator_f,
-        _WRAP_EVALUATR_F_ARG: _test1_wrap_evaluate_f,
-        _VALIDATE_RESULT_F: _test1_validate_result_f,
-        _WRAP_EVO_CALLBACK: _wrap_test1_evo_callback,
+        _WRAP_IND_CRATOR_F_ARG: _test0_wrap_ind_creator_f,
+        _WRAP_EVALUATR_F_ARG: _test0_wrap_evaluate_f,
+        _VALIDATE_RESULT_F: _test0_validate_result_f,
+        _WRAP_EVO_CALLBACK: _test0_wrap_evo_callback,
     },
     {
         _NAME_ARG: 'eggholder',
         _CFG_ARG: {
             'rand_seed': 2,
-            'max_gen_num': 100,
-            'population_size': 50,
+            'max_gen_num': 200,
+            'population_size': 100,
             'hromo_len': 2,
 
             'fitness_weights': [-1.0,],
@@ -191,21 +234,22 @@ _TESTS = [
                 ],
             },
             'mate': {
-                'method': 'cxSimulatedBinaryBounded',
                 'probability': 0.9,
-                'args': [
-                    {'key':'low','val':-512},
-                    {'key':'up','val':512},
-                    {'key':'eta','val':20},
-                ],
+                'method': 'cxOnePoint'
+                # 'method': 'cxSimulatedBinaryBounded',
+                # 'args': [
+                #     {'key':'low','val':-512},
+                #     {'key':'up','val':512},
+                #     {'key':'eta','val':20},
+                # ],
             },
             'mutate': {
                 'method': 'mutPolynomialBounded',
-                'probability': 0.2,
+                'probability': 0.1,
                 'args': [
                     {'key':'low','val':-512},
                     {'key':'up','val':512},
-                    {'key':'eta','val':20},
+                    {'key':'eta','val':10},
                 ],
             },
 
@@ -214,14 +258,16 @@ _TESTS = [
                 {'min': -512, 'max': 512},
             ],
         },
-        _WRAP_EVALUATR_F_ARG: _test2_wrap_evaluate_f,
-        # _VALIDATE_RESULT_F: _test2_validate_result_f,
+        _WRAP_EVALUATR_F_ARG: _test1_wrap_evaluate_f,
+        _WRAP_EVO_CALLBACK: _test1_wrap_evo_callback,
+        _VALIDATE_RESULT_F: _test1_validate_result_f,
     },
     {
+        # _DISABLE: True,
         _NAME_ARG: 'himmelblau',
         _CFG_ARG: {
             'rand_seed': 3,
-            'max_gen_num': 100,
+            'max_gen_num': 150,
             'population_size': 30,
             'hromo_len': 2,
 
@@ -257,17 +303,17 @@ _TESTS = [
                 {'min': -5, 'max': 5},
             ],
         },
-        _WRAP_EVALUATR_F_ARG: _test3_wrap_evaluate_f,
-        _WRAP_EVO_CALLBACK: _wrap_test3_evo_callback,
-        _VALIDATE_RESULT_F: _test3_validate_result_f,
+        _WRAP_EVALUATR_F_ARG: _test2_wrap_evaluate_f,
+        _WRAP_EVO_CALLBACK: _test2_wrap_evo_callback,
+        _VALIDATE_RESULT_F: _test2_validate_result_f,
     },
 ]
 
 def _validate_test(test: dict, num: int, logger: logging.Logger) -> bool:
     rules = [
         {
-            'msg': f'skip test #{num}, validation error: len args is not equal 4',
-            'cond': lambda test: len(test) < 2 or len(test) > 6,
+            'msg': f'skip test #{num}, validation error: len args is not in range [2,7]',
+            'cond': lambda test: len(test) < 2 or len(test) > 7,
         },
         {
             'msg': f'skip test #{num}, validation error: test doesn\'t contain arg "{_CFG_ARG}"',
@@ -301,6 +347,11 @@ def run_tests():
 
     for i, test in enumerate(_TESTS):
         if not _validate_test(test, i, logger):
+            continue
+
+        disable = test.get(_DISABLE, False)
+        if disable:
+            logger.info('test #%d - skip test (disabled)', i)
             continue
 
         # Evo scheme prepare
