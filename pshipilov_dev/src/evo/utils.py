@@ -1,6 +1,7 @@
 from deap import tools
 
 import numpy as np
+import random
 
 from .. import dump
 
@@ -50,6 +51,15 @@ def wrap_esn_evaluate_f(esn_creator_by_ind_f, **evaluate_kvargs):
 
     return lambda ind: evaluate_f(esn_creator_by_ind_f(ind))
 
+class DynoExtensions:
+    @staticmethod
+    def dynoMutGauss(individual, indpb, low, up, sigma):
+        for i in range(len(individual)):
+            if np.random.uniform(0, 1) < indpb:
+                individual[i] = random.triangular(up, low, random.gauss(individual[i], sigma))
+        return individual,
+
+
 # Mapping functions
 
 def map_metric_f():
@@ -62,6 +72,8 @@ def map_metric_f():
 def map_select_f(select: str):
     if not isinstance(select, str):
         raise Exception(f'select should be a string')
+    if select.startswith('selCx') and hasattr(DynoExtensions, select):
+        return getattr(DynoExtensions, select)
     if not select.startswith('sel'):
         raise Exception(f'unknown select "{select}", it should start with "sel"')
     if hasattr(tools, select):
@@ -71,6 +83,8 @@ def map_select_f(select: str):
 def map_mate_f(crossing: str):
     if not isinstance(crossing, str):
         raise Exception(f'crossing should be a string')
+    if crossing.startswith('dynoCx') and hasattr(DynoExtensions, crossing):
+        return getattr(DynoExtensions, crossing)
     if not crossing.startswith('cx'):
         raise Exception(f'unknown crossing "{crossing}", it should start with "cx"')
     if hasattr(tools, crossing):
@@ -80,6 +94,8 @@ def map_mate_f(crossing: str):
 def map_mutate_f(mutate: str):
     if not isinstance(mutate, str):
         raise Exception(f'mutate should be a string')
+    if mutate.startswith('dynoMut') and hasattr(DynoExtensions, mutate):
+        return getattr(DynoExtensions, mutate)
     if not mutate.startswith('mut'):
         raise Exception(f'unknown mutate "{mutate}", it should start with "mut"')
     if hasattr(tools, mutate):

@@ -8,3 +8,4 @@ dill==0.3.4
 joblib==1.1.0
 pandas==1.4.2
 sklearn
+git+https://github.com/DHorrible/dyno_deap

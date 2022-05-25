@@ -95,6 +95,9 @@ class EvoScheme(Scheme):
                     self._cfg.Mutate.Args,
                     indpb=1/self._cfg.HromoLen
                     )
+        self._hall_of_fame = None
+        if self._cfg.HallOfFame > 0:
+            self._hall_of_fame = tools.HallOfFame(self._cfg.HallOfFame)
 
         self._stats = tools.Statistics(lambda ind: ind.fitness.values)
         self._stats.register('min', np.min)
@@ -107,7 +110,7 @@ class EvoScheme(Scheme):
         # Matplotlib setup
         # f._fig, self._ax = plt.subplots()
 
-    def run(self, callback=None) -> None:
+    def run(self, **kvargs) -> None:
         self._logger.info('Evo scheme "%s" is running...', self._name)
 
         self._lastPopulation, self._logbook = algorithms.eaSimple(
@@ -117,8 +120,9 @@ class EvoScheme(Scheme):
             mutpb=self._cfg.Mutate.Probability,
             ngen=self._cfg.MaxGenNum,
             stats=self._stats,
+            halloffame=self._hall_of_fame,
             verbose=self._cfg.Verbose,
-            callback=callback,
+            **kvargs,
         )
 
         self._logger.info('Evo scheme "%s"  has bean done', self._name)
@@ -166,3 +170,4 @@ class EvoScheme(Scheme):
             else:
                 ret[i] = self._rand.rand()
         return creator.Individual(ret)
+

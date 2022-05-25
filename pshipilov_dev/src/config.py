@@ -241,6 +241,10 @@ class EvoSchemeConfigField(ConfigSection):
     def RandSeed(self) -> int: return self._rand_seed
     @property
     def HromoLen(self) -> int: return self._hromo_len
+    @property
+    def HallOfFame(self) -> int: return self._hall_of_fame
+    @property
+    def Verbose(self) -> bool: return self._verbose
 
     @property
     def FitnessWeights(self) -> List[float]: return self._fitness_weights
@@ -255,14 +259,13 @@ class EvoSchemeConfigField(ConfigSection):
     @property
     def Limits(self) -> List[EvoLimitGenConfigField]: return self._limits
 
-    @property
-    def Verbose(self) -> bool: return self._verbose
-
     def __init__(self) -> None:
         self._max_gen_num:     int = NecessaryField
         self._population_size: int = NecessaryField
         self._rand_seed:       int = NecessaryField
         self._hromo_len:       int = NecessaryField
+        self._hall_of_fame:    int = 0
+        self._verbose:         bool = False
 
         self._fitness_weights: list = NecessaryField
 
@@ -272,13 +275,13 @@ class EvoSchemeConfigField(ConfigSection):
 
         self._limits: List[EvoLimitGenConfigField] = []
 
-        self._verbose = False
-
     def load(self, cfg: dict) -> None:
         self._max_gen_num     = Config.get_necessary_value(cfg, 'max_gen_num', self._max_gen_num)
         self._population_size = Config.get_necessary_value(cfg, 'population_size', self._population_size)
         self._rand_seed       = Config.get_necessary_value(cfg, 'rand_seed', self._rand_seed)
         self._hromo_len       = Config.get_necessary_value(cfg, 'hromo_len', self._hromo_len)
+        self._hall_of_fame    = Config.get_optional_value(cfg, 'hall_of_fame', self._hall_of_fame)
+        self._verbose         = Config.get_optional_value(cfg, 'verbose', self._verbose)
 
         self._fitness_weights = Config.get_necessary_value(cfg, 'fitness_weights', self._fitness_weights)
 
@@ -288,11 +291,9 @@ class EvoSchemeConfigField(ConfigSection):
 
         self._limits = Config.get_optional_arr_value(cfg, 'limits', EvoLimitGenConfigField, self._limits)
 
-        self._verbose = Config.get_optional_value(cfg, 'verbose', self._verbose)
-
     def yaml(self) -> dict:
         return {'max_gen_num': self._max_gen_num, 'population_size': self._population_size, 'rand_seed': self._rand_seed, 'hromo_len': self._hromo_len,
-            'fitness_weights': self._fitness_weights,
+             'hall_of_fame': self._hall_of_fame,'fitness_weights': self._fitness_weights,'verbose': self._verbose,
             'select': self._select,'mate': self._mate,'mutate': self._mutate,
             'limits': _yaml_config_section_arr(self._limits),}
 

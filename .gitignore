@@ -136,3 +136,5 @@ pshipilov_dev/etc
 pshipilov_dev/logs
 pshipilov_dev/dumps
 pshipilov_dev/notebooks
+
+/*.DS_Store

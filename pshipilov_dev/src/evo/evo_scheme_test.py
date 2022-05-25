@@ -220,10 +220,11 @@ _TESTS = [
     {
         _NAME_ARG: 'eggholder',
         _CFG_ARG: {
-            'rand_seed': 2,
-            'max_gen_num': 200,
+            'rand_seed': 5,
+            'max_gen_num': 300,
             'population_size': 100,
             'hromo_len': 2,
+            'hall_of_fame': 5,
 
             'fitness_weights': [-1.0,],
 
@@ -235,21 +236,31 @@ _TESTS = [
             },
             'mate': {
                 'probability': 0.9,
-                'method': 'cxOnePoint'
-                # 'method': 'cxSimulatedBinaryBounded',
+                # 'method': 'cxBlend',
+                # 'args': [
+                #     {'key':'alpha','val':0.5},
+                # ],
+                'method': 'cxSimulatedBinaryBounded',
+                'args': [
+                    {'key':'low','val':-512},
+                    {'key':'up','val':512},
+                    {'key':'eta','val':15},
+                ],
+            },
+            'mutate': {
+                # 'method': 'mutPolynomialBounded',
+                # 'probability': 0.5,
                 # 'args': [
                 #     {'key':'low','val':-512},
                 #     {'key':'up','val':512},
-                #     {'key':'eta','val':20},
+                #     {'key':'eta','val':10},
                 # ],
-            },
-            'mutate': {
-                'method': 'mutPolynomialBounded',
+                'method': 'dynoMutGauss',
                 'probability': 0.1,
                 'args': [
                     {'key':'low','val':-512},
                     {'key':'up','val':512},
-                    {'key':'eta','val':10},
+                    {'key':'sigma','val':0.7},
                 ],
             },
 
@@ -270,6 +281,7 @@ _TESTS = [
             'max_gen_num': 150,
             'population_size': 30,
             'hromo_len': 2,
+            'hall_of_fame': 5,
 
             'fitness_weights': [-1.0,],
 
@@ -368,8 +380,12 @@ def run_tests():
             ind_creator_f,
         )
 
+        stop_cond = None
+        if _VALIDATE_RESULT_F in test:
+            stop_cond = lambda population, gen: test[_VALIDATE_RESULT_F](cfg, population)[0]
+
         # Action
-        last_popultaion = scheme.run(evo_callback)
+        last_popultaion = scheme.run(callback=evo_callback, stop_cond=stop_cond)
 
         # Assert
         if _VALIDATE_RESULT_F in test:
