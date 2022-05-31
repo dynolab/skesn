@@ -272,7 +272,7 @@ class EsnForecaster(BaseForecaster):
         else:
             return endo_states[1:]
 
-    def _update(self, y, X=None, mode='synchronization'):
+    def _update(self, y, X=None, mode='synchronization', **kwargs):
         """Update the model to incremental training data.
         Depending on the mode, it can be done as synchronization
         or transfer learning.
@@ -296,9 +296,9 @@ class EsnForecaster(BaseForecaster):
         self
         """
         if mode == 'synchronization':
-            self._update_via_synchronization(y, X, mode='synchronization')
+            self._update_via_synchronization(y, X, mode='synchronization', **kwargs)
         elif mode == 'transfer_learning':
-            self._update_via_transfer_learning(y, X, mu=1e-8, inspect=False)
+            self._update_via_transfer_learning(y, X, **kwargs)
 
     def _update_via_synchronization(self, y, X=None):
         """Update the model to incremental training data

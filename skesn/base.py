@@ -190,7 +190,7 @@ class BaseForecaster(BaseEstimator):
             n_timesteps=n_timesteps, X=X, **predict_kwargs
         )
 
-    def update(self, y, X=None, mode=None):
+    def update(self, y, X=None, mode=None, **kwargs):
         """Update cutoff value and, optionally, fitted parameters.
 
         If no estimator-specific update method has been implemented,
@@ -235,7 +235,7 @@ class BaseForecaster(BaseEstimator):
         self.check_is_fitted()
 
         # checks and conversions complete, pass to inner fit
-        self._update(y=y, X=X, mode=mode)
+        self._update(y=y, X=X, mode=mode, **kwargs)
 
         return self
 
@@ -310,6 +310,7 @@ class BaseForecaster(BaseEstimator):
         n_timesteps=None,
         X=None,
         mode=None,
+        **kwargs
     ):
         """Update model with new data and make forecasts.
 
@@ -362,6 +363,7 @@ class BaseForecaster(BaseEstimator):
             n_timesteps=n_timesteps,
             X=X,
             mode=mode,
+            **kwargs
         )
 
     def predict_residuals(self, n_timesteps, y=None, X=None, **kwargs):
@@ -540,7 +542,7 @@ class BaseForecaster(BaseEstimator):
         """
         raise NotImplementedError("abstract method")
 
-    def _update(self, y, X=None, mode=None):
+    def _update(self, y, X=None, mode=None, **kwargs):
         """Update time series to incremental training data.
 
         Writes to self:
@@ -592,6 +594,7 @@ class BaseForecaster(BaseEstimator):
         n_timesteps,
         X=None,
         mode=None,
+        **kwargs
     ):
         """Update forecaster and then make forecasts.
 
@@ -599,7 +602,7 @@ class BaseForecaster(BaseEstimator):
         sequentially, but can be overwritten by subclasses
         to implement more efficient updating algorithms when available.
         """
-        self.update(y, X, mode=mode)
+        self.update(y, X, mode=mode, **kwargs)
         return self.predict(n_timesteps, X)
 
 
