@@ -451,7 +451,7 @@ class EsnForecaster(BaseForecaster):
 
         # remember the last state for later:
         self.last_reservoir_state_ = reservoir_states[-1, :]
-        self.last_endo_input_ = endo_states[-1, :]
+        self.last_endo_state_ = endo_states[-1, :]
         return self
 
     def _iterate_reservoir_state(self, reservoir_state, endo_state,
