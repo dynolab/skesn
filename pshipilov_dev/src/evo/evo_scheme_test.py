@@ -172,7 +172,7 @@ def _test2_wrap_evo_callback(cfg: EvoSchemeConfigField):
             population,
             _TEST_2_EXPECTED,
             5.,
-            _radius_log_callback(_test_logger, 'test #2 - find point in radius 5 ({x}, {y}), error: {r}'),
+            _radius_log_callback(_test_logger, 'test #2 - find point in radius 5.0 ({x}, {y}), error: {r}'),
             _radius_highlight_callback(ax, marker='X', color='green', zorder=1),
         )
 
@@ -306,25 +306,14 @@ _TESTS = [
                 'args': [
                     {'key': 'tournsize','val': 2},
                 ],
-                # 'method': 'selRoulette',
             },
-            # 'select': {
-            #     'method': 'selTournament',
-            #     'args': [
-            #         {'key': 'tournsize','val': 3},
-            #     ],
-            # },
             'mate': {
-                'probability': 0.5,
-                # 'method': 'cxBlend',
-                # 'args': [
-                #     {'key':'alpha','val':0.5},
-                # ],
+                'probability': 0.8,
                 'method': 'cxSimulatedBinaryBounded',
                 'args': [
                     {'key':'low','val':-512},
                     {'key':'up','val':512},
-                    {'key':'eta','val':2},
+                    {'key':'eta','val':20},
                 ],
             },
             'mutate': {

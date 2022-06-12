@@ -49,9 +49,10 @@ def get_logger(**kvargs) -> logging.Logger:
 
     log_level = _map_log_level(try_get_param_by_kvargs(kvargs, 'level', Config.Logging.Level))
 
-    fileHandler = logging.FileHandler(filename, mode='w')
+    fileHandler = logging.FileHandler(filename, mode='a')
     fileHandler.setFormatter(logFormatter)
     fileHandler.setLevel(log_level)
+    fileHandler.createLock()
     ret.addHandler(fileHandler)
 
     if not Config.Logging.DisableConsole:
