@@ -137,4 +137,7 @@ pshipilov_dev/logs
 pshipilov_dev/dumps
 pshipilov_dev/notebooks
 
-/*.DS_Store
+.DS_Store
+._.DS_Store
+**/.DS_Store
+**/._.DS_Store
