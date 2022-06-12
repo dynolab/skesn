@@ -13,6 +13,15 @@ from deap import base, algorithms
 from deap import creator
 from deap import tools
 
+def _ind_eq(ind_l: List, ind_r: List) -> bool:
+    if len(ind_l) != len(ind_r):
+        return False
+    EPS = 1e-6
+    for i in range(len(ind_l)):
+        if np.abs(ind_l[i] - ind_r[i]) > EPS:
+            return False
+    return True
+
 def _bind_evo_operator(
     tool_box: base.Toolbox,
     name: str,
@@ -97,7 +106,7 @@ class EvoScheme(Scheme):
                     )
         self._hall_of_fame = None
         if self._cfg.HallOfFame > 0:
-            self._hall_of_fame = tools.HallOfFame(self._cfg.HallOfFame)
+            self._hall_of_fame = tools.HallOfFame(self._cfg.HallOfFame, _ind_eq)
 
         self._stats = tools.Statistics(lambda ind: ind.fitness.values)
         self._stats.register('min', np.min)
@@ -170,4 +179,3 @@ class EvoScheme(Scheme):
             else:
                 ret[i] = self._rand.rand()
         return creator.Individual(ret)
-

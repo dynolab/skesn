@@ -71,14 +71,17 @@ def _test0_wrap_evo_callback(cfg: EvoSchemeConfigField):
 
 # Test 1 implementations
 
-_TEST_1_EPS = 1e-2
-_TEST_1_EXPECTED = ((512.,404.2319),)
-
 def _test1_wrap_evaluate_f(cfg: EvoSchemeConfigField):
     def _evaluate_f(ind: list) -> Tuple[float]:
         x, y = ind
-        return -(y+47)*np.sin(np.sqrt(np.fabs(x/2+(y+47)))-x*np.sin(np.sqrt(np.fabs(x-(y+47))))),
+        return (x**2+y-11)**2+(x+y**2-7)**2,
     return _evaluate_f
+
+_TEST_1_EPS = 1e-2
+_TEST_1_EXPECTED = (
+    (3.,2.),(-2.805118,3.131312),
+    (-3.779310,-3.283186),(3.584458,-1.848126),
+)
 
 def _test1_validate_result_f(cfg: EvoSchemeConfigField, last_popultaion: list) -> Tuple[bool, List]:
     for ind in last_popultaion:
@@ -97,7 +100,7 @@ def _test1_wrap_evo_callback(cfg: EvoSchemeConfigField):
     x_min, x_max = cfg.Limits[0].Min, cfg.Limits[0].Max
     y_min, y_max = cfg.Limits[1].Min, cfg.Limits[1].Max
 
-    x, y = np.arange(x_min, x_max, 1), np.arange(y_min, y_max, 1)
+    x, y = np.arange(x_min, x_max, 0.1), np.arange(y_min, y_max, 0.1)
     x_grid, y_grid = np.meshgrid(x, y)
     eval_f = _test1_wrap_evaluate_f(cfg)
     f_expected, = eval_f([x_grid, y_grid])
@@ -105,15 +108,15 @@ def _test1_wrap_evo_callback(cfg: EvoSchemeConfigField):
     def _evo_callback(population, gen):
         ax.clear()
 
-        ax.set_xlim(x_min - x_min * 0.05, x_max + x_max * 0.05)
-        ax.set_ylim(y_min - y_min * 0.05, y_max + y_max * 0.05)
+        ax.set_xlim(x_min - x_min * 0.1, x_max + x_max * 0.1)
+        ax.set_ylim(y_min - y_min * 0.1, y_max + y_max * 0.1)
 
         ax.set_xlabel('x')
         ax.set_ylabel('y')
 
         ax.set_title(f'generation = {gen}')
 
-        # ax.contour(x_grid, y_grid, f_expected, levels=5)
+        ax.contour(x_grid, y_grid, f_expected)
         ax.scatter(*zip(*population), color='green', s=2, zorder=0)
         ax.scatter(*zip(*_TEST_1_EXPECTED), marker='X', color='red', zorder=1)
 
@@ -123,17 +126,14 @@ def _test1_wrap_evo_callback(cfg: EvoSchemeConfigField):
 
 # Test 2 implementations
 
+_TEST_2_EPS = 1e-2
+_TEST_2_EXPECTED = ((512.,404.2319),)
+
 def _test2_wrap_evaluate_f(cfg: EvoSchemeConfigField):
     def _evaluate_f(ind: list) -> Tuple[float]:
         x, y = ind
-        return (x**2+y-11)**2+(x+y**2-7)**2,
+        return -(y+47)*np.sin(np.sqrt(np.fabs(x/2+(y+47)))-x*np.sin(np.sqrt(np.fabs(x-(y+47))))),
     return _evaluate_f
-
-_TEST_2_EPS = 1e-2
-_TEST_2_EXPECTED = (
-    (3.,2.),(-2.805118,3.131312),
-    (-3.779310,-3.283186),(3.584458,-1.848126),
-)
 
 def _test2_validate_result_f(cfg: EvoSchemeConfigField, last_popultaion: list) -> Tuple[bool, List]:
     for ind in last_popultaion:
@@ -152,29 +152,40 @@ def _test2_wrap_evo_callback(cfg: EvoSchemeConfigField):
     x_min, x_max = cfg.Limits[0].Min, cfg.Limits[0].Max
     y_min, y_max = cfg.Limits[1].Min, cfg.Limits[1].Max
 
-    x, y = np.arange(x_min, x_max, 0.1), np.arange(y_min, y_max, 0.1)
+    x, y = np.arange(x_min, x_max, 1), np.arange(y_min, y_max, 1)
     x_grid, y_grid = np.meshgrid(x, y)
     eval_f = _test2_wrap_evaluate_f(cfg)
     f_expected, = eval_f([x_grid, y_grid])
 
+    ticks = np.linspace(-512, 512, 5)
+    ticks_labels = [str(x) for x in ticks]
+
     def _evo_callback(population, gen):
         ax.clear()
 
-        ax.set_xlim(x_min - x_min * 0.1, x_max + x_max * 0.1)
-        ax.set_ylim(y_min - y_min * 0.1, y_max + y_max * 0.1)
+        ax.set_xlim(x_min - x_min * 0.05, x_max + x_max * 0.05)
+        ax.set_ylim(y_min - y_min * 0.05, y_max + y_max * 0.05)
 
         ax.set_xlabel('x')
         ax.set_ylabel('y')
 
+        ax.set_xticks(ticks)
+        ax.set_xticklabels(ticks_labels)
+        ax.set_yticks(ticks)
+        ax.set_yticklabels(ticks_labels)
+
         ax.set_title(f'generation = {gen}')
 
-        ax.contour(x_grid, y_grid, f_expected)
+        # ax.contour(x_grid, y_grid, f_expected, levels=5)
         ax.scatter(*zip(*population), color='green', s=2, zorder=0)
         ax.scatter(*zip(*_TEST_2_EXPECTED), marker='X', color='red', zorder=1)
 
         plt.pause(0.01)
 
     return _evo_callback
+
+
+# Test config params
 
 _NAME_ARG = 'name'
 _CFG_ARG = 'cfg'
@@ -184,9 +195,11 @@ _WRAP_EVO_CALLBACK = 'wrap_evo_callback'
 _VALIDATE_RESULT_F = 'valitate_result_f'
 _DISABLE = 'disable'
 
+# Tests main configuration
+
 _TESTS = [
     {
-        # _DISABLE: True,
+        _DISABLE: True,
         _NAME_ARG: 'one_max',
         _CFG_ARG: {
             'rand_seed': 1,
@@ -217,63 +230,7 @@ _TESTS = [
         _VALIDATE_RESULT_F: _test0_validate_result_f,
         _WRAP_EVO_CALLBACK: _test0_wrap_evo_callback,
     },
-    {
-        _NAME_ARG: 'eggholder',
-        _CFG_ARG: {
-            'rand_seed': 5,
-            'max_gen_num': 300,
-            'population_size': 100,
-            'hromo_len': 2,
-            'hall_of_fame': 5,
-
-            'fitness_weights': [-1.0,],
-
-            'select': {
-                'method': 'selTournament',
-                'args': [
-                    {'key': 'tournsize','val': 3},
-                ],
-            },
-            'mate': {
-                'probability': 0.9,
-                # 'method': 'cxBlend',
-                # 'args': [
-                #     {'key':'alpha','val':0.5},
-                # ],
-                'method': 'cxSimulatedBinaryBounded',
-                'args': [
-                    {'key':'low','val':-512},
-                    {'key':'up','val':512},
-                    {'key':'eta','val':15},
-                ],
-            },
-            'mutate': {
-                # 'method': 'mutPolynomialBounded',
-                # 'probability': 0.5,
-                # 'args': [
-                #     {'key':'low','val':-512},
-                #     {'key':'up','val':512},
-                #     {'key':'eta','val':10},
-                # ],
-                'method': 'dynoMutGauss',
-                'probability': 0.1,
-                'args': [
-                    {'key':'low','val':-512},
-                    {'key':'up','val':512},
-                    {'key':'sigma','val':0.7},
-                ],
-            },
-
-            'limits': [
-                {'min': -512, 'max': 512},
-                {'min': -512, 'max': 512},
-            ],
-        },
-        _WRAP_EVALUATR_F_ARG: _test1_wrap_evaluate_f,
-        _WRAP_EVO_CALLBACK: _test1_wrap_evo_callback,
-        _VALIDATE_RESULT_F: _test1_validate_result_f,
-    },
-    {
+        {
         # _DISABLE: True,
         _NAME_ARG: 'himmelblau',
         _CFG_ARG: {
@@ -290,6 +247,7 @@ _TESTS = [
                 'args': [
                     {'key': 'tournsize','val': 3},
                 ],
+                # 'method': 'selRoulette',
             },
             'mate': {
                 'method': 'cxSimulatedBinaryBounded',
@@ -313,6 +271,69 @@ _TESTS = [
             'limits': [
                 {'min': -5, 'max': 5},
                 {'min': -5, 'max': 5},
+            ],
+        },
+        _WRAP_EVALUATR_F_ARG: _test1_wrap_evaluate_f,
+        _WRAP_EVO_CALLBACK: _test1_wrap_evo_callback,
+        _VALIDATE_RESULT_F: _test1_validate_result_f,
+    },
+    {
+        _NAME_ARG: 'eggholder',
+        _CFG_ARG: {
+            'rand_seed': 8,
+            'max_gen_num': 5000,
+            'population_size': 120,
+            'hromo_len': 2,
+            'hall_of_fame': 5,
+
+            'fitness_weights': [-1.0,],
+
+            'select': {
+                'method': 'selTournament',
+                'args': [
+                    {'key': 'tournsize','val': 2},
+                ],
+                # 'method': 'selRoulette',
+            },
+            # 'select': {
+            #     'method': 'selTournament',
+            #     'args': [
+            #         {'key': 'tournsize','val': 3},
+            #     ],
+            # },
+            'mate': {
+                'probability': 0.5,
+                # 'method': 'cxBlend',
+                # 'args': [
+                #     {'key':'alpha','val':0.5},
+                # ],
+                'method': 'cxSimulatedBinaryBounded',
+                'args': [
+                    {'key':'low','val':-512},
+                    {'key':'up','val':512},
+                    {'key':'eta','val':2},
+                ],
+            },
+            'mutate': {
+                'method': 'mutPolynomialBounded',
+                'probability': 0.4,
+                'args': [
+                    {'key':'low','val':-512},
+                    {'key':'up','val':512},
+                    {'key':'eta','val':0.5},
+                ],
+                # 'method': 'dynoMutGauss',
+                # 'probability': 0.1,
+                # 'args': [
+                #     {'key':'low','val':-512},
+                #     {'key':'up','val':512},
+                #     {'key':'sigma','val':0.3},
+                # ],
+            },
+
+            'limits': [
+                {'min': -512, 'max': 512},
+                {'min': -512, 'max': 512},
             ],
         },
         _WRAP_EVALUATR_F_ARG: _test2_wrap_evaluate_f,
