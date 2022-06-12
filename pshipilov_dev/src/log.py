@@ -1,4 +1,5 @@
 from datetime import date
+from genericpath import exists
 
 import sys
 import logging
@@ -6,6 +7,7 @@ import os
 import os.path
 
 from .config import Config
+from .utils import try_get_param_by_kvargs
 
 _KVARGS_NAME = 'name'
 _KVARGS_LOGGER = 'logger'
@@ -33,7 +35,8 @@ def get_logger(**kvargs) -> logging.Logger:
 
     filename = f"{logdir}{str(date.today()).replace('-', '_')}_log"
     # create file
-    with open(filename, 'w'): "dummy"
+    if not os.path.exists(filename):
+        with open(filename, 'w'): "dummy"
 
     logFormatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s",
         '%d-%b-%y %H:%M:%S',
@@ -44,15 +47,17 @@ def get_logger(**kvargs) -> logging.Logger:
         ret_name = _KVARGS_NAME
     ret = logging.Logger(ret_name)
 
+    log_level = _map_log_level(try_get_param_by_kvargs(kvargs, 'level', Config.Logging.Level))
+
     fileHandler = logging.FileHandler(filename, mode='w')
     fileHandler.setFormatter(logFormatter)
-    fileHandler.setLevel(_map_log_level())
+    fileHandler.setLevel(log_level)
     ret.addHandler(fileHandler)
 
     if not Config.Logging.DisableConsole:
         consoleHandler = logging.StreamHandler(sys.stdout)
         consoleHandler.setFormatter(logFormatter)
-        consoleHandler.setLevel(_map_log_level())
+        consoleHandler.setLevel(log_level)
         ret.addHandler(consoleHandler)
 
     return ret
@@ -75,8 +80,8 @@ def get_logger_via_kvargs(**kvargs) -> logging.Logger:
     return ret
 
 
-def _map_log_level() -> int:
-    level = Config.Logging.Level.lower()
+def _map_log_level(level: str) -> int:
+    level = level.lower()
     if level == 'debug':
         return logging.DEBUG
     if level == 'info':
@@ -87,4 +92,4 @@ def _map_log_level() -> int:
         return logging.ERROR
     if level in ['fatal', 'critical']:
         return logging.FATAL
-    raise Exception('Unknown log level in config %s' % Config.Logging.Level)
+    raise Exception('Unknown log level in config %s' % level)
