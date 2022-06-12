@@ -7,7 +7,6 @@ import os
 import os.path
 
 from .config import Config
-from .utils import try_get_param_by_kvargs
 
 _KVARGS_NAME = 'name'
 _KVARGS_LOGGER = 'logger'
@@ -47,7 +46,7 @@ def get_logger(**kvargs) -> logging.Logger:
         ret_name = _KVARGS_NAME
     ret = logging.Logger(ret_name)
 
-    log_level = _map_log_level(try_get_param_by_kvargs(kvargs, 'level', Config.Logging.Level))
+    log_level = _map_log_level(kvargs.get('level', Config.Logging.Level))
 
     fileHandler = logging.FileHandler(filename, mode='a')
     fileHandler.setFormatter(logFormatter)

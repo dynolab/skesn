@@ -24,10 +24,3 @@ def get_necessary_arg(args, name1, name2=None):
             return getattr(args, name2)
         raise 'unknown arg names: {0}, {1}'.format(name1, name2)
     raise 'unknown arg name: {0}'.format(name1)
-
-def try_get_param_by_kvargs(
-    kvargs: Dict[str, Any],
-    name: str,
-    default: Any=None,
-) -> Any:
-    return kvargs[name] if name in kvargs else default
