@@ -1,6 +1,6 @@
 from types import FunctionType
 from matplotlib import pyplot as plt
-from deap import creator, tools
+from deap import creator, tools, base
 from typing import Any, Dict, List, Tuple
 
 import random
@@ -207,6 +207,33 @@ def _test2_wrap_evo_callback(cfg: EvoSchemeConfigField):
 
     return _evo_callback
 
+def _test2_toolbox_setup_f(
+    cfg: EvoSchemeConfigField,
+) -> base.Toolbox:
+    ret_toolbox = base.Toolbox()
+
+    def _new_population_override():
+        x_min, x_max = cfg.Limits[0].Min, cfg.Limits[0].Max
+        y_min, y_max = cfg.Limits[1].Min, cfg.Limits[1].Max
+        n = int(np.floor(np.sqrt(cfg.PopulationSize)))
+        x = np.linspace(x_min, x_max, n, True)
+        y = np.linspace(y_min, y_max, n, True)
+
+        ret = [0] * cfg.PopulationSize
+        ind_cnt = 0
+        for i in range(n):
+            for j in range(n):
+                ret[ind_cnt] = creator.Individual([x[i], y[j]])
+                ind_cnt += 1
+
+        while ind_cnt < cfg.PopulationSize:
+            ret[ind_cnt] = ret_toolbox.new_ind()
+            ind_cnt += 1
+
+        return ret
+
+    ret_toolbox.register('new_population', _new_population_override)
+    return ret_toolbox
 
 # Test config params
 
@@ -216,6 +243,7 @@ _TEST_CFG_KEY_WRAP_IND_CRATOR_F = 'wrap_ind_creator_f'
 _TEST_CFG_KEY_WRAP_EVALUATR_F   = 'wrap_evaluate_f'
 _TEST_CFG_KEY_WRAP_EVO_CALLBACK = 'wrap_evo_callback'
 _TEST_CFG_KEY_VALIDATE_RESULT_F = 'valitate_result_f'
+_TEST_CFG_KEY_TOOLBOX_SETUP_F   = 'toolbox_setup_f'
 _TEST_CFG_KEY_DISABLE           = 'disable'
 
 # Tests main configuration
@@ -313,37 +341,38 @@ _TESTS = [
         # _TEST_CFG_KEY_DISABLE: True,
         _TEST_CFG_KEY_NAME: 'eggholder',
         _TEST_CFG_KEY_CFG: {
-            'rand_seed': 11,
-            'max_gen_num': 500,
-            'population_size': 120,
+            'rand_seed': 12,
+            'max_gen_num': 1000,
+            'population_size': 150,
             'hromo_len': 2,
-            'hall_of_fame': 10,
+            'hall_of_fame': 7,
 
             'fitness_weights': [-1.0,],
 
             'select': {
+                # 'method': 'selRoulette',
                 'method': 'selTournament',
                 'args': [
                     {'key': 'tournsize','val': 2},
                 ],
             },
             'mate': {
-                'probability': 0.85,
+                'probability': 0.8,
                 'method': 'cxSimulatedBinaryBounded',
                 'args': [
                     {'key':'low','val':-512},
                     {'key':'up','val':512},
-                    {'key':'eta','val':10},
+                    {'key':'eta','val':20},
                 ],
             },
             'mutate': {
                 'method': 'mutPolynomialBounded',
-                'probability': 0.4,
+                'probability': 0.3,
                 'args': [
                     {'key':'low','val':-512},
                     {'key':'up','val':512},
-                    {'key':'eta','val':15},
-                    {'key':'indpb','val':0.9},
+                    {'key':'eta','val':5},
+                    {'key':'indpb','val':0.8},
                 ],
                 # 'method': 'dynoMutGauss',
                 # 'probability': 0.1,
@@ -373,11 +402,14 @@ _TESTS = [
         _TEST_CFG_KEY_WRAP_EVALUATR_F: _test2_wrap_evaluate_f,
         _TEST_CFG_KEY_WRAP_EVO_CALLBACK: _test2_wrap_evo_callback,
         _TEST_CFG_KEY_VALIDATE_RESULT_F: _test2_validate_result_f,
+        _TEST_CFG_KEY_TOOLBOX_SETUP_F: _test2_toolbox_setup_f,
     },
 ]
 
 # Main test logger
 _test_logger: logging.Logger = None
+
+_DEF_TEST_DUMP_DIR = 'pshipilov_dev/dumps/tests'
 
 def run_tests(**kvargs):
     global _test_logger
@@ -386,6 +418,9 @@ def run_tests(**kvargs):
     args = _get_args_via_kvargs(kvargs)
     disable_iter_graph = get_optional_arg(args, 'test_disable_iter_graph', default=False)
     disable_stat_graph = get_optional_arg(args, 'test_disable_stat_graph', default=False)
+    disable_dump = get_optional_arg(args, 'test_disable_dump', default=False)
+    restore_result = get_optional_arg(args, 'test_restore_result', default=False)
+    tests_dumpdir = get_optional_arg(args, 'test_dump_dir', default=_DEF_TEST_DUMP_DIR)
 
     if not disable_iter_graph:
         plt.ion()
@@ -410,11 +445,13 @@ def run_tests(**kvargs):
         name = test[_TEST_CFG_KEY_NAME] if _TEST_CFG_KEY_NAME in test else f'test_#{i}'
         ind_creator_f = test[_TEST_CFG_KEY_WRAP_IND_CRATOR_F](cfg) if test.get(_TEST_CFG_KEY_WRAP_IND_CRATOR_F, None) is not None else None
         evo_callback = test[_TEST_CFG_KEY_WRAP_EVO_CALLBACK](cfg) if not disable_iter_graph and test.get(_TEST_CFG_KEY_WRAP_EVO_CALLBACK, None) is not None else None
+        toolbox = test[_TEST_CFG_KEY_TOOLBOX_SETUP_F](cfg) if test.get(_TEST_CFG_KEY_TOOLBOX_SETUP_F, None) is not None else None
         scheme = EvoScheme(
             name,
             cfg,
             test[_TEST_CFG_KEY_WRAP_EVALUATR_F](cfg),
             ind_creator_f,
+            toolbox,
         )
 
         # Set random state
@@ -425,8 +462,16 @@ def run_tests(**kvargs):
         if _TEST_CFG_KEY_VALIDATE_RESULT_F in test:
             stop_cond = lambda population, gen, **kvargs: test[_TEST_CFG_KEY_VALIDATE_RESULT_F](cfg, population)[0]
 
+        dumpdir = f'{tests_dumpdir}/test_{i}_{name}'
+
+        if restore_result:
+            scheme.restore_population_last_run_pool(dumpdir)
+
         # Action
-        last_popultaion = scheme.run(callback=evo_callback, stop_cond=stop_cond)
+        scheme.run(callback=evo_callback, stop_cond=stop_cond)
+
+        if not disable_dump:
+            scheme.save(dumpdir)
 
         if not disable_stat_graph and len(cfg.Metrics) > 0:
             logbook = scheme.get_logbook()
@@ -434,7 +479,8 @@ def run_tests(**kvargs):
 
         # Assert
         if _TEST_CFG_KEY_VALIDATE_RESULT_F in test:
-            ok, sol = test[_TEST_CFG_KEY_VALIDATE_RESULT_F](cfg, last_popultaion)
+            validation_inds = scheme.get_hall_of_fame().items if cfg.HallOfFame > 0 else scheme.get_last_population()
+            ok, sol = test[_TEST_CFG_KEY_VALIDATE_RESULT_F](cfg, validation_inds)
             if ok:
                 _test_logger.info('test #%d - successful (one of solution: [%s])', i, ','.join(map(str, sol)))
             else:
@@ -445,7 +491,7 @@ def run_tests(**kvargs):
     if not disable_iter_graph:
         plt.ioff()
 
-    if not disable_stat_graph:
+    if not disable_stat_graph and disable_dump:
         len_active_tests = len(active_tests)
         fig, axes = plt.subplots(1, len_active_tests)
         fig.suptitle('evo stats')
@@ -464,17 +510,17 @@ def run_tests(**kvargs):
                 ax.set_ylabel('fitness')
                 ax.legend()
 
+    if not disable_stat_graph:
         plt.show()
-
 
 # Utils
 
 def _validate_test(test: dict, num: int, logger: logging.Logger) -> bool:
     rules = [
-        {
-            'msg': f'skip test #{num}, validation error: len args is not in range [2,7]',
-            'cond': lambda test: len(test) < 2 or len(test) > 7,
-        },
+        # {
+        #     'msg': f'skip test #{num}, validation error: len args is not in range [2,8]',
+        #     'cond': lambda test: len(test) < 2 or len(test) > 8,
+        # },
         {
             'msg': f'skip test #{num}, validation error: test doesn\'t contain arg "{_TEST_CFG_KEY_CFG}"',
             'cond': lambda test: _TEST_CFG_KEY_CFG not in test,

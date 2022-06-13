@@ -34,10 +34,14 @@ def get_optional_arg(
     default: Any=None,
 ) -> Any:
     if hasattr(args, name1):
-        return getattr(args, name1)
+        ret = getattr(args, name1)
+        if ret is not None:
+            return ret
     elif name2 is not None:
         if hasattr(args, name2):
-            return getattr(args, name2)
+            ret = getattr(args, name2)
+            if ret is not None:
+                return ret
     return default
 
 def kv_config_arr_to_kvargs(

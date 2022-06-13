@@ -232,12 +232,6 @@ class EvoLimitGenConfigField(ConfigSection):
             'min': self._min,'max': self._max,'is_int': self._is_int,
         }
 
-class KVConfigField(ConfigSection):
-    @property
-    def Name(self) -> str: return self._name
-    @property
-    def Func(self) -> str: return self._func
-
 class EvoMetricConfigField(ConfigSection):
     @property
     def Name(self) -> str: return self._name
@@ -337,7 +331,7 @@ class EvoSchemeConfigField(ConfigSection):
         return {
             'max_gen_num': self._max_gen_num, 'population_size': self._population_size, 'rand_seed': self._rand_seed, 'hromo_len': self._hromo_len,
             'hall_of_fame': self._hall_of_fame,'fitness_weights': self._fitness_weights,'verbose': self._verbose,
-            'select': self._select,'mate': self._mate,'mutate': self._mutate,
+            'select': self._select.yaml(),'mate': self._mate.yaml(),'mutate': self._mutate.yaml(),
             'limits': _yaml_config_section_arr(self._limits),'metrics': _yaml_config_section_arr(self._metrics),
         }
 
