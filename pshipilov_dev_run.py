@@ -196,7 +196,5 @@ def main():
 def CustomMap(f, *iters):
     return Parallel(n_jobs=-1)(delayed(f)(*args) for args in zip(*iters))
 
-random.seed(cfg.Config.Esn.RandomState)
-
 if __name__ == '__main__':
     main()

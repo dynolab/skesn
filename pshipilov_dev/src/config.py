@@ -1,4 +1,4 @@
-from typing import Any, List, Union, Type
+from typing import Any, List, Union, Type, Dict
 
 import yaml
 
@@ -113,7 +113,7 @@ class EsnConfigField(ConfigSection):
                 'sparsity': EsnConfigField.Sparsity, 'noise': EsnConfigField.Noise, 'lambda_r': EsnConfigField.LambdaR, 'inspect': EsnConfigField.Inspect,
                 'random_state': EsnConfigField.RandomState,}
 
-class EvoOperatorArg(ConfigSection):
+class KVArgConfigSection(ConfigSection):
     @property
     def Key(self) -> str: return self._key
 
@@ -138,15 +138,15 @@ class EvoOperatorBaseConfigField(ConfigSection):
     def Method(self) -> str: return self._method
 
     @property
-    def Args(self) -> List[EvoOperatorArg]: return self._args
+    def Args(self) -> List[KVArgConfigSection]: return self._args
 
     def __init__(self) -> None:
         self._method: str                  = NecessaryField
-        self._args:   List[EvoOperatorArg] = []
+        self._args:   List[KVArgConfigSection] = []
 
     def load(self, cfg: dict) -> None:
         self._method = Config.get_necessary_value(cfg, 'method', self._method)
-        self._args   = Config.get_optional_arr_value(cfg, 'args', EvoOperatorArg, self._args)
+        self._args   = Config.get_optional_arr_value(cfg, 'args', KVArgConfigSection, self._args)
 
     def yaml(self) -> dict:
         return {
@@ -232,6 +232,44 @@ class EvoLimitGenConfigField(ConfigSection):
             'min': self._min,'max': self._max,'is_int': self._is_int,
         }
 
+class KVConfigField(ConfigSection):
+    @property
+    def Name(self) -> str: return self._name
+    @property
+    def Func(self) -> str: return self._func
+
+class EvoMetricConfigField(ConfigSection):
+    @property
+    def Name(self) -> str: return self._name
+    @property
+    def Func(self) -> str: return self._func
+    @property
+    def Package(self) -> str: return self._package
+
+    @property
+    def PltArgs(self) -> List[KVArgConfigSection]: return self._plt_args
+
+    def __init__(self) -> None:
+        self._name: str = NecessaryField
+        self._func: str = NecessaryField
+        # native python math import package
+        self._package: str = 'math'
+
+        self._plt_args: List[KVArgConfigSection] = []
+
+    def load(self, cfg: dict) -> None:
+        self._name    = Config.get_necessary_value(cfg, 'name', self._name)
+        self._func    = Config.get_necessary_value(cfg, 'func', self._func)
+        self._package = Config.get_optional_value(cfg, 'package', self._package)
+
+        self._plt_args = Config.get_optional_arr_value(cfg, 'plt_args', KVArgConfigSection, self._plt_args)
+
+    def yaml(self) -> dict:
+        return {
+            'name': self._name, 'func': self._func, 'package': self._package,
+            'plt_args': _yaml_config_section_arr(self._plt_args),
+        }
+
 class EvoSchemeConfigField(ConfigSection):
     @property
     def MaxGenNum(self) -> int: return self._max_gen_num
@@ -258,6 +296,8 @@ class EvoSchemeConfigField(ConfigSection):
 
     @property
     def Limits(self) -> List[EvoLimitGenConfigField]: return self._limits
+    @property
+    def Metrics(self) -> List[EvoMetricConfigField]: return self._metrics
 
     def __init__(self) -> None:
         self._max_gen_num:     int = NecessaryField
@@ -274,6 +314,7 @@ class EvoSchemeConfigField(ConfigSection):
         self._mutate: EvoMutateConfigField = EvoMutateConfigField()
 
         self._limits: List[EvoLimitGenConfigField] = []
+        self._metrics: List[EvoMetricConfigField] = []
 
     def load(self, cfg: dict) -> None:
         self._max_gen_num     = Config.get_necessary_value(cfg, 'max_gen_num', self._max_gen_num)
@@ -290,12 +331,15 @@ class EvoSchemeConfigField(ConfigSection):
         self._mutate.load(Config.get_necessary_value(cfg, 'mutate', self._mutate))
 
         self._limits = Config.get_optional_arr_value(cfg, 'limits', EvoLimitGenConfigField, self._limits)
+        self._metrics = Config.get_optional_arr_value(cfg, 'metrics', EvoMetricConfigField, self._metrics)
 
     def yaml(self) -> dict:
-        return {'max_gen_num': self._max_gen_num, 'population_size': self._population_size, 'rand_seed': self._rand_seed, 'hromo_len': self._hromo_len,
-             'hall_of_fame': self._hall_of_fame,'fitness_weights': self._fitness_weights,'verbose': self._verbose,
+        return {
+            'max_gen_num': self._max_gen_num, 'population_size': self._population_size, 'rand_seed': self._rand_seed, 'hromo_len': self._hromo_len,
+            'hall_of_fame': self._hall_of_fame,'fitness_weights': self._fitness_weights,'verbose': self._verbose,
             'select': self._select,'mate': self._mate,'mutate': self._mutate,
-            'limits': _yaml_config_section_arr(self._limits),}
+            'limits': _yaml_config_section_arr(self._limits),'metrics': _yaml_config_section_arr(self._metrics),
+        }
 
 class Scheme_1ConfigField(ConfigSection):
     @property

@@ -1,5 +1,7 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 import numpy as np
+
+from pshipilov_dev.src.config import KVArgConfigSection
 
 from .lorenz import train_to_data
 
@@ -24,3 +26,11 @@ def get_necessary_arg(args, name1, name2=None):
             return getattr(args, name2)
         raise 'unknown arg names: {0}, {1}'.format(name1, name2)
     raise 'unknown arg name: {0}'.format(name1)
+
+def kv_config_arr_to_kvargs(
+    args: List[KVArgConfigSection],
+) -> Dict[str, Any]:
+    ret = {}
+    for kv in args:
+        ret[kv.Key] = kv.Val
+    return ret

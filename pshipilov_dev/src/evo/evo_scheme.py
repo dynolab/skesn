@@ -1,19 +1,20 @@
 from .utils import map_select_f, map_mate_f, map_mutate_f
 from .abstract import Scheme
 from ..log import get_logger
-from ..config import EvoOperatorArg, EvoSchemeConfigField
+from ..config import KVArgConfigSection, EvoSchemeConfigField
 
 import yaml
-import logging
+import importlib
 import matplotlib.pyplot as plt
 import numpy as np
 
+from types import FunctionType
 from typing import List
 from deap import base, algorithms
 from deap import creator
 from deap import tools
 
-def _ind_eq(ind_l: List, ind_r: List) -> bool:
+def _ind_float_eq(ind_l: List[float], ind_r: List[float]) -> bool:
     if len(ind_l) != len(ind_r):
         return False
     EPS = 1e-6
@@ -25,8 +26,8 @@ def _ind_eq(ind_l: List, ind_r: List) -> bool:
 def _bind_evo_operator(
     tool_box: base.Toolbox,
     name: str,
-    func,
-    args: List[EvoOperatorArg],
+    func: FunctionType,
+    args: List[KVArgConfigSection],
     **kvargs,
     ):
 
@@ -40,8 +41,8 @@ class EvoScheme(Scheme):
     def __init__(self,
         name: str,
         cfg: EvoSchemeConfigField,
-        evaluate_f,
-        ind_creator_f=None,
+        evaluate_f: FunctionType,
+        ind_creator_f: FunctionType=None,
         tool_box: base.Toolbox=None,
         ) -> None:
 
@@ -106,15 +107,18 @@ class EvoScheme(Scheme):
                     )
         self._hall_of_fame = None
         if self._cfg.HallOfFame > 0:
-            self._hall_of_fame = tools.HallOfFame(self._cfg.HallOfFame, _ind_eq)
+            self._hall_of_fame = tools.HallOfFame(self._cfg.HallOfFame, _ind_float_eq)
 
-        self._stats = tools.Statistics(lambda ind: ind.fitness.values)
-        self._stats.register('min', np.min)
-        self._stats.register('agv', np.mean)
+        # Evo stats
+        self._stats: tools.Statistics = None
+        if len(self._cfg.Metrics) > 0:
+            self._stats = tools.Statistics(lambda ind: ind.fitness.values)
+            for metric_cfg in self._cfg.Metrics:
+                self._stats.register(metric_cfg.Name, _get_evo_metric_func(metric_cfg.Func, metric_cfg.Package))
 
         # Result
         self._logbook: tools.Logbook = None
-        self._lastPopulation: list = None
+        self._last_population: list = None
 
     def get_logbook(self) -> tools.Logbook:
         return self._logbook
@@ -122,7 +126,7 @@ class EvoScheme(Scheme):
     def run(self, **kvargs) -> None:
         self._logger.info('Evo scheme "%s" is running...', self._name)
 
-        self._lastPopulation, self._logbook = algorithms.eaSimple(
+        self._last_population, self._logbook = algorithms.eaSimple(
             population=self._tool_box.new_population(),
             toolbox=self._tool_box,
             cxpb=self._cfg.Mate.Probability,
@@ -136,7 +140,7 @@ class EvoScheme(Scheme):
 
         self._logger.info('Evo scheme "%s"  has bean done', self._name)
 
-        return self._lastPopulation
+        return self._last_population
 
     def show_plot(self) -> None:
         self._fig, self._ax = plt.subplots()
@@ -157,7 +161,7 @@ class EvoScheme(Scheme):
         # Dump last population
         with open(f'{dirname}/last_popultation.yaml', 'w') as f:
             dump_weight = {}
-            for i, ind in enumerate(self._lastPopulation):
+            for i, ind in enumerate(self._last_population):
                 dump_weight[f'ind_{str(i)}'] = {param.key: ind[param.idx] for param in self._hyper_params}
             yaml.safe_dump(dump_weight, f)
 
@@ -179,3 +183,13 @@ class EvoScheme(Scheme):
             else:
                 ret[i] = self._rand.rand()
         return creator.Individual(ret)
+
+def _get_evo_metric_func(
+    func_name: str,
+    package_name: str,
+) -> FunctionType:
+    module = importlib.import_module(package_name)
+    if hasattr(module, func_name):
+        return getattr(module, func_name)
+    raise 'unknown function name'
+

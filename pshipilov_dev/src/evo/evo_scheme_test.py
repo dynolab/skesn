@@ -1,17 +1,17 @@
 from types import FunctionType
 from matplotlib import pyplot as plt
+from deap import creator, tools
+from typing import Any, Dict, List, Tuple
 
-from ..log import get_logger
-
-from pshipilov_dev.src.config import EvoSchemeConfigField
-from pshipilov_dev.src.evo.evo_scheme import EvoScheme
-
-
+import random
 import logging
 import numpy as np
 
-from deap import creator, tools
-from typing import Any, Dict, List, Tuple
+from ..log import get_logger
+
+from pshipilov_dev.src.utils import kv_config_arr_to_kvargs
+from pshipilov_dev.src.config import EvoSchemeConfigField
+from pshipilov_dev.src.evo.evo_scheme import EvoScheme
 
 # Const
 
@@ -59,7 +59,7 @@ def _test0_wrap_evo_callback(cfg: EvoSchemeConfigField):
         ax.set_xlabel('idx')
         ax.set_ylabel('fitness')
 
-        ax.set_title(f'generation = {gen}')
+        ax.set_title(f'test #0\ngeneration = {gen}')
 
         points = [0] * cfg.PopulationSize
         for i in range(cfg.PopulationSize):
@@ -115,7 +115,7 @@ def _test1_wrap_evo_callback(cfg: EvoSchemeConfigField):
         ax.set_xlabel('x')
         ax.set_ylabel('y')
 
-        ax.set_title(f'test #2\ngeneration = {gen}')
+        ax.set_title(f'test #1\ngeneration = {gen}')
 
         ax.contour(x_grid, y_grid, f_expected)
         ax.scatter(*zip(*population), color='green', s=2, zorder=0)
@@ -171,17 +171,18 @@ def _test2_wrap_evo_callback(cfg: EvoSchemeConfigField):
 
         halloffame: tools.HallOfFame = kvargs.get('halloffame', None)
 
+        radius = 100.
         _radius_iter_points(
             halloffame.items,
             _TEST_2_EXPECTED,
-            5.,
-            _radius_log_callback(_test_logger, 'test #2 - find point in radius 5.0 ({x}, {y}), error: {r}'),
+            radius,
+            _radius_log_callback(_test_logger, 'test #2 - find point in radius {radius} ({x}, {y}), error: {r}', radius=radius),
             _radius_highlight_callback(ax, marker='X', color='green', zorder=1),
         )
 
         ax.scatter(*zip(*halloffame.items), marker='o', color='blue', zorder=1)
         best = halloffame.items[0]
-        ax.text(-600, 600, f'best: [{best[0]};{best[1]}]; value: {best.fitness.values[0]}')
+        ax.text(-600, 650, f'best: ({best[0]};{best[1]}); value: {best.fitness.values[0]}')
 
         ax.set_xlim(x_min - x_min * 0.05, x_max + x_max * 0.05)
         ax.set_ylim(y_min - y_min * 0.05, y_max + y_max * 0.05)
@@ -194,7 +195,7 @@ def _test2_wrap_evo_callback(cfg: EvoSchemeConfigField):
         ax.set_yticks(ticks)
         ax.set_yticklabels(ticks_labels)
 
-        ax.set_title(f'generation = {gen}')
+        ax.set_title(f'test #2\ngeneration = {gen}')
 
         # ax.contour(x_grid, y_grid, f_expected, levels=5)
         ax.scatter(*zip(*population), color='green', s=2, zorder=0)
@@ -244,6 +245,11 @@ _TESTS = [
                 'probability': 0.1,
                # 'indpb': 0.25,
             },
+
+            'metrics': [
+                {'name': 'max','func': 'max','package': 'numpy'},
+                {'name': 'avg','func': 'mean','package': 'numpy'},
+            ],
         },
         _WRAP_IND_CRATOR_F_ARG: _test0_wrap_ind_creator_f,
         _WRAP_EVALUATR_F_ARG: _test0_wrap_evaluate_f,
@@ -292,6 +298,10 @@ _TESTS = [
                 {'min': -5, 'max': 5},
                 {'min': -5, 'max': 5},
             ],
+            'metrics': [
+                {'name': 'min','func': 'min','package': 'numpy'},
+                {'name': 'avg','func': 'mean','package': 'numpy'},
+            ],
         },
         _WRAP_EVALUATR_F_ARG: _test1_wrap_evaluate_f,
         _WRAP_EVO_CALLBACK: _test1_wrap_evo_callback,
@@ -301,7 +311,7 @@ _TESTS = [
         # _DISABLE: True,
         _NAME_ARG: 'eggholder',
         _CFG_ARG: {
-            'rand_seed': 9,
+            'rand_seed': 10,
             'max_gen_num': 500,
             'population_size': 120,
             'hromo_len': 2,
@@ -345,6 +355,17 @@ _TESTS = [
                 {'min': -512, 'max': 512},
                 {'min': -512, 'max': 512},
             ],
+            'metrics': [
+                {
+                    'name':'min',
+                    'func':'min',
+                    'package':'numpy',
+                    'plt_args': [
+                        {'key':'color', 'val': 'green'},
+                    ],
+                },
+                {'name':'avg','func':'mean','package': 'numpy'},
+            ],
         },
         _WRAP_EVALUATR_F_ARG: _test2_wrap_evaluate_f,
         _WRAP_EVO_CALLBACK: _test2_wrap_evo_callback,
@@ -363,9 +384,7 @@ def run_tests():
     plt.ion()
 
     active_tests = []
-
-    minFitnessValuesMap = {}
-    avgFitnessValuesMap = {}
+    metricValuesMap = {}
 
     for i, test in enumerate(_TESTS):
         if not _validate_test(test, i, _test_logger):
@@ -379,7 +398,6 @@ def run_tests():
         active_tests.append(i)
 
         # Evo scheme prepare
-
         cfg = EvoSchemeConfigField()
         cfg.load(test[_CFG_ARG])
         name = test[_NAME_ARG] if _NAME_ARG in test else f'test_#{i}'
@@ -392,6 +410,10 @@ def run_tests():
             ind_creator_f,
         )
 
+        # Set random state
+        random.seed(cfg.RandSeed)
+        np.random.seed(cfg.RandSeed)
+
         stop_cond = None
         if _VALIDATE_RESULT_F in test:
             stop_cond = lambda population, gen, **kvargs: test[_VALIDATE_RESULT_F](cfg, population)[0]
@@ -399,8 +421,9 @@ def run_tests():
         # Action
         last_popultaion = scheme.run(callback=evo_callback, stop_cond=stop_cond)
 
-        logbook = scheme.get_logbook()
-        minFitnessValuesMap[i], avgFitnessValuesMap[i] = logbook.select('min', 'avg')
+        if len(cfg.Metrics) > 0:
+            logbook = scheme.get_logbook()
+            metricValuesMap[i] = cfg.Metrics, logbook.select(*[metric.Name for metric in cfg.Metrics])
 
         # Assert
         if _VALIDATE_RESULT_F in test:
@@ -423,11 +446,14 @@ def run_tests():
     for i, n in enumerate(active_tests):
         ax = axes[i]
         ax.set_title(f'test #{n}')
-        ax.plot(minFitnessValuesMap[n], color='green', label='min')
-        ax.plot(avgFitnessValuesMap[n], color='blue', label='avg')
-        ax.set_xlabel('generation')
-        ax.set_ylabel('fitness')
-        ax.legend()
+        metrics = metricValuesMap.get(n, None)
+        if metrics is not None:
+            metric_cfgs, values = metrics
+            for i in range(len(values)):
+                ax.plot(values[i], label=metric_cfgs[i].Name, **kv_config_arr_to_kvargs(metric_cfgs[i].PltArgs))
+            ax.set_xlabel('generation')
+            ax.set_ylabel('fitness')
+            ax.legend()
 
     plt.show()
 
