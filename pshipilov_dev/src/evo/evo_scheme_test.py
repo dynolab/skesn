@@ -1,5 +1,6 @@
 from types import FunctionType
 from matplotlib import pyplot as plt
+
 from ..log import get_logger
 
 from pshipilov_dev.src.config import EvoSchemeConfigField
@@ -9,13 +10,13 @@ from pshipilov_dev.src.evo.evo_scheme import EvoScheme
 import logging
 import numpy as np
 
-from deap import creator
+from deap import creator, tools
 from typing import Any, Dict, List, Tuple
 
 # Const
 
-_FIG_HEIGHT_INCHES = 5
-_FIG_WEIGHT_INCHES = 5
+_FIG_HEIGHT_INCHES = 8
+_FIG_WEIGHT_INCHES = 8
 
 # Test 0 implementations
 
@@ -49,7 +50,7 @@ def _test0_wrap_evo_callback(cfg: EvoSchemeConfigField):
     fig, ax = plt.subplots()
     fig.set_size_inches(_FIG_WEIGHT_INCHES, _FIG_HEIGHT_INCHES)
 
-    def _evo_callback(population, gen):
+    def _evo_callback(population, gen, **kvargs):
         ax.clear()
 
         ax.set_xlim(0, cfg.PopulationSize + 1)
@@ -65,7 +66,7 @@ def _test0_wrap_evo_callback(cfg: EvoSchemeConfigField):
             points[i] = (i, population[i].fitness.values[0] * population[i].fitness.weights[0])
         ax.scatter(*zip(*points), color='green', s=2, zorder=0)
 
-        plt.pause(0.01)
+        plt.pause(0.001)
 
     return _evo_callback
 
@@ -105,7 +106,7 @@ def _test1_wrap_evo_callback(cfg: EvoSchemeConfigField):
     eval_f = _test1_wrap_evaluate_f(cfg)
     f_expected, = eval_f([x_grid, y_grid])
 
-    def _evo_callback(population, gen):
+    def _evo_callback(population, gen, **kvargs):
         ax.clear()
 
         ax.set_xlim(x_min - x_min * 0.1, x_max + x_max * 0.1)
@@ -114,7 +115,7 @@ def _test1_wrap_evo_callback(cfg: EvoSchemeConfigField):
         ax.set_xlabel('x')
         ax.set_ylabel('y')
 
-        ax.set_title(f'generation = {gen}')
+        ax.set_title(f'test #2\ngeneration = {gen}')
 
         ax.contour(x_grid, y_grid, f_expected)
         ax.scatter(*zip(*population), color='green', s=2, zorder=0)
@@ -165,16 +166,22 @@ def _test2_wrap_evo_callback(cfg: EvoSchemeConfigField):
     ticks = np.linspace(-512, 512, 5)
     ticks_labels = [str(x) for x in ticks]
 
-    def _evo_callback(population, gen):
+    def _evo_callback(population, gen, **kvargs):
         ax.clear()
 
+        halloffame: tools.HallOfFame = kvargs.get('halloffame', None)
+
         _radius_iter_points(
-            population,
+            halloffame.items,
             _TEST_2_EXPECTED,
             5.,
             _radius_log_callback(_test_logger, 'test #2 - find point in radius 5.0 ({x}, {y}), error: {r}'),
             _radius_highlight_callback(ax, marker='X', color='green', zorder=1),
         )
+
+        ax.scatter(*zip(*halloffame.items), marker='o', color='blue', zorder=1)
+        best = halloffame.items[0]
+        ax.text(-600, 600, f'best: [{best[0]};{best[1]}]; value: {best.fitness.values[0]}')
 
         ax.set_xlim(x_min - x_min * 0.05, x_max + x_max * 0.05)
         ax.set_ylim(y_min - y_min * 0.05, y_max + y_max * 0.05)
@@ -193,7 +200,7 @@ def _test2_wrap_evo_callback(cfg: EvoSchemeConfigField):
         ax.scatter(*zip(*population), color='green', s=2, zorder=0)
         ax.scatter(*zip(*_TEST_2_EXPECTED), marker='X', color='red', zorder=1)
 
-        plt.pause(0.001)
+        plt.pause(0.0001)
 
     return _evo_callback
 
@@ -291,13 +298,14 @@ _TESTS = [
         _VALIDATE_RESULT_F: _test1_validate_result_f,
     },
     {
+        # _DISABLE: True,
         _NAME_ARG: 'eggholder',
         _CFG_ARG: {
             'rand_seed': 9,
-            'max_gen_num': 5000,
+            'max_gen_num': 500,
             'population_size': 120,
             'hromo_len': 2,
-            'hall_of_fame': 3,
+            'hall_of_fame': 10,
 
             'fitness_weights': [-1.0,],
 
@@ -308,12 +316,12 @@ _TESTS = [
                 ],
             },
             'mate': {
-                'probability': 0.8,
+                'probability': 0.85,
                 'method': 'cxSimulatedBinaryBounded',
                 'args': [
                     {'key':'low','val':-512},
                     {'key':'up','val':512},
-                    {'key':'eta','val':20},
+                    {'key':'eta','val':10},
                 ],
             },
             'mutate': {
@@ -322,7 +330,7 @@ _TESTS = [
                 'args': [
                     {'key':'low','val':-512},
                     {'key':'up','val':512},
-                    {'key':'eta','val':0.5},
+                    {'key':'eta','val':15},
                 ],
                 # 'method': 'dynoMutGauss',
                 # 'probability': 0.1,
@@ -354,6 +362,11 @@ def run_tests():
     plt.show()
     plt.ion()
 
+    active_tests = []
+
+    minFitnessValuesMap = {}
+    avgFitnessValuesMap = {}
+
     for i, test in enumerate(_TESTS):
         if not _validate_test(test, i, _test_logger):
             continue
@@ -362,6 +375,8 @@ def run_tests():
         if disable:
             _test_logger.info('test #%d - skip test (disabled)', i)
             continue
+
+        active_tests.append(i)
 
         # Evo scheme prepare
 
@@ -379,10 +394,13 @@ def run_tests():
 
         stop_cond = None
         if _VALIDATE_RESULT_F in test:
-            stop_cond = lambda population, gen: test[_VALIDATE_RESULT_F](cfg, population)[0]
+            stop_cond = lambda population, gen, **kvargs: test[_VALIDATE_RESULT_F](cfg, population)[0]
 
         # Action
         last_popultaion = scheme.run(callback=evo_callback, stop_cond=stop_cond)
+
+        logbook = scheme.get_logbook()
+        minFitnessValuesMap[i], avgFitnessValuesMap[i] = logbook.select('min', 'avg')
 
         # Assert
         if _VALIDATE_RESULT_F in test:
@@ -395,6 +413,24 @@ def run_tests():
             _test_logger.warn('test #%d - skip result validation', i)
 
     plt.ioff()
+
+    len_active_tests = len(active_tests)
+    fig, axes = plt.subplots(1, len_active_tests)
+    fig.suptitle('evo stats')
+    if len_active_tests == 1:
+        axes = axes,
+
+    for i, n in enumerate(active_tests):
+        ax = axes[i]
+        ax.set_title(f'test #{n}')
+        ax.plot(minFitnessValuesMap[n], color='green', label='min')
+        ax.plot(avgFitnessValuesMap[n], color='blue', label='avg')
+        ax.set_xlabel('generation')
+        ax.set_ylabel('fitness')
+        ax.legend()
+
+    plt.show()
+
 
 # Utils
 

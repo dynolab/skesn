@@ -116,8 +116,8 @@ class EvoScheme(Scheme):
         self._logbook: tools.Logbook = None
         self._lastPopulation: list = None
 
-        # Matplotlib setup
-        # f._fig, self._ax = plt.subplots()
+    def get_logbook(self) -> tools.Logbook:
+        return self._logbook
 
     def run(self, **kvargs) -> None:
         self._logger.info('Evo scheme "%s" is running...', self._name)
