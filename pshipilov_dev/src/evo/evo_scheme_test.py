@@ -7,9 +7,11 @@ import random
 import logging
 import numpy as np
 
+from pshipilov_dev_run import _get_args_via_kvargs
+
 from ..log import get_logger
 
-from pshipilov_dev.src.utils import kv_config_arr_to_kvargs
+from pshipilov_dev.src.utils import get_optional_arg, kv_config_arr_to_kvargs
 from pshipilov_dev.src.config import EvoSchemeConfigField
 from pshipilov_dev.src.evo.evo_scheme import EvoScheme
 
@@ -311,7 +313,7 @@ _TESTS = [
         # _DISABLE: True,
         _NAME_ARG: 'eggholder',
         _CFG_ARG: {
-            'rand_seed': 10,
+            'rand_seed': 11,
             'max_gen_num': 500,
             'population_size': 120,
             'hromo_len': 2,
@@ -341,6 +343,7 @@ _TESTS = [
                     {'key':'low','val':-512},
                     {'key':'up','val':512},
                     {'key':'eta','val':15},
+                    {'key':'indpb','val':0.9},
                 ],
                 # 'method': 'dynoMutGauss',
                 # 'probability': 0.1,
@@ -376,12 +379,16 @@ _TESTS = [
 # Main test logger
 _test_logger: logging.Logger = None
 
-def run_tests():
+def run_tests(**kvargs):
     global _test_logger
     _test_logger = get_logger(name='tests', level='debug')
 
-    plt.show()
-    plt.ion()
+    args = _get_args_via_kvargs(kvargs)
+    disable_iter_graph = get_optional_arg(args, 'test_disable_iter_graph', default=False)
+    disable_stat_graph = get_optional_arg(args, 'test_disable_stat_graph', default=False)
+
+    if not disable_iter_graph:
+        plt.ion()
 
     active_tests = []
     metricValuesMap = {}
@@ -402,7 +409,7 @@ def run_tests():
         cfg.load(test[_CFG_ARG])
         name = test[_NAME_ARG] if _NAME_ARG in test else f'test_#{i}'
         ind_creator_f = test[_WRAP_IND_CRATOR_F_ARG](cfg) if test.get(_WRAP_IND_CRATOR_F_ARG, None) is not None else None
-        evo_callback = test[_WRAP_EVO_CALLBACK](cfg) if test.get(_WRAP_EVO_CALLBACK, None) is not None else None
+        evo_callback = test[_WRAP_EVO_CALLBACK](cfg) if not disable_iter_graph and test.get(_WRAP_EVO_CALLBACK, None) is not None else None
         scheme = EvoScheme(
             name,
             cfg,
@@ -421,7 +428,7 @@ def run_tests():
         # Action
         last_popultaion = scheme.run(callback=evo_callback, stop_cond=stop_cond)
 
-        if len(cfg.Metrics) > 0:
+        if not disable_stat_graph and len(cfg.Metrics) > 0:
             logbook = scheme.get_logbook()
             metricValuesMap[i] = cfg.Metrics, logbook.select(*[metric.Name for metric in cfg.Metrics])
 
@@ -435,27 +442,29 @@ def run_tests():
         else:
             _test_logger.warn('test #%d - skip result validation', i)
 
-    plt.ioff()
+    if not disable_iter_graph:
+        plt.ioff()
 
-    len_active_tests = len(active_tests)
-    fig, axes = plt.subplots(1, len_active_tests)
-    fig.suptitle('evo stats')
-    if len_active_tests == 1:
-        axes = axes,
+    if not disable_stat_graph:
+        len_active_tests = len(active_tests)
+        fig, axes = plt.subplots(1, len_active_tests)
+        fig.suptitle('evo stats')
+        if len_active_tests == 1:
+            axes = axes,
 
-    for i, n in enumerate(active_tests):
-        ax = axes[i]
-        ax.set_title(f'test #{n}')
-        metrics = metricValuesMap.get(n, None)
-        if metrics is not None:
-            metric_cfgs, values = metrics
-            for i in range(len(values)):
-                ax.plot(values[i], label=metric_cfgs[i].Name, **kv_config_arr_to_kvargs(metric_cfgs[i].PltArgs))
-            ax.set_xlabel('generation')
-            ax.set_ylabel('fitness')
-            ax.legend()
+        for i, n in enumerate(active_tests):
+            ax = axes[i]
+            ax.set_title(f'test #{n}')
+            metrics = metricValuesMap.get(n, None)
+            if metrics is not None:
+                metric_cfgs, values = metrics
+                for i in range(len(values)):
+                    ax.plot(values[i], label=metric_cfgs[i].Name, **kv_config_arr_to_kvargs(metric_cfgs[i].PltArgs))
+                ax.set_xlabel('generation')
+                ax.set_ylabel('fitness')
+                ax.legend()
 
-    plt.show()
+        plt.show()
 
 
 # Utils

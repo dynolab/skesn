@@ -46,7 +46,7 @@ _MODE_EVO_SCHEME_2 = 'evo_scheme_2'
 
 _KVARGS_ARGS = 'args'
 
-def _get_args_via_kvargs(**kvargs):
+def _get_args_via_kvargs(kvargs):
     ret = None
     if _KVARGS_ARGS in kvargs:
         ret = kvargs[_KVARGS_ARGS]
@@ -54,7 +54,7 @@ def _get_args_via_kvargs(**kvargs):
 
 
 def run_tests(**kvargs):
-    evo_scheme_test.run_tests()
+    evo_scheme_test.run_tests(**kvargs)
 
 def run_scheme1(**kvargs):
     args = _get_args_via_kvargs(**kvargs)
@@ -149,9 +149,16 @@ def _create_parser() -> argparse.ArgumentParser:
         help='config path'
     )
     parser.add_argument('--disable-config',
-        type=str,
-        nargs='?',
-        help='disable loading config'
+        action='store_true',
+        help='disable loading config from config dir'
+    )
+    parser.add_argument('--test-disable-iter-graph',
+        action='store_true',
+        help='disable matplotlib lib graphs on iterations for tests'
+    )
+    parser.add_argument('--test-disable-stat-graph',
+        action='store_true',
+        help='disable matplotlib lib statistics graphs for tests'
     )
     parser.add_argument('-v', '--verbose',
         action='store_true',
@@ -181,7 +188,7 @@ def main():
     mode = utils.get_necessary_arg(args, 'm', 'mode')
 
     if mode == _MODE_TESTS:
-        run_tests()
+        run_tests(args=args)
     elif mode == _MODE_TEST_MULTI:
         run_test_multi(args=args)
     elif mode == _MODE_GRID:

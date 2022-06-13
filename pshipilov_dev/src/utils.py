@@ -27,6 +27,19 @@ def get_necessary_arg(args, name1, name2=None):
         raise 'unknown arg names: {0}, {1}'.format(name1, name2)
     raise 'unknown arg name: {0}'.format(name1)
 
+def get_optional_arg(
+    args,
+    name1: str,
+    name2: str=None,
+    default: Any=None,
+) -> Any:
+    if hasattr(args, name1):
+        return getattr(args, name1)
+    elif name2 is not None:
+        if hasattr(args, name2):
+            return getattr(args, name2)
+    return default
+
 def kv_config_arr_to_kvargs(
     args: List[KVArgConfigSection],
 ) -> Dict[str, Any]:
