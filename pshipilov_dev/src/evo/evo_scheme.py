@@ -134,9 +134,8 @@ class EvoScheme(Scheme):
     def save(self, dirname: str, **kvargs) -> str:
         dumpdir = self._create_dump_dir(dirname)
 
-        disable_stat = kvargs.get('disable_stat', False)
         len_metrics = len(self._cfg.Metrics)
-        if not disable_stat and len_metrics > 0:
+        if not kvargs.get('disable_stat', False) and len_metrics > 0:
             # Dump stat graph
             fig, ax = plt.subplots()
             fig.suptitle(f'{self._name}\nevo stats')
@@ -150,31 +149,19 @@ class EvoScheme(Scheme):
 
             fig.savefig(f'{dumpdir}/stat_graph.png', dpi=fig.dpi)
 
-        disable_cfg = kvargs.get('disable_cfg', False)
-        if not disable_cfg:
+        if not kvargs.get('disable_cfg', False):
             # Dump config
             with open(f'{dumpdir}/config.yaml', 'w') as f:
                 yaml.safe_dump(self._cfg.yaml(), f)
 
-        disable_last_population = kvargs.get('disable_last_population', False)
-        if not disable_last_population:
+        if not kvargs.get('disable_last_population', False):
             # Dump last population
             with open(f'{dumpdir}/last_population.yaml', 'w') as f:
-                dump = {}
-                for i, ind in enumerate(self._last_population):
-                    dump_ind = [0] * self._cfg.HromoLen
-                    allow_limits = len(self._cfg.Limits) == self._cfg.HromoLen
-                    for j in range(self._cfg.HromoLen):
-                        if allow_limits:
-                            if self._cfg.Limits[j].IsInt:
-                                dump_ind[j] = int(ind[j])
-                            else:
-                                dump_ind[j] = float(ind[j])
-                        else:
-                            dump_ind[j] = float(ind[j])
+                self._dump_ind_arr(f, self._last_population)
 
-                    dump[f'ind_{i}'] = dump_ind
-                yaml.safe_dump(dump, f)
+        if not kvargs.get('disable_hall_of_fame', False) and self._hall_of_fame is not None:
+            with open(f'{dumpdir}/hall_off_fame.yaml', 'w') as f:
+                self._dump_ind_arr(f, self._hall_of_fame.items)
 
         return dumpdir
 
@@ -252,6 +239,23 @@ class EvoScheme(Scheme):
         self._first_run = False
 
     # Internal methods
+
+    def _dump_ind_arr(self, f, inds: List) -> None:
+        dump = {}
+        for i, ind in enumerate(inds):
+            dump_ind = [0] * self._cfg.HromoLen
+            allow_limits = len(self._cfg.Limits) == self._cfg.HromoLen
+            for j in range(self._cfg.HromoLen):
+                if allow_limits:
+                    if self._cfg.Limits[j].IsInt:
+                        dump_ind[j] = int(ind[j])
+                    else:
+                        dump_ind[j] = float(ind[j])
+                else:
+                    dump_ind[j] = float(ind[j])
+
+            dump[f'ind_{i}'] = dump_ind
+        yaml.safe_dump(dump, f)
 
     def _ind_creator_def_f(self) -> list:
         ret = [0] * self._cfg.HromoLen
