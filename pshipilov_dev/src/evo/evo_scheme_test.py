@@ -210,21 +210,21 @@ def _test2_wrap_evo_callback(cfg: EvoSchemeConfigField):
 
 # Test config params
 
-_NAME_ARG = 'name'
-_CFG_ARG = 'cfg'
-_WRAP_IND_CRATOR_F_ARG = 'wrap_ind_creator_f'
-_WRAP_EVALUATR_F_ARG = 'wrap_evaluate_f'
-_WRAP_EVO_CALLBACK = 'wrap_evo_callback'
-_VALIDATE_RESULT_F = 'valitate_result_f'
-_DISABLE = 'disable'
+_TEST_CFG_KEY_NAME              = 'name'
+_TEST_CFG_KEY_CFG               = 'cfg'
+_TEST_CFG_KEY_WRAP_IND_CRATOR_F = 'wrap_ind_creator_f'
+_TEST_CFG_KEY_WRAP_EVALUATR_F   = 'wrap_evaluate_f'
+_TEST_CFG_KEY_WRAP_EVO_CALLBACK = 'wrap_evo_callback'
+_TEST_CFG_KEY_VALIDATE_RESULT_F = 'valitate_result_f'
+_TEST_CFG_KEY_DISABLE           = 'disable'
 
 # Tests main configuration
 
 _TESTS = [
     {
-        # _DISABLE: True,
-        _NAME_ARG: 'one_max',
-        _CFG_ARG: {
+        # _TEST_CFG_KEY_DISABLE: True,
+        _TEST_CFG_KEY_NAME: 'one_max',
+        _TEST_CFG_KEY_CFG: {
             'rand_seed': 1,
             'max_gen_num': 150,
             'population_size': 50,
@@ -253,15 +253,15 @@ _TESTS = [
                 {'name': 'avg','func': 'mean','package': 'numpy'},
             ],
         },
-        _WRAP_IND_CRATOR_F_ARG: _test0_wrap_ind_creator_f,
-        _WRAP_EVALUATR_F_ARG: _test0_wrap_evaluate_f,
-        _VALIDATE_RESULT_F: _test0_validate_result_f,
-        _WRAP_EVO_CALLBACK: _test0_wrap_evo_callback,
+        _TEST_CFG_KEY_WRAP_IND_CRATOR_F: _test0_wrap_ind_creator_f,
+        _TEST_CFG_KEY_WRAP_EVALUATR_F: _test0_wrap_evaluate_f,
+        _TEST_CFG_KEY_VALIDATE_RESULT_F: _test0_validate_result_f,
+        _TEST_CFG_KEY_WRAP_EVO_CALLBACK: _test0_wrap_evo_callback,
     },
     {
-        # _DISABLE: True,
-        _NAME_ARG: 'himmelblau',
-        _CFG_ARG: {
+        # _TEST_CFG_KEY_DISABLE: True,
+        _TEST_CFG_KEY_NAME: 'himmelblau',
+        _TEST_CFG_KEY_CFG: {
             'rand_seed': 3,
             'max_gen_num': 150,
             'population_size': 30,
@@ -305,14 +305,14 @@ _TESTS = [
                 {'name': 'avg','func': 'mean','package': 'numpy'},
             ],
         },
-        _WRAP_EVALUATR_F_ARG: _test1_wrap_evaluate_f,
-        _WRAP_EVO_CALLBACK: _test1_wrap_evo_callback,
-        _VALIDATE_RESULT_F: _test1_validate_result_f,
+        _TEST_CFG_KEY_WRAP_EVALUATR_F: _test1_wrap_evaluate_f,
+        _TEST_CFG_KEY_WRAP_EVO_CALLBACK: _test1_wrap_evo_callback,
+        _TEST_CFG_KEY_VALIDATE_RESULT_F: _test1_validate_result_f,
     },
     {
-        # _DISABLE: True,
-        _NAME_ARG: 'eggholder',
-        _CFG_ARG: {
+        # _TEST_CFG_KEY_DISABLE: True,
+        _TEST_CFG_KEY_NAME: 'eggholder',
+        _TEST_CFG_KEY_CFG: {
             'rand_seed': 11,
             'max_gen_num': 500,
             'population_size': 120,
@@ -370,9 +370,9 @@ _TESTS = [
                 {'name':'avg','func':'mean','package': 'numpy'},
             ],
         },
-        _WRAP_EVALUATR_F_ARG: _test2_wrap_evaluate_f,
-        _WRAP_EVO_CALLBACK: _test2_wrap_evo_callback,
-        _VALIDATE_RESULT_F: _test2_validate_result_f,
+        _TEST_CFG_KEY_WRAP_EVALUATR_F: _test2_wrap_evaluate_f,
+        _TEST_CFG_KEY_WRAP_EVO_CALLBACK: _test2_wrap_evo_callback,
+        _TEST_CFG_KEY_VALIDATE_RESULT_F: _test2_validate_result_f,
     },
 ]
 
@@ -397,7 +397,7 @@ def run_tests(**kvargs):
         if not _validate_test(test, i, _test_logger):
             continue
 
-        disable = test.get(_DISABLE, False)
+        disable = test.get(_TEST_CFG_KEY_DISABLE, False)
         if disable:
             _test_logger.info('test #%d - skip test (disabled)', i)
             continue
@@ -406,14 +406,14 @@ def run_tests(**kvargs):
 
         # Evo scheme prepare
         cfg = EvoSchemeConfigField()
-        cfg.load(test[_CFG_ARG])
-        name = test[_NAME_ARG] if _NAME_ARG in test else f'test_#{i}'
-        ind_creator_f = test[_WRAP_IND_CRATOR_F_ARG](cfg) if test.get(_WRAP_IND_CRATOR_F_ARG, None) is not None else None
-        evo_callback = test[_WRAP_EVO_CALLBACK](cfg) if not disable_iter_graph and test.get(_WRAP_EVO_CALLBACK, None) is not None else None
+        cfg.load(test[_TEST_CFG_KEY_CFG])
+        name = test[_TEST_CFG_KEY_NAME] if _TEST_CFG_KEY_NAME in test else f'test_#{i}'
+        ind_creator_f = test[_TEST_CFG_KEY_WRAP_IND_CRATOR_F](cfg) if test.get(_TEST_CFG_KEY_WRAP_IND_CRATOR_F, None) is not None else None
+        evo_callback = test[_TEST_CFG_KEY_WRAP_EVO_CALLBACK](cfg) if not disable_iter_graph and test.get(_TEST_CFG_KEY_WRAP_EVO_CALLBACK, None) is not None else None
         scheme = EvoScheme(
             name,
             cfg,
-            test[_WRAP_EVALUATR_F_ARG](cfg),
+            test[_TEST_CFG_KEY_WRAP_EVALUATR_F](cfg),
             ind_creator_f,
         )
 
@@ -422,8 +422,8 @@ def run_tests(**kvargs):
         np.random.seed(cfg.RandSeed)
 
         stop_cond = None
-        if _VALIDATE_RESULT_F in test:
-            stop_cond = lambda population, gen, **kvargs: test[_VALIDATE_RESULT_F](cfg, population)[0]
+        if _TEST_CFG_KEY_VALIDATE_RESULT_F in test:
+            stop_cond = lambda population, gen, **kvargs: test[_TEST_CFG_KEY_VALIDATE_RESULT_F](cfg, population)[0]
 
         # Action
         last_popultaion = scheme.run(callback=evo_callback, stop_cond=stop_cond)
@@ -433,8 +433,8 @@ def run_tests(**kvargs):
             metricValuesMap[i] = cfg.Metrics, logbook.select(*[metric.Name for metric in cfg.Metrics])
 
         # Assert
-        if _VALIDATE_RESULT_F in test:
-            ok, sol = test[_VALIDATE_RESULT_F](cfg, last_popultaion)
+        if _TEST_CFG_KEY_VALIDATE_RESULT_F in test:
+            ok, sol = test[_TEST_CFG_KEY_VALIDATE_RESULT_F](cfg, last_popultaion)
             if ok:
                 _test_logger.info('test #%d - successful (one of solution: [%s])', i, ','.join(map(str, sol)))
             else:
@@ -476,16 +476,16 @@ def _validate_test(test: dict, num: int, logger: logging.Logger) -> bool:
             'cond': lambda test: len(test) < 2 or len(test) > 7,
         },
         {
-            'msg': f'skip test #{num}, validation error: test doesn\'t contain arg "{_CFG_ARG}"',
-            'cond': lambda test: _CFG_ARG not in test,
+            'msg': f'skip test #{num}, validation error: test doesn\'t contain arg "{_TEST_CFG_KEY_CFG}"',
+            'cond': lambda test: _TEST_CFG_KEY_CFG not in test,
         },
         # {
         #     'msg': f'skip test #{num}, validation error: test doesn\'t contain arg "{_WRAP_IND_CRATOR_F_ARG}"',
         #     'cond': lambda test: _WRAP_IND_CRATOR_F_ARG not in test,
         # },
         {
-            'msg': f'skip test #{num}, validation error: test doesn\'t contain arg "{_WRAP_EVALUATR_F_ARG}"',
-            'cond': lambda test: _WRAP_EVALUATR_F_ARG not in test,
+            'msg': f'skip test #{num}, validation error: test doesn\'t contain arg "{_TEST_CFG_KEY_WRAP_EVALUATR_F}"',
+            'cond': lambda test: _TEST_CFG_KEY_WRAP_EVALUATR_F not in test,
         },
         # {
         #     'msg': f'skip test #{num}, validation error: test doesn\'t contain arg "{_VALIDATE_RESULT_F}"',
