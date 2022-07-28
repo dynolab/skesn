@@ -28,6 +28,9 @@ def get_logger(**kvargs) -> logging.Logger:
     logdir = Config.Logging.Dir
     if _args is not None and hasattr(_args, 'log_dir'):
         logdir = _args.log_dir
+    # create log dir if necessary
+    if not os.path.exists(logdir):
+        os.makedirs(logdir)
 
     if len(logdir) > 0 and logdir[len(logdir)-1] != ord('/'):
         logdir += '/'
