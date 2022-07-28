@@ -168,6 +168,7 @@ def _create_parser() -> argparse.ArgumentParser:
     parser.add_argument('--log-dir',
         type=str,
         nargs='?',
+        default='pshipilov_dev/logs',
         help='directory for writing log files'
     )
     parser.add_argument('--dump-dir',
@@ -197,6 +198,7 @@ def _create_parser() -> argparse.ArgumentParser:
     parser.add_argument('--test-dump-dir',
         type=str,
         nargs='?',
+        default='pshipilov_dev/dumps/tests',
         help='directory for writing dump files for tests'
     )
 
