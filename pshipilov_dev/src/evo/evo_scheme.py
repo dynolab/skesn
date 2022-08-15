@@ -220,6 +220,9 @@ class EvoScheme(Scheme):
     ) -> None:
         with open(filename, 'r') as f:
             last_population_yaml = yaml.safe_load(f)
+            if last_population_yaml is None:
+                raise f'the population from the file "{filename}" is None)'
+
             if self._cfg.PopulationSize != len(last_population_yaml):
                 raise f'the population size from the file "{filename}" ({len(last_population_yaml)}) does not match the config ({self._cfg.PopulationSize})'
 

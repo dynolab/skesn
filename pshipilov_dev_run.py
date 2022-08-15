@@ -8,7 +8,6 @@ import pshipilov_dev.src.config as cfg
 
 import skesn.esn as esn
 
-
 import matplotlib.pyplot as plt
 import numpy as np
 

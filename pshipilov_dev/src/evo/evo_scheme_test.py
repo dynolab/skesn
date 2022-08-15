@@ -22,7 +22,9 @@ _FIG_WEIGHT_INCHES = 8
 
 # Test 0 implementations
 
-def _test0_wrap_ind_creator_f(cfg: EvoSchemeConfigField):
+def _test0_wrap_ind_creator_f(
+    cfg: EvoSchemeConfigField,
+    ) -> None:
     def _ind_creator_f():
         ret = [0] * cfg.HromoLen
         for i in range(cfg.HromoLen):
@@ -30,7 +32,9 @@ def _test0_wrap_ind_creator_f(cfg: EvoSchemeConfigField):
         return creator.Individual(ret)
     return _ind_creator_f
 
-def _test0_wrap_evaluate_f(cfg: EvoSchemeConfigField):
+def _test0_wrap_evaluate_f(
+    cfg: EvoSchemeConfigField,
+    ) -> None:
     def _evaluate_f(ind: list) -> Tuple[int]:
         ret = 0
         for x in ind:
@@ -38,7 +42,10 @@ def _test0_wrap_evaluate_f(cfg: EvoSchemeConfigField):
         return ret,
     return _evaluate_f
 
-def _test0_validate_result_f(cfg: EvoSchemeConfigField, last_popultaion: list) -> Tuple[bool, List]:
+def _test0_validate_result_f(
+    cfg: EvoSchemeConfigField,
+    last_popultaion: list,
+    ) -> Tuple[bool, List]:
     expected = cfg.HromoLen
     for ind in last_popultaion:
         actual = 0
@@ -48,7 +55,9 @@ def _test0_validate_result_f(cfg: EvoSchemeConfigField, last_popultaion: list) -
             return True, ind
     return False, None
 
-def _test0_wrap_evo_callback(cfg: EvoSchemeConfigField):
+def _test0_wrap_evo_callback(
+    cfg: EvoSchemeConfigField,
+    ) -> None:
     fig, ax = plt.subplots()
     fig.set_size_inches(_FIG_WEIGHT_INCHES, _FIG_HEIGHT_INCHES)
 
@@ -74,7 +83,9 @@ def _test0_wrap_evo_callback(cfg: EvoSchemeConfigField):
 
 # Test 1 implementations
 
-def _test1_wrap_evaluate_f(cfg: EvoSchemeConfigField):
+def _test1_wrap_evaluate_f(
+    cfg: EvoSchemeConfigField,
+    ) -> None:
     def _evaluate_f(ind: list) -> Tuple[float]:
         x, y = ind
         return (x**2+y-11)**2+(x+y**2-7)**2,
@@ -86,7 +97,10 @@ _TEST_1_EXPECTED = (
     (-3.779310,-3.283186),(3.584458,-1.848126),
 )
 
-def _test1_validate_result_f(cfg: EvoSchemeConfigField, last_popultaion: list) -> Tuple[bool, List]:
+def _test1_validate_result_f(
+    cfg: EvoSchemeConfigField,
+    last_popultaion: list,
+    ) -> Tuple[bool, List]:
     for ind in last_popultaion:
         expected_x, expected_y = ind
         for coords in _TEST_1_EXPECTED:
@@ -96,7 +110,9 @@ def _test1_validate_result_f(cfg: EvoSchemeConfigField, last_popultaion: list) -
                 return True, ind
     return False, None
 
-def _test1_wrap_evo_callback(cfg: EvoSchemeConfigField):
+def _test1_wrap_evo_callback(
+    cfg: EvoSchemeConfigField,
+    ) -> None:
     fig, ax = plt.subplots()
     fig.set_size_inches(_FIG_WEIGHT_INCHES, _FIG_HEIGHT_INCHES)
 
@@ -153,7 +169,9 @@ def _test2_validate_result_f(
                 return True, ind
     return False, None
 
-def _test2_wrap_evo_callback(cfg: EvoSchemeConfigField):
+def _test2_wrap_evo_callback(
+    cfg: EvoSchemeConfigField,
+    ) -> None:
     fig, ax = plt.subplots()
     fig.set_size_inches(_FIG_WEIGHT_INCHES, _FIG_HEIGHT_INCHES)
 
@@ -239,8 +257,8 @@ def _test2_toolbox_setup_f(
 
 _TEST_CFG_KEY_NAME              = 'name'
 _TEST_CFG_KEY_CFG               = 'cfg'
-_TEST_CFG_KEY_WRAP_IND_CRATOR_F = 'wrap_ind_creator_f'
 _TEST_CFG_KEY_WRAP_EVALUATR_F   = 'wrap_evaluate_f'
+_TEST_CFG_KEY_WRAP_IND_CRATOR_F = 'wrap_ind_creator_f'
 _TEST_CFG_KEY_WRAP_EVO_CALLBACK = 'wrap_evo_callback'
 _TEST_CFG_KEY_VALIDATE_RESULT_F = 'valitate_result_f'
 _TEST_CFG_KEY_TOOLBOX_SETUP_F   = 'toolbox_setup_f'
@@ -372,7 +390,7 @@ _TESTS = [
                     {'key':'low','val':-512},
                     {'key':'up','val':512},
                     {'key':'eta','val':5},
-                    {'key':'indpb','val':0.8},
+                    {'key':'indpb','val':1.},
                 ],
                 # 'method': 'dynoMutGauss',
                 # 'probability': 0.1,
