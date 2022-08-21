@@ -1,4 +1,5 @@
-import pshipilov_dev.src.evo.evo_scheme_test as evo_scheme_test
+import pshipilov_dev.src.evo.test.evo_scheme_test as evo_scheme_test
+import pshipilov_dev.src.evo.test.evo_scheme_multi_pop_test as evo_scheme_multi_pop_test
 import pshipilov_dev.src.grid as grid
 import pshipilov_dev.src.lorenz as lorenz
 import pshipilov_dev.src.utils as utils
@@ -43,20 +44,13 @@ _MODE_GRID = 'grid'
 _MODE_EVO_SCHEME_1 = 'evo_scheme_1'
 _MODE_EVO_SCHEME_2 = 'evo_scheme_2'
 
-_KVARGS_ARGS = 'args'
-
-def _get_args_via_kvargs(kvargs):
-    ret = None
-    if _KVARGS_ARGS in kvargs:
-        ret = kvargs[_KVARGS_ARGS]
-    return ret
-
-
 def run_tests(**kvargs):
-    evo_scheme_test.run_tests(**kvargs)
+    # TODO :
+    # evo_scheme_test.run_tests(**kvargs)
+    evo_scheme_multi_pop_test.run_tests(**kvargs)
 
 def run_scheme1(**kvargs):
-    args = _get_args_via_kvargs(**kvargs)
+    args = utils.get_args_via_kvargs(**kvargs)
     logger = log.get_logger_via_kvargs(**kvargs)
 
     # scheme = Scheme_1(base.Toolbox(), args)
@@ -66,7 +60,7 @@ def run_scheme1(**kvargs):
     # dump.do(logger=logger, evo_scheme=scheme)
 
 def run_scheme2(**kvargs):
-    args = _get_args_via_kvargs(**kvargs)
+    args = utils.get_args_via_kvargs(**kvargs)
     logger = log.get_logger_via_kvargs(**kvargs)
 
     scheme = Scheme_2(base.Toolbox(), args)
@@ -76,7 +70,7 @@ def run_scheme2(**kvargs):
     dump.do(logger=logger, evo_scheme=scheme)
 
 def run_grid(**kvargs):
-    args = _get_args_via_kvargs(**kvargs)
+    args = utils.get_args_via_kvargs(**kvargs)
     logger = log.get_logger_via_kvargs(**kvargs)
 
     best_params = grid.esn_lorenz_grid_search(args)

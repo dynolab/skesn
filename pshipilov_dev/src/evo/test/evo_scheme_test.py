@@ -3,22 +3,18 @@ from matplotlib import pyplot as plt
 from deap import creator, tools, base
 from typing import Any, Dict, List, Tuple
 
+import pshipilov_dev.src.evo.test.utils as utils
+import pshipilov_dev.src.evo.utils as evo_utils
+
 import random
 import logging
 import numpy as np
 
-from pshipilov_dev_run import _get_args_via_kvargs
+from ...log import get_logger
 
-from ..log import get_logger
-
-from pshipilov_dev.src.utils import get_optional_arg, kv_config_arr_to_kvargs
+from pshipilov_dev.src.utils import get_optional_arg, kv_config_arr_to_kvargs, get_args_via_kvargs
 from pshipilov_dev.src.config import EvoSchemeConfigField
 from pshipilov_dev.src.evo.evo_scheme import EvoScheme
-
-# Const
-
-_FIG_HEIGHT_INCHES = 8
-_FIG_WEIGHT_INCHES = 8
 
 # Test 0 implementations
 
@@ -59,7 +55,7 @@ def _test0_wrap_evo_callback(
     cfg: EvoSchemeConfigField,
     ) -> None:
     fig, ax = plt.subplots()
-    fig.set_size_inches(_FIG_WEIGHT_INCHES, _FIG_HEIGHT_INCHES)
+    fig.set_size_inches(utils.DEF_FIG_WEIGHT_INCHES, utils.DEF_FIG_HEIGHT_INCHES)
 
     def _evo_callback(population, gen, **kvargs):
         ax.clear()
@@ -114,7 +110,7 @@ def _test1_wrap_evo_callback(
     cfg: EvoSchemeConfigField,
     ) -> None:
     fig, ax = plt.subplots()
-    fig.set_size_inches(_FIG_WEIGHT_INCHES, _FIG_HEIGHT_INCHES)
+    fig.set_size_inches(utils.DEF_FIG_WEIGHT_INCHES, utils.DEF_FIG_HEIGHT_INCHES)
 
     x_min, x_max = cfg.Limits[0].Min, cfg.Limits[0].Max
     y_min, y_max = cfg.Limits[1].Min, cfg.Limits[1].Max
@@ -173,7 +169,7 @@ def _test2_wrap_evo_callback(
     cfg: EvoSchemeConfigField,
     ) -> None:
     fig, ax = plt.subplots()
-    fig.set_size_inches(_FIG_WEIGHT_INCHES, _FIG_HEIGHT_INCHES)
+    fig.set_size_inches(utils.DEF_FIG_WEIGHT_INCHES, utils.DEF_FIG_HEIGHT_INCHES)
 
     x_min, x_max = cfg.Limits[0].Min, cfg.Limits[0].Max
     y_min, y_max = cfg.Limits[1].Min, cfg.Limits[1].Max
@@ -192,12 +188,12 @@ def _test2_wrap_evo_callback(
         halloffame: tools.HallOfFame = kvargs.get('halloffame', None)
 
         radius = 100.
-        _radius_iter_points(
+        utils.radius_iter_points(
             halloffame.items,
             _TEST_2_EXPECTED,
             radius,
-            _radius_log_callback(_test_logger, 'test #2 - find point in radius {radius} ({x}, {y}), error: {r}', radius=radius),
-            _radius_highlight_callback(ax, marker='X', color='green', zorder=1),
+            utils.radius_log_callback(_test_logger, 'test #2 - find point in radius {radius} ({x}, {y}), error: {r}', radius=radius),
+            utils.radius_highlight_callback(ax, marker='X', color='green', zorder=1),
         )
 
         ax.scatter(*zip(*halloffame.items), marker='o', color='blue', zorder=1)
@@ -253,24 +249,14 @@ def _test2_toolbox_setup_f(
     ret_toolbox.register('new_population', _new_population_override)
     return ret_toolbox
 
-# Test config params
-
-_TEST_CFG_KEY_NAME              = 'name'
-_TEST_CFG_KEY_CFG               = 'cfg'
-_TEST_CFG_KEY_WRAP_EVALUATR_F   = 'wrap_evaluate_f'
-_TEST_CFG_KEY_WRAP_IND_CRATOR_F = 'wrap_ind_creator_f'
-_TEST_CFG_KEY_WRAP_EVO_CALLBACK = 'wrap_evo_callback'
-_TEST_CFG_KEY_VALIDATE_RESULT_F = 'valitate_result_f'
-_TEST_CFG_KEY_TOOLBOX_SETUP_F   = 'toolbox_setup_f'
-_TEST_CFG_KEY_DISABLE           = 'disable'
 
 # Tests main configuration
 
 _TESTS = [
     {
-        # _TEST_CFG_KEY_DISABLE: True,
-        _TEST_CFG_KEY_NAME: 'one_max',
-        _TEST_CFG_KEY_CFG: {
+        # utils.TEST_CFG_KEY_DISABLE: True,
+        utils.TEST_CFG_KEY_NAME: 'one_max',
+        utils.TEST_CFG_KEY_CFG: {
             'rand_seed': 1,
             'max_gen_num': 150,
             'population_size': 50,
@@ -299,15 +285,15 @@ _TESTS = [
                 {'name': 'avg','func': 'mean','package': 'numpy'},
             ],
         },
-        _TEST_CFG_KEY_WRAP_IND_CRATOR_F: _test0_wrap_ind_creator_f,
-        _TEST_CFG_KEY_WRAP_EVALUATR_F: _test0_wrap_evaluate_f,
-        _TEST_CFG_KEY_VALIDATE_RESULT_F: _test0_validate_result_f,
-        _TEST_CFG_KEY_WRAP_EVO_CALLBACK: _test0_wrap_evo_callback,
+        utils.TEST_CFG_KEY_WRAP_IND_CRATOR_F: _test0_wrap_ind_creator_f,
+        utils.TEST_CFG_KEY_WRAP_EVALUATR_F: _test0_wrap_evaluate_f,
+        utils.TEST_CFG_KEY_VALIDATE_RESULT_F: _test0_validate_result_f,
+        utils.TEST_CFG_KEY_WRAP_EVO_CALLBACK: _test0_wrap_evo_callback,
     },
     {
-        # _TEST_CFG_KEY_DISABLE: True,
-        _TEST_CFG_KEY_NAME: 'himmelblau',
-        _TEST_CFG_KEY_CFG: {
+        # utils.TEST_CFG_KEY_DISABLE: True,
+        utils.TEST_CFG_KEY_NAME: 'himmelblau',
+        utils.TEST_CFG_KEY_CFG: {
             'rand_seed': 3,
             'max_gen_num': 150,
             'population_size': 30,
@@ -351,24 +337,26 @@ _TESTS = [
                 {'name': 'avg','func': 'mean','package': 'numpy'},
             ],
         },
-        _TEST_CFG_KEY_WRAP_EVALUATR_F: _test1_wrap_evaluate_f,
-        _TEST_CFG_KEY_WRAP_EVO_CALLBACK: _test1_wrap_evo_callback,
-        _TEST_CFG_KEY_VALIDATE_RESULT_F: _test1_validate_result_f,
+        utils.TEST_CFG_KEY_WRAP_EVALUATR_F: _test1_wrap_evaluate_f,
+        utils.TEST_CFG_KEY_WRAP_EVO_CALLBACK: _test1_wrap_evo_callback,
+        utils.TEST_CFG_KEY_VALIDATE_RESULT_F: _test1_validate_result_f,
     },
     {
-        # _TEST_CFG_KEY_DISABLE: True,
-        _TEST_CFG_KEY_NAME: 'eggholder',
-        _TEST_CFG_KEY_CFG: {
+        # utils.TEST_CFG_KEY_DISABLE: True,
+        utils.TEST_CFG_KEY_NAME: 'eggholder',
+        utils.TEST_CFG_KEY_CFG: {
             'rand_seed': 12,
-            'max_gen_num': 1000,
-            'population_size': 150,
+            'max_gen_num': 100,
+
             'hromo_len': 2,
-            'hall_of_fame': 7,
 
             'fitness_weights': [-1.0,],
 
+            'population_size': 150,
+            'hall_of_fame': 7,
+
             'select': {
-                # 'method': 'selRoulette',
+            # 'method': 'selRoulette',
                 'method': 'selTournament',
                 'args': [
                     {'key': 'tournsize','val': 2},
@@ -405,6 +393,7 @@ _TESTS = [
                 {'min': -512, 'max': 512},
                 {'min': -512, 'max': 512},
             ],
+
             'metrics': [
                 {
                     'name':'min',
@@ -417,28 +406,34 @@ _TESTS = [
                 {'name':'avg','func':'mean','package': 'numpy'},
             ],
         },
-        _TEST_CFG_KEY_WRAP_EVALUATR_F: _test2_wrap_evaluate_f,
-        _TEST_CFG_KEY_WRAP_EVO_CALLBACK: _test2_wrap_evo_callback,
-        _TEST_CFG_KEY_VALIDATE_RESULT_F: _test2_validate_result_f,
-        _TEST_CFG_KEY_TOOLBOX_SETUP_F: _test2_toolbox_setup_f,
+        utils.TEST_CFG_KEY_WRAP_EVALUATR_F: _test2_wrap_evaluate_f,
+        utils.TEST_CFG_KEY_WRAP_EVO_CALLBACK: _test2_wrap_evo_callback,
+        utils.TEST_CFG_KEY_VALIDATE_RESULT_F: _test2_validate_result_f,
+        utils.TEST_CFG_KEY_TOOLBOX_SETUP_F: _test2_toolbox_setup_f,
     },
 ]
 
 # Main test logger
 _test_logger: logging.Logger = None
 
-_DEF_TEST_DUMP_DIR = 'pshipilov_dev/dumps/tests'
-
 def run_tests(**kvargs):
     global _test_logger
-    _test_logger = get_logger(name='tests', level='debug')
+    _test_logger = get_logger(name='Test<evo_scheme>', level='debug')
 
-    args = _get_args_via_kvargs(kvargs)
+    args = get_args_via_kvargs(kvargs)
     disable_iter_graph = get_optional_arg(args, 'test_disable_iter_graph', default=False)
     disable_stat_graph = get_optional_arg(args, 'test_disable_stat_graph', default=False)
     disable_dump = get_optional_arg(args, 'test_disable_dump', default=False)
     restore_result = get_optional_arg(args, 'test_restore_result', default=False)
-    tests_dumpdir = get_optional_arg(args, 'test_dump_dir', default=_DEF_TEST_DUMP_DIR)
+    tests_dumpdir = get_optional_arg(args, 'test_dump_dir', default=utils.DEF_TEST_DUMP_DIR)
+
+    if len(tests_dumpdir) == 0:
+        tests_dumpdir = './'
+
+    if ord(tests_dumpdir[len(tests_dumpdir)-1]) != ord('/'):
+        tests_dumpdir += '/'
+
+    tests_dumpdir += 'evo_scheme/'
 
     if not disable_iter_graph:
         plt.ion()
@@ -447,10 +442,10 @@ def run_tests(**kvargs):
     metricValuesMap = {}
 
     for i, test in enumerate(_TESTS):
-        if not _validate_test(test, i, _test_logger):
+        if not utils.validate_test(test, i, _test_logger):
             continue
 
-        disable = test.get(_TEST_CFG_KEY_DISABLE, False)
+        disable = test.get(utils.TEST_CFG_KEY_DISABLE, False)
         if disable:
             _test_logger.info('test #%d - skip test (disabled)', i)
             continue
@@ -459,31 +454,43 @@ def run_tests(**kvargs):
 
         # Evo scheme prepare
         cfg = EvoSchemeConfigField()
-        cfg.load(test[_TEST_CFG_KEY_CFG])
-        name = test[_TEST_CFG_KEY_NAME] if _TEST_CFG_KEY_NAME in test else f'test_#{i}'
-        ind_creator_f = test[_TEST_CFG_KEY_WRAP_IND_CRATOR_F](cfg) if test.get(_TEST_CFG_KEY_WRAP_IND_CRATOR_F, None) is not None else None
-        evo_callback = test[_TEST_CFG_KEY_WRAP_EVO_CALLBACK](cfg) if not disable_iter_graph and test.get(_TEST_CFG_KEY_WRAP_EVO_CALLBACK, None) is not None else None
-        toolbox = test[_TEST_CFG_KEY_TOOLBOX_SETUP_F](cfg) if test.get(_TEST_CFG_KEY_TOOLBOX_SETUP_F, None) is not None else None
+        cfg.load(test[utils.TEST_CFG_KEY_CFG])
+        name = test[utils.TEST_CFG_KEY_NAME] if utils.TEST_CFG_KEY_NAME in test else f'test_#{i}'
+        ind_creator_f = test[utils.TEST_CFG_KEY_WRAP_IND_CRATOR_F](cfg) if test.get(utils.TEST_CFG_KEY_WRAP_IND_CRATOR_F, None) is not None else None
+        evo_callback = test[utils.TEST_CFG_KEY_WRAP_EVO_CALLBACK](cfg) if not disable_iter_graph and test.get(utils.TEST_CFG_KEY_WRAP_EVO_CALLBACK, None) is not None else None
+        toolbox = test[utils.TEST_CFG_KEY_TOOLBOX_SETUP_F](cfg) if test.get(utils.TEST_CFG_KEY_TOOLBOX_SETUP_F, None) is not None else None
+
         scheme = EvoScheme(
             name,
             cfg,
-            test[_TEST_CFG_KEY_WRAP_EVALUATR_F](cfg),
+            test[utils.TEST_CFG_KEY_WRAP_EVALUATR_F](cfg),
             ind_creator_f,
             toolbox,
         )
+
+        dumpdir = f'{tests_dumpdir}/test_{i}_{name}'
+
+        if restore_result:
+            restored_result = evo_utils.get_evo_scheme_result_last_run_pool(
+                evo_utils.get_evo_scheme_result_from_file,
+                creator.Individual,
+                cfg,
+                dumpdir,
+                name,
+            )
+            if restored_result is not None:
+                scheme.restore_result(restored_result)
+                _test_logger.info('restored result has been set')
+            else:
+                _test_logger.warn('restored result has not been set')
 
         # Set random state
         random.seed(cfg.RandSeed)
         np.random.seed(cfg.RandSeed)
 
         stop_cond = None
-        if _TEST_CFG_KEY_VALIDATE_RESULT_F in test:
-            stop_cond = lambda population, gen, **kvargs: test[_TEST_CFG_KEY_VALIDATE_RESULT_F](cfg, population)[0]
-
-        dumpdir = f'{tests_dumpdir}/test_{i}_{name}'
-
-        if restore_result:
-            scheme.restore_population_last_run_pool(dumpdir)
+        if utils.TEST_CFG_KEY_VALIDATE_RESULT_F in test:
+            stop_cond = lambda population, gen, **kvargs: test[utils.TEST_CFG_KEY_VALIDATE_RESULT_F](cfg, population)[0]
 
         # Action
         scheme.run(callback=evo_callback, stop_cond=stop_cond)
@@ -496,9 +503,9 @@ def run_tests(**kvargs):
             metricValuesMap[i] = cfg.Metrics, logbook.select(*[metric.Name for metric in cfg.Metrics])
 
         # Assert
-        if _TEST_CFG_KEY_VALIDATE_RESULT_F in test:
+        if utils.TEST_CFG_KEY_VALIDATE_RESULT_F in test:
             validation_inds = scheme.get_hall_of_fame().items if cfg.HallOfFame > 0 else scheme.get_last_population()
-            ok, sol = test[_TEST_CFG_KEY_VALIDATE_RESULT_F](cfg, validation_inds)
+            ok, sol = test[utils.TEST_CFG_KEY_VALIDATE_RESULT_F](cfg, validation_inds)
             if ok:
                 _test_logger.info('test #%d - successful (one of solution: [%s])', i, ','.join(map(str, sol)))
             else:
@@ -530,69 +537,3 @@ def run_tests(**kvargs):
 
     if not disable_stat_graph:
         plt.show()
-
-# Utils
-
-def _validate_test(test: dict, num: int, logger: logging.Logger) -> bool:
-    rules = [
-        # {
-        #     'msg': f'skip test #{num}, validation error: len args is not in range [2,8]',
-        #     'cond': lambda test: len(test) < 2 or len(test) > 8,
-        # },
-        {
-            'msg': f'skip test #{num}, validation error: test doesn\'t contain arg "{_TEST_CFG_KEY_CFG}"',
-            'cond': lambda test: _TEST_CFG_KEY_CFG not in test,
-        },
-        # {
-        #     'msg': f'skip test #{num}, validation error: test doesn\'t contain arg "{_WRAP_IND_CRATOR_F_ARG}"',
-        #     'cond': lambda test: _WRAP_IND_CRATOR_F_ARG not in test,
-        # },
-        {
-            'msg': f'skip test #{num}, validation error: test doesn\'t contain arg "{_TEST_CFG_KEY_WRAP_EVALUATR_F}"',
-            'cond': lambda test: _TEST_CFG_KEY_WRAP_EVALUATR_F not in test,
-        },
-        # {
-        #     'msg': f'skip test #{num}, validation error: test doesn\'t contain arg "{_VALIDATE_RESULT_F}"',
-        #     'cond': lambda test: _VALIDATE_RESULT_F not in test,
-        # },
-    ]
-
-    for rule in rules:
-        if rule['cond'](test):
-            logger.error(rule['msg'])
-            return False
-    return True
-
-# Radius API functions: iterate 2D points and search points in radius by center points and call callbacks functions on it
-
-def _radius_iter_points(
-    points: List[Tuple[float,float]],
-    centers: List[Tuple[float, float]],
-    radius: float,
-    *callbacks: List[FunctionType],
-) -> None:
-    for x, y in points:
-        for c_x, c_y in centers:
-            r = np.sqrt((x-c_x)**2+(y-c_y)**2)
-            if r <= radius:
-                for callback in callbacks:
-                    callback(x=x, y=y, r=r)
-
-def _radius_log_callback(
-    logger: logging.Logger,
-    pattern: str,
-    **kvargs: Dict[str, Any],
-) -> FunctionType:
-    return lambda x, y, r: logger.info(pattern.format(x=x, y=y, r=r, **kvargs))
-
-def _radius_highlight_callback(
-    ax: plt.Axes,
-    **kvargs: Dict[str, Any],
-) -> FunctionType:
-    if 'marker' not in kvargs:
-        kvargs['marker'] = 'X'
-    if 'color' not in kvargs:
-        kvargs['color'] = 'green'
-    if 'zorder' not in kvargs:
-        kvargs['zorder'] = 1
-    return lambda x, y, r: ax.scatter(x, y, **kvargs)

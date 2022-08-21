@@ -264,6 +264,105 @@ class EvoMetricConfigField(ConfigSection):
             'plt_args': _yaml_config_section_arr(self._plt_args),
         }
 
+class EvoPopulationConfigField(ConfigSection):
+    @property
+    def IncludingCount(self) -> int: return self._including_count
+    @property
+    def HallOfFame(self) -> int: return self._hall_of_fame
+
+    @property
+    def Size(self) -> int: return self._size
+
+    @property
+    def Select(self) -> EvoSelectConfigField: return self._select
+    @property
+    def Mate(self) -> EvoMateConfigField: return self._mate
+    @property
+    def Mutate(self) -> EvoMutateConfigField: return self._mutate
+
+    @property
+    def Limits(self) -> List[EvoLimitGenConfigField]: return self._limits
+
+    def __init__(self) -> None:
+        self._including_count:     int = 1
+        self._hall_of_fame:        int = 0
+
+        self._size:     int = NecessaryField
+
+        self._select: EvoSelectConfigField = EvoSelectConfigField()
+        self._mate:   EvoMateConfigField   = EvoMateConfigField()
+        self._mutate: EvoMutateConfigField = EvoMutateConfigField()
+
+        self._limits: List[EvoLimitGenConfigField] = []
+
+    def load(self, cfg: dict) -> None:
+        self._size            = Config.get_necessary_value(cfg, 'size', self._size)
+        self._including_count = Config.get_optional_value(cfg, 'including_count', self._including_count)
+        self._hall_of_fame    = Config.get_optional_value(cfg, 'hall_of_fame', self._including_count)
+
+        self._select.load(Config.get_necessary_value(cfg, 'select', self._select))
+        self._mate.load(Config.get_necessary_value(cfg, 'mate', self._mate))
+        self._mutate.load(Config.get_necessary_value(cfg, 'mutate', self._mutate))
+
+        self._limits = Config.get_optional_arr_value(cfg, 'limits', EvoLimitGenConfigField, self._limits)
+
+    def yaml(self) -> dict:
+        return {
+            'including_count': self._including_count,'hall_of_fame': self._hall_of_fame,'size': self._size,
+            'select': self._select.yaml(),'mate': self._mate.yaml(),'mutate': self._mutate.yaml(),
+            'limits': _yaml_config_section_arr(self._limits),
+        }
+
+
+class EvoSchemeMultiPopConfigField(ConfigSection):
+    @property
+    def MaxGenNum(self) -> int: return self._max_gen_num
+    @property
+    def RandSeed(self) -> int: return self._rand_seed
+    @property
+    def HromoLen(self) -> int: return self._hromo_len
+    @property
+    def Verbose(self) -> bool: return self._verbose
+
+    @property
+    def FitnessWeights(self) -> List[float]: return self._fitness_weights
+
+    @property
+    def Populations(self) -> List[EvoPopulationConfigField]: return self._populations
+    @property
+    def Metrics(self) -> List[EvoMetricConfigField]: return self._metrics
+
+    def __init__(self) -> None:
+        self._max_gen_num:     int = NecessaryField
+        self._rand_seed:       int = NecessaryField
+        self._hromo_len:       int = NecessaryField
+        self._verbose:         bool = False
+
+        self._fitness_weights: list[float] = NecessaryField
+
+        self._populations: List[EvoPopulationConfigField] = NecessaryField
+        self._metrics:     List[EvoMetricConfigField] = []
+
+    def load(self, cfg: dict) -> None:
+        self._max_gen_num     = Config.get_necessary_value(cfg, 'max_gen_num', self._max_gen_num)
+        self._rand_seed       = Config.get_necessary_value(cfg, 'rand_seed', self._rand_seed)
+        self._hromo_len       = Config.get_necessary_value(cfg, 'hromo_len', self._hromo_len)
+        self._verbose         = Config.get_optional_value(cfg, 'verbose', self._verbose)
+
+        self._fitness_weights = Config.get_necessary_value(cfg, 'fitness_weights', self._fitness_weights)
+
+        self._populations = Config.get_necessary_arr_value(cfg, 'populations', EvoPopulationConfigField, self._populations)
+        self._metrics     = Config.get_optional_arr_value(cfg, 'metrics', EvoMetricConfigField, self._metrics)
+
+    def yaml(self) -> dict:
+        return {
+            'max_gen_num': self._max_gen_num, 'rand_seed': self._rand_seed, 'hromo_len': self._hromo_len,
+            'fitness_weights': self._fitness_weights,'verbose': self._verbose,
+            'populations': _yaml_config_section_arr(self._populations),'metrics': _yaml_config_section_arr(self._metrics),
+        }
+
+
+
 class EvoSchemeConfigField(ConfigSection):
     @property
     def MaxGenNum(self) -> int: return self._max_gen_num

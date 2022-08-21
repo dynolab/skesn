@@ -51,3 +51,11 @@ def kv_config_arr_to_kvargs(
     for kv in args:
         ret[kv.Key] = kv.Val
     return ret
+
+_KVARGS_ARGS = 'args'
+
+def get_args_via_kvargs(kvargs):
+    ret = None
+    if _KVARGS_ARGS in kvargs:
+        ret = kvargs[_KVARGS_ARGS]
+    return ret

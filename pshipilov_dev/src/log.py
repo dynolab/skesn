@@ -32,7 +32,7 @@ def get_logger(**kvargs) -> logging.Logger:
     if not os.path.exists(logdir):
         os.makedirs(logdir)
 
-    if len(logdir) > 0 and logdir[len(logdir)-1] != ord('/'):
+    if len(logdir) > 0 and ord(logdir[len(logdir)-1]) != ord('/'):
         logdir += '/'
 
     filename = f"{logdir}{str(date.today()).replace('-', '_')}_log"

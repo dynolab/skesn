@@ -38,7 +38,7 @@ def _create_framedir(args=None) -> str:
     else:
         dumpdir = Config.Dump.Dir
 
-    if len(dumpdir) > 0 and dumpdir[len(dumpdir)-1] != ord('/'):
+    if len(dumpdir) > 0 and ord(dumpdir[len(dumpdir)-1]) != ord('/'):
         dumpdir += '/'
 
     if not os.path.isdir(dumpdir):
