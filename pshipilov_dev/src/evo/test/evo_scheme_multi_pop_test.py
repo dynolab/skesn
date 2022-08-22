@@ -433,7 +433,7 @@ _TESTS = [
                         {'min': -5, 'max': 5},
                     ],
                 },
-                                {
+                {
                     'size': 30,
                     'hall_of_fame': 3,
 
@@ -577,7 +577,7 @@ _TESTS = [
                         {'min': -512, 'max': 512},
                     ],
                 },
-{
+                {
                     'size': 50,
                     'hall_of_fame': 7,
 
