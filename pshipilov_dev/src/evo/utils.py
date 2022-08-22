@@ -497,6 +497,19 @@ def get_populations_cnt(
         ret += pop_cfg.IncludingCount
     return ret
 
+def get_max_population_size(
+    cfg: EvoSchemeMultiPopConfigField,
+) -> int:
+    if cfg.Populations is None or len(cfg.Populations) == 0:
+        return 0
+
+    max = cfg.Populations[0].Size
+    for pop_cfg in cfg.Populations:
+        if pop_cfg.Size > max:
+            max = pop_cfg.Size
+    return max
+
+
 def create_ind_by_list(
     list_ind: List,
     evaluate_f: FunctionType,

@@ -63,21 +63,23 @@ def _test0_wrap_evo_callback(
     for i in range(populations_cnt):
         colors[i] = utils.get_next_color()
 
+    max_pop_size = evo_utils.get_max_population_size(cfg)
+
     def _evo_callback(populations, gen, **kvargs):
         ax.clear()
 
+        ax.set_xlim(0, max_pop_size + 1)
+        ax.set_ylim(0, cfg.HromoLen + 1)
+
+        ax.set_xlabel('idx')
+        ax.set_ylabel('fitness')
+
+        ax.set_title(f'evo_scheme_multi_pop\ntest #0\ngeneration = {gen}')
+
         for i, population in enumerate(populations):
-            ax.set_xlim(0, population.Size + 1)
-            ax.set_ylim(0, cfg.HromoLen + 1)
-
-            ax.set_xlabel('idx')
-            ax.set_ylabel('fitness')
-
-            ax.set_title(f'evo_scheme_multi_pop\ntest #0\ngeneration = {gen}')
-
             points = [0] * population.Size
             for j in range(population.Size):
-                points[j] = (j, population.Inds[j].fitness.values[0] * population.Inds[j].fitness.weights[0])
+                points[j] = (j, np.dot(population.Inds[j].fitness.weights, population.Inds[j].fitness.values))
             ax.scatter(*zip(*points), color=colors[i], s=2, zorder=0)
 
         plt.pause(0.001)
@@ -139,18 +141,19 @@ def _test1_wrap_evo_callback(
     def _evo_callback(populations, gen, **kvargs):
         ax.clear()
 
+        ax.set_xlim(x_min - x_min * 0.1, x_max + x_max * 0.1)
+        ax.set_ylim(y_min - y_min * 0.1, y_max + y_max * 0.1)
+
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+
+        ax.set_title(f'evo_scheme_multi_pop\ntest #1\ngeneration = {gen}')
+
+        ax.contour(x_grid, y_grid, f_expected)
+        ax.scatter(*zip(*_TEST_1_EXPECTED), marker='X', color='red', zorder=1)
+
         for i, population in enumerate(populations):
-            ax.set_xlim(x_min - x_min * 0.1, x_max + x_max * 0.1)
-            ax.set_ylim(y_min - y_min * 0.1, y_max + y_max * 0.1)
-
-            ax.set_xlabel('x')
-            ax.set_ylabel('y')
-
-            ax.set_title(f'evo_scheme_multi_pop\ntest #1\ngeneration = {gen}')
-
-            ax.contour(x_grid, y_grid, f_expected)
             ax.scatter(*zip(*population.Inds), color=colors[i], s=2, zorder=0)
-            ax.scatter(*zip(*_TEST_1_EXPECTED), marker='X', color='red', zorder=1)
 
         plt.pause(0.01)
 
@@ -208,6 +211,22 @@ def _test2_wrap_evo_callback(
     def _evo_callback(populations, gen, **kvargs):
         ax.clear()
 
+        ax.set_xlim(x_min - x_min * 0.05, x_max + x_max * 0.05)
+        ax.set_ylim(y_min - y_min * 0.05, y_max + y_max * 0.05)
+
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+
+        ax.set_xticks(ticks)
+        ax.set_xticklabels(ticks_labels)
+        ax.set_yticks(ticks)
+        ax.set_yticklabels(ticks_labels)
+
+        ax.set_title(f'evo_scheme_multi_pop\ntest #2\ngeneration = {gen}')
+
+        ax.scatter(*zip(*_TEST_2_EXPECTED), marker='X', color='red', zorder=1)
+
+        best = populations[0].HallOfFame[0]
         for i, population in enumerate(populations):
             radius = 100.
             utils.radius_iter_points(
@@ -218,26 +237,16 @@ def _test2_wrap_evo_callback(
                 utils.radius_highlight_callback(ax, marker='X', color='green', zorder=1),
             )
 
+            for item in population.HallOfFame.items:
+                if np.dot(item.fitness.weights, item.fitness.values) > np.dot(best.fitness.weights, best.fitness.values):
+                    best = item
+
             ax.scatter(*zip(*population.HallOfFame.items), marker='o', color='blue', zorder=1)
-            best = population.HallOfFame.items[0]
-            ax.text(-600, 650, f'best: ({best[0]};{best[1]}); value: {best.fitness.values[0]}')
-
-            ax.set_xlim(x_min - x_min * 0.05, x_max + x_max * 0.05)
-            ax.set_ylim(y_min - y_min * 0.05, y_max + y_max * 0.05)
-
-            ax.set_xlabel('x')
-            ax.set_ylabel('y')
-
-            ax.set_xticks(ticks)
-            ax.set_xticklabels(ticks_labels)
-            ax.set_yticks(ticks)
-            ax.set_yticklabels(ticks_labels)
-
-            ax.set_title(f'evo_scheme_multi_pop\ntest #2\ngeneration = {gen}')
 
             # ax.contour(x_grid, y_grid, f_expected, levels=5)
             ax.scatter(*zip(*population.Inds), color=colors[i], s=2, zorder=0)
-            ax.scatter(*zip(*_TEST_2_EXPECTED), marker='X', color='red', zorder=1)
+
+        ax.text(-600, 650, f'best: ({best[0]};{best[1]}); value: {np.dot(best.fitness.weights, best.fitness.values)}')
 
         plt.pause(0.0001)
 
@@ -318,7 +327,7 @@ _TESTS = [
         utils.TEST_CFG_KEY_WRAP_EVO_CALLBACK: _test0_wrap_evo_callback,
     },
     {
-        # utils.TEST_CFG_KEY_DISABLE: True,
+        utils.TEST_CFG_KEY_DISABLE: True,
         utils.TEST_CFG_KEY_NAME: 'himmelblau',
         utils.TEST_CFG_KEY_CFG: {
             'rand_seed': 3,
@@ -492,76 +501,33 @@ _TESTS = [
 
             'populations': [
                 {
-                    'size': 50,
-                    'hall_of_fame': 7,
+                    'size': 30,
+                    'hall_of_fame': 5,
 
                     'select': {
                     # 'method': 'selRoulette',
                         'method': 'selTournament',
                         'args': [
-                            {'key': 'tournsize','val': 2},
+                            {'key': 'tournsize','val': 3},
                         ],
                     },
                     'mate': {
                         'probability': 0.8,
                         'method': 'cxSimulatedBinaryBounded',
-                        'args': [
-                            {'key':'low','val':-512},
-                            {'key':'up','val':512},
-                            {'key':'eta','val':20},
-                        ],
-                    },
-                    'mutate': {
-                        'method': 'mutPolynomialBounded',
-                        'probability': 0.3,
                         'args': [
                             {'key':'low','val':-512},
                             {'key':'up','val':512},
                             {'key':'eta','val':5},
-                            {'key':'indpb','val':1.},
-                        ],
-                        # 'method': 'dynoMutGauss',
-                        # 'probability': 0.1,
-                        # 'args': [
-                        #     {'key':'low','val':-512},
-                        #     {'key':'up','val':512},
-                        #     {'key':'sigma','val':0.3},
-                        # ],
-                    },
-
-                    'limits': [
-                        {'min': -512, 'max': 512},
-                        {'min': -512, 'max': 512},
-                    ],
-                },
-                {
-                    'size': 50,
-                    'hall_of_fame': 7,
-
-                    'select': {
-                    # 'method': 'selRoulette',
-                        'method': 'selTournament',
-                        'args': [
-                            {'key': 'tournsize','val': 2},
-                        ],
-                    },
-                    'mate': {
-                        'probability': 0.8,
-                        'method': 'cxSimulatedBinaryBounded',
-                        'args': [
-                            {'key':'low','val':-512},
-                            {'key':'up','val':512},
-                            {'key':'eta','val':15},
                         ],
                     },
                     'mutate': {
                         'method': 'mutPolynomialBounded',
-                        'probability': 0.3,
+                        'probability': 0.2,
                         'args': [
                             {'key':'low','val':-512},
                             {'key':'up','val':512},
-                            {'key':'eta','val':10},
-                            {'key':'indpb','val':1.},
+                            {'key':'eta','val':5},
+                            # {'key':'indpb','val':1.},
                         ],
                         # 'method': 'dynoMutGauss',
                         # 'probability': 0.1,
@@ -578,8 +544,8 @@ _TESTS = [
                     ],
                 },
                 {
-                    'size': 50,
-                    'hall_of_fame': 7,
+                    'size': 30,
+                    'hall_of_fame': 5,
 
                     'select': {
                     # 'method': 'selRoulette',
@@ -603,8 +569,8 @@ _TESTS = [
                         'args': [
                             {'key':'low','val':-512},
                             {'key':'up','val':512},
-                            {'key':'eta','val':15},
-                            {'key':'indpb','val':1.},
+                            {'key':'eta','val':10},
+                            # {'key':'indpb','val':1.},
                         ],
                         # 'method': 'dynoMutGauss',
                         # 'probability': 0.1,
@@ -621,8 +587,8 @@ _TESTS = [
                     ],
                 },
                 {
-                    'size': 50,
-                    'hall_of_fame': 7,
+                    'size': 30,
+                    'hall_of_fame': 5,
 
                     'select': {
                     # 'method': 'selRoulette',
@@ -633,6 +599,92 @@ _TESTS = [
                     },
                     'mate': {
                         'probability': 0.8,
+                        'method': 'cxSimulatedBinaryBounded',
+                        'args': [
+                            {'key':'low','val':-512},
+                            {'key':'up','val':512},
+                            {'key':'eta','val':15},
+                        ],
+                    },
+                    'mutate': {
+                        'method': 'mutPolynomialBounded',
+                        'probability': 0.3,
+                        'args': [
+                            {'key':'low','val':-512},
+                            {'key':'up','val':512},
+                            {'key':'eta','val':15},
+                            # {'key':'indpb','val':1.},
+                        ],
+                        # 'method': 'dynoMutGauss',
+                        # 'probability': 0.1,
+                        # 'args': [
+                        #     {'key':'low','val':-512},
+                        #     {'key':'up','val':512},
+                        #     {'key':'sigma','val':0.3},
+                        # ],
+                    },
+
+                    'limits': [
+                        {'min': -512, 'max': 512},
+                        {'min': -512, 'max': 512},
+                    ],
+                },
+                {
+                    'size': 30,
+                    'hall_of_fame': 5,
+
+                    'select': {
+                    # 'method': 'selRoulette',
+                        'method': 'selTournament',
+                        'args': [
+                            {'key': 'tournsize','val': 2},
+                        ],
+                    },
+                    'mate': {
+                        'probability': 0.8,
+                        'method': 'cxSimulatedBinaryBounded',
+                        'args': [
+                            {'key':'low','val':-512},
+                            {'key':'up','val':512},
+                            {'key':'eta','val':20},
+                        ],
+                    },
+                    'mutate': {
+                        'method': 'mutPolynomialBounded',
+                        'probability': 0.3,
+                        'args': [
+                            {'key':'low','val':-512},
+                            {'key':'up','val':512},
+                            {'key':'eta','val':20},
+                            # {'key':'indpb','val':1.},
+                        ],
+                        # 'method': 'dynoMutGauss',
+                        # 'probability': 0.1,
+                        # 'args': [
+                        #     {'key':'low','val':-512},
+                        #     {'key':'up','val':512},
+                        #     {'key':'sigma','val':0.3},
+                        # ],
+                    },
+
+                    'limits': [
+                        {'min': -512, 'max': 512},
+                        {'min': -512, 'max': 512},
+                    ],
+                },
+                {
+                    'size': 30,
+                    'hall_of_fame': 5,
+
+                    'select': {
+                    # 'method': 'selRoulette',
+                        'method': 'selTournament',
+                        'args': [
+                            {'key': 'tournsize','val': 2},
+                        ],
+                    },
+                    'mate': {
+                        'probability': 0.7,
                         'method': 'cxSimulatedBinaryBounded',
                         'args': [
                             {'key':'low','val':-512},
@@ -647,7 +699,7 @@ _TESTS = [
                             {'key':'low','val':-512},
                             {'key':'up','val':512},
                             {'key':'eta','val':20},
-                            {'key':'indpb','val':1.},
+                            # {'key':'indpb','val':1.},
                         ],
                         # 'method': 'dynoMutGauss',
                         # 'probability': 0.1,
@@ -664,8 +716,8 @@ _TESTS = [
                     ],
                 },
                 {
-                    'size': 50,
-                    'hall_of_fame': 7,
+                    'size': 30,
+                    'hall_of_fame': 5,
 
                     'select': {
                     # 'method': 'selRoulette',
@@ -675,12 +727,12 @@ _TESTS = [
                         ],
                     },
                     'mate': {
-                        'probability': 0.8,
+                        'probability': 0.9,
                         'method': 'cxSimulatedBinaryBounded',
                         'args': [
                             {'key':'low','val':-512},
                             {'key':'up','val':512},
-                            {'key':'eta','val':15},
+                            {'key':'eta','val':20},
                         ],
                     },
                     'mutate': {
@@ -689,8 +741,8 @@ _TESTS = [
                         'args': [
                             {'key':'low','val':-512},
                             {'key':'up','val':512},
-                            {'key':'eta','val':15},
-                            {'key':'indpb','val':1.},
+                            {'key':'eta','val':5},
+                            # {'key':'indpb','val':1.},
                         ],
                         # 'method': 'dynoMutGauss',
                         # 'probability': 0.1,

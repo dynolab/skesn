@@ -112,8 +112,7 @@ class EvoSchemeMultiPop(Scheme):
 
     def save(self, dirname: str, **kvargs) -> str:
         run_pool_dir = utils.get_or_create_last_run_pool_dir(dirname, self._name)
-        iter_dir: str = utils.get_or_create_iter_dir(run_pool_dir) if self._use_restored_result\
-                else utils.create_iter_dir(run_pool_dir)
+        iter_dir = utils.create_iter_dir(run_pool_dir)
 
         len_metrics = len(self._cfg.Metrics)
         if not kvargs.get('disable_stat', False) and len_metrics > 0:
