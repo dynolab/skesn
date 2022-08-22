@@ -1,4 +1,3 @@
-from ctypes import util
 import pshipilov_dev.src.evo.utils as utils
 
 from .abstract import Scheme
@@ -6,11 +5,8 @@ from ..log import get_logger
 from ..config import EvoSchemeMultiPopConfigField, EvoPopulationConfigField
 from pshipilov_dev.src.utils import kv_config_arr_to_kvargs
 
-import os
 import yaml
 import logging
-import importlib
-import matplotlib
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -86,6 +82,8 @@ class EvoSchemeMultiPop(Scheme):
             populations=self._result,
             ngen=self._cfg.MaxGenNum,
             stats=self._stats,
+            pbcltex=0.8,
+            cltex_f=cltex,
             verbose=self._cfg.Verbose,
             **kvargs,
         )
@@ -168,6 +166,24 @@ class EvoSchemeMultiPop(Scheme):
     def get_populations(self) -> List[List[List]]:
         return self._result
 
+def cltex(
+    populations: List[algorithms.Popolation],
+) -> None:
+    base_hall_of_fame = tools.HallOfFame(3)
+    for population in populations:
+        if population.HallOfFameSize > 0:
+            base_hall_of_fame.update(population.HallOfFame.items)
+            continue
+
+    for population in populations:
+        population.Inds.sort(key=_cltex_key)
+        for i, best in enumerate(base_hall_of_fame):
+            population.Inds[i] = best
+
+def _cltex_key(
+    ind: List,
+) -> float:
+    return np.dot(ind.fitness.values, ind.fitness.weights)
 
 def _create_deap_population(
     evaluate_f: FunctionType,
