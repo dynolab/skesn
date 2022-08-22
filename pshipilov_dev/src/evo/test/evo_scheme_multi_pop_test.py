@@ -40,15 +40,16 @@ def _test0_wrap_evaluate_f(
 
 def _test0_validate_result_f(
     cfg: EvoSchemeMultiPopConfigField,
-    population: List[algorithms.Popolation],
-    ) -> Tuple[bool, List]:
+    populations: List[algorithms.Popolation],
+) -> Tuple[bool, List]:
     expected = cfg.HromoLen
-    for ind in population:
-        actual = 0
-        for x in ind:
-            actual += x
-        if actual == expected:
-            return True, ind
+    for population in populations:
+        for ind in population.Inds:
+            actual = 0
+            for x in ind:
+                actual += x
+            if actual == expected:
+                return True, ind
     return False, None
 
 def _test0_wrap_evo_callback(
@@ -57,33 +58,223 @@ def _test0_wrap_evo_callback(
     fig, ax = plt.subplots()
     fig.set_size_inches(utils.DEF_FIG_WEIGHT_INCHES, utils.DEF_FIG_HEIGHT_INCHES)
 
-    def _evo_callback(population, gen, **kvargs):
+    populations_cnt = evo_utils.get_populations_cnt(cfg)
+    colors = [0] * populations_cnt
+    for i in range(populations_cnt):
+        colors[i] = utils.get_next_color()
+
+    def _evo_callback(populations, gen, **kvargs):
         ax.clear()
 
-        pop_size = len(population)
+        for i, population in enumerate(populations):
+            ax.set_xlim(0, population.Size + 1)
+            ax.set_ylim(0, cfg.HromoLen + 1)
 
-        ax.set_xlim(0, pop_size + 1)
-        ax.set_ylim(0, cfg.HromoLen + 1)
+            ax.set_xlabel('idx')
+            ax.set_ylabel('fitness')
 
-        ax.set_xlabel('idx')
-        ax.set_ylabel('fitness')
+            ax.set_title(f'test #0\ngeneration = {gen}')
 
-        ax.set_title(f'test #0\ngeneration = {gen}')
-
-        color = utils.get_next_color()
-        points = [0] * pop_size
-        for i in range(pop_size):
-            points[i] = (i, population[i].fitness.values[0] * population[i].fitness.weights[0])
-        ax.scatter(*zip(*points), color=color, s=2, zorder=0)
+            points = [0] * population.Size
+            for j in range(population.Size):
+                points[j] = (j, population.Inds[j].fitness.values[0] * population.Inds[j].fitness.weights[0])
+            ax.scatter(*zip(*points), color=colors[i], s=2, zorder=0)
 
         plt.pause(0.001)
 
     return _evo_callback
 
+# Test 1 implementations
+
+def _test1_wrap_evaluate_f(
+    cfg: EvoSchemeMultiPopConfigField,
+) -> None:
+    def _evaluate_f(ind: list) -> Tuple[float]:
+        x, y = ind
+        return (x**2+y-11)**2+(x+y**2-7)**2,
+    return _evaluate_f
+
+_TEST_1_EPS = 1e-2
+_TEST_1_EXPECTED = (
+    (3.,2.),(-2.805118,3.131312),
+    (-3.779310,-3.283186),(3.584458,-1.848126),
+)
+
+def _test1_validate_result_f(
+    cfg: EvoSchemeMultiPopConfigField,
+    popultaions: List[algorithms.Popolation],
+) -> Tuple[bool, List]:
+    for popultaion in popultaions:
+        for ind in popultaion.Inds:
+            expected_x, expected_y = ind
+            for coords in _TEST_1_EXPECTED:
+                actual_x, actual_y = coords
+                if np.fabs(expected_x - actual_x) < _TEST_1_EPS and\
+                    np.fabs(expected_y - actual_y) < _TEST_1_EPS:
+                    return True, ind
+    return False, None
+
+def _test1_wrap_evo_callback(
+    cfg: EvoSchemeMultiPopConfigField,
+) -> None:
+    fig, ax = plt.subplots()
+    fig.set_size_inches(utils.DEF_FIG_WEIGHT_INCHES, utils.DEF_FIG_HEIGHT_INCHES)
+
+    # x_min, x_max = cfg.Limits[0].Min, cfg.Limits[0].Max
+    # y_min, y_max = cfg.Limits[1].Min, cfg.Limits[1].Max
+
+    x_min, x_max = cfg.Populations[0].Limits[0].Min, cfg.Populations[0].Limits[0].Max
+    y_min, y_max = cfg.Populations[0].Limits[1].Min, cfg.Populations[0].Limits[1].Max
+
+    x, y = np.arange(x_min, x_max, 0.1), np.arange(y_min, y_max, 0.1)
+    x_grid, y_grid = np.meshgrid(x, y)
+    eval_f = _test1_wrap_evaluate_f(cfg)
+    f_expected, = eval_f([x_grid, y_grid])
+
+    populations_cnt = evo_utils.get_populations_cnt(cfg)
+    colors = [0] * populations_cnt
+    for i in range(populations_cnt):
+        colors[i] = utils.get_next_color()
+
+    def _evo_callback(populations, gen, **kvargs):
+        ax.clear()
+
+        for i, population in enumerate(populations):
+            ax.set_xlim(x_min - x_min * 0.1, x_max + x_max * 0.1)
+            ax.set_ylim(y_min - y_min * 0.1, y_max + y_max * 0.1)
+
+            ax.set_xlabel('x')
+            ax.set_ylabel('y')
+
+            ax.set_title(f'test #1\ngeneration = {gen}')
+
+            ax.contour(x_grid, y_grid, f_expected)
+            ax.scatter(*zip(*population.Inds), color=colors[i], s=2, zorder=0)
+            ax.scatter(*zip(*_TEST_1_EXPECTED), marker='X', color='red', zorder=1)
+
+        plt.pause(0.01)
+
+    return _evo_callback
+
+# Test 2 implementations
+
+_TEST_2_EPS = 1e-2
+_TEST_2_EXPECTED = ((512.,404.2319),)
+
+def _test2_wrap_evaluate_f(
+    cfg: EvoSchemeMultiPopConfigField,
+) -> FunctionType:
+    def _evaluate_f(ind: list) -> Tuple[float]:
+        x, y = ind
+        return -(y+47)*np.sin(np.sqrt(np.fabs(x/2+(y+47)))-x*np.sin(np.sqrt(np.fabs(x-(y+47))))),
+    return _evaluate_f
+
+def _test2_validate_result_f(
+    cfg: EvoSchemeMultiPopConfigField,
+    popultaions: List[algorithms.Popolation],
+) -> Tuple[bool, List]:
+    for popultaion in popultaions:
+        for ind in popultaion.Inds:
+            expected_x, expected_y = ind
+            for coords in _TEST_2_EXPECTED:
+                actual_x, actual_y = coords
+                if np.fabs(expected_x - actual_x) < _TEST_2_EPS and\
+                    np.fabs(expected_y - actual_y) < _TEST_2_EPS:
+                    return True, ind
+    return False, None
+
+def _test2_wrap_evo_callback(
+    cfg: EvoSchemeMultiPopConfigField,
+) -> None:
+    fig, ax = plt.subplots()
+    fig.set_size_inches(utils.DEF_FIG_WEIGHT_INCHES, utils.DEF_FIG_HEIGHT_INCHES)
+
+    x_min, x_max = cfg.Populations[0].Limits[0].Min, cfg.Populations[0].Limits[0].Max
+    y_min, y_max = cfg.Populations[0].Limits[1].Min, cfg.Populations[0].Limits[1].Max
+
+    # x, y = np.arange(x_min, x_max, 1), np.arange(y_min, y_max, 1)
+    # x_grid, y_grid = np.meshgrid(x, y)
+    # eval_f = _test2_wrap_evaluate_f(cfg)
+    # f_expected, = eval_f([x_grid, y_grid])
+
+    ticks = np.linspace(-512, 512, 5)
+    ticks_labels = [str(x) for x in ticks]
+
+    populations_cnt = evo_utils.get_populations_cnt(cfg)
+    colors = [0] * populations_cnt
+    for i in range(populations_cnt):
+        colors[i] = utils.get_next_color()
+
+    def _evo_callback(populations, gen, **kvargs):
+        ax.clear()
+
+        for i, population in enumerate(populations):
+            radius = 100.
+            utils.radius_iter_points(
+                population.HallOfFame.items,
+                _TEST_2_EXPECTED,
+                radius,
+                utils.radius_log_callback(_test_logger, 'test #2 - find point in radius {radius} ({x}, {y}), error: {r}', radius=radius),
+                utils.radius_highlight_callback(ax, marker='X', color='green', zorder=1),
+            )
+
+            ax.scatter(*zip(*population.HallOfFame.items), marker='o', color='blue', zorder=1)
+            best = population.HallOfFame.items[0]
+            ax.text(-600, 650, f'best: ({best[0]};{best[1]}); value: {best.fitness.values[0]}')
+
+            ax.set_xlim(x_min - x_min * 0.05, x_max + x_max * 0.05)
+            ax.set_ylim(y_min - y_min * 0.05, y_max + y_max * 0.05)
+
+            ax.set_xlabel('x')
+            ax.set_ylabel('y')
+
+            ax.set_xticks(ticks)
+            ax.set_xticklabels(ticks_labels)
+            ax.set_yticks(ticks)
+            ax.set_yticklabels(ticks_labels)
+
+            ax.set_title(f'test #2\ngeneration = {gen}')
+
+            # ax.contour(x_grid, y_grid, f_expected, levels=5)
+            ax.scatter(*zip(*population.Inds), color=colors[i], s=2, zorder=0)
+            ax.scatter(*zip(*_TEST_2_EXPECTED), marker='X', color='red', zorder=1)
+
+        plt.pause(0.0001)
+
+    return _evo_callback
+
+# def _test2_toolbox_setup_f(
+#     cfg: EvoSchemeMultiPopConfigField,
+# ) -> base.Toolbox:
+#     ret_toolbox = base.Toolbox()
+
+#     def _new_population_override():
+#         x_min, x_max = cfg.Limits[0].Min, cfg.Limits[0].Max
+#         y_min, y_max = cfg.Limits[1].Min, cfg.Limits[1].Max
+#         n = int(np.floor(np.sqrt(cfg.PopulationSize)))
+#         x = np.linspace(x_min, x_max, n, True)
+#         y = np.linspace(y_min, y_max, n, True)
+
+#         ret = [0] * cfg.PopulationSize
+#         ind_cnt = 0
+#         for i in range(n):
+#             for j in range(n):
+#                 ret[ind_cnt] = creator.Individual([x[i], y[j]])
+#                 ind_cnt += 1
+
+#         while ind_cnt < cfg.PopulationSize:
+#             ret[ind_cnt] = ret_toolbox.new_ind()
+#             ind_cnt += 1
+
+#         return ret
+
+#     ret_toolbox.register('new_population', _new_population_override)
+#     return ret_toolbox
+
 # Tests main configuration
 
 _TESTS = [
-{
+    {
         # utils.TEST_CFG_KEY_DISABLE: True,
         utils.TEST_CFG_KEY_NAME: 'one_max',
         utils.TEST_CFG_KEY_CFG: {
@@ -125,6 +316,414 @@ _TESTS = [
         utils.TEST_CFG_KEY_WRAP_EVALUATR_F: _test0_wrap_evaluate_f,
         utils.TEST_CFG_KEY_VALIDATE_RESULT_F: _test0_validate_result_f,
         utils.TEST_CFG_KEY_WRAP_EVO_CALLBACK: _test0_wrap_evo_callback,
+    },
+    {
+        # utils.TEST_CFG_KEY_DISABLE: True,
+        utils.TEST_CFG_KEY_NAME: 'himmelblau',
+        utils.TEST_CFG_KEY_CFG: {
+            'rand_seed': 3,
+            'max_gen_num': 150,
+            'hromo_len': 2,
+
+            'fitness_weights': [-1.0,],
+
+            'populations': [
+                {
+                    'size': 30,
+                    'hall_of_fame': 3,
+
+                    'select': {
+                        'method': 'selTournament',
+                        'args': [
+                            {'key': 'tournsize','val': 3},
+                        ],
+                        # 'method': 'selRoulette',
+                    },
+                    'mate': {
+                        'method': 'cxSimulatedBinaryBounded',
+                        'probability': 0.9,
+                        'args': [
+                            {'key':'low','val':-5},
+                            {'key':'up','val':5},
+                            {'key':'eta','val':5},
+                        ],
+                    },
+                    'mutate': {
+                        'method': 'mutPolynomialBounded',
+                        'probability': 0.1,
+                        'args': [
+                            {'key':'low','val':-5},
+                            {'key':'up','val':5},
+                            {'key':'eta','val':20},
+                        ],
+                    },
+
+                    'limits': [
+                        {'min': -5, 'max': 5},
+                        {'min': -5, 'max': 5},
+                    ],
+                },
+                {
+                    'size': 30,
+                    'hall_of_fame': 3,
+
+                    'select': {
+                        'method': 'selTournament',
+                        'args': [
+                            {'key': 'tournsize','val': 3},
+                        ],
+                        # 'method': 'selRoulette',
+                    },
+                    'mate': {
+                        'method': 'cxSimulatedBinaryBounded',
+                        'probability': 0.9,
+                        'args': [
+                            {'key':'low','val':-5},
+                            {'key':'up','val':5},
+                            {'key':'eta','val':10},
+                        ],
+                    },
+                    'mutate': {
+                        'method': 'mutPolynomialBounded',
+                        'probability': 0.1,
+                        'args': [
+                            {'key':'low','val':-5},
+                            {'key':'up','val':5},
+                            {'key':'eta','val':15},
+                        ],
+                    },
+
+                    'limits': [
+                        {'min': -5, 'max': 5},
+                        {'min': -5, 'max': 5},
+                    ],
+                },
+                {
+                    'size': 30,
+                    'hall_of_fame': 3,
+
+                    'select': {
+                        'method': 'selTournament',
+                        'args': [
+                            {'key': 'tournsize','val': 3},
+                        ],
+                        # 'method': 'selRoulette',
+                    },
+                    'mate': {
+                        'method': 'cxSimulatedBinaryBounded',
+                        'probability': 0.9,
+                        'args': [
+                            {'key':'low','val':-5},
+                            {'key':'up','val':5},
+                            {'key':'eta','val':15},
+                        ],
+                    },
+                    'mutate': {
+                        'method': 'mutPolynomialBounded',
+                        'probability': 0.1,
+                        'args': [
+                            {'key':'low','val':-5},
+                            {'key':'up','val':5},
+                            {'key':'eta','val':15},
+                        ],
+                    },
+
+                    'limits': [
+                        {'min': -5, 'max': 5},
+                        {'min': -5, 'max': 5},
+                    ],
+                },
+                                {
+                    'size': 30,
+                    'hall_of_fame': 3,
+
+                    'select': {
+                        'method': 'selTournament',
+                        'args': [
+                            {'key': 'tournsize','val': 3},
+                        ],
+                        # 'method': 'selRoulette',
+                    },
+                    'mate': {
+                        'method': 'cxSimulatedBinaryBounded',
+                        'probability': 0.9,
+                        'args': [
+                            {'key':'low','val':-5},
+                            {'key':'up','val':5},
+                            {'key':'eta','val':20},
+                        ],
+                    },
+                    'mutate': {
+                        'method': 'mutPolynomialBounded',
+                        'probability': 0.1,
+                        'args': [
+                            {'key':'low','val':-5},
+                            {'key':'up','val':5},
+                            {'key':'eta','val':10},
+                        ],
+                    },
+
+                    'limits': [
+                        {'min': -5, 'max': 5},
+                        {'min': -5, 'max': 5},
+                    ],
+                },
+            ],
+
+            'metrics': [
+                {'name': 'min','func': 'min','package': 'numpy'},
+                {'name': 'avg','func': 'mean','package': 'numpy'},
+            ],
+        },
+        utils.TEST_CFG_KEY_WRAP_EVALUATR_F: _test1_wrap_evaluate_f,
+        utils.TEST_CFG_KEY_WRAP_EVO_CALLBACK: _test1_wrap_evo_callback,
+        utils.TEST_CFG_KEY_VALIDATE_RESULT_F: _test1_validate_result_f,
+    },
+    {
+        # utils.TEST_CFG_KEY_DISABLE: True,
+        utils.TEST_CFG_KEY_NAME: 'eggholder',
+        utils.TEST_CFG_KEY_CFG: {
+            'rand_seed': 12,
+            'max_gen_num': 500,
+
+            'hromo_len': 2,
+
+            'fitness_weights': [-1.0,],
+
+            'populations': [
+                {
+                    'size': 50,
+                    'hall_of_fame': 7,
+
+                    'select': {
+                    # 'method': 'selRoulette',
+                        'method': 'selTournament',
+                        'args': [
+                            {'key': 'tournsize','val': 2},
+                        ],
+                    },
+                    'mate': {
+                        'probability': 0.8,
+                        'method': 'cxSimulatedBinaryBounded',
+                        'args': [
+                            {'key':'low','val':-512},
+                            {'key':'up','val':512},
+                            {'key':'eta','val':20},
+                        ],
+                    },
+                    'mutate': {
+                        'method': 'mutPolynomialBounded',
+                        'probability': 0.3,
+                        'args': [
+                            {'key':'low','val':-512},
+                            {'key':'up','val':512},
+                            {'key':'eta','val':5},
+                            {'key':'indpb','val':1.},
+                        ],
+                        # 'method': 'dynoMutGauss',
+                        # 'probability': 0.1,
+                        # 'args': [
+                        #     {'key':'low','val':-512},
+                        #     {'key':'up','val':512},
+                        #     {'key':'sigma','val':0.3},
+                        # ],
+                    },
+
+                    'limits': [
+                        {'min': -512, 'max': 512},
+                        {'min': -512, 'max': 512},
+                    ],
+                },
+                {
+                    'size': 50,
+                    'hall_of_fame': 7,
+
+                    'select': {
+                    # 'method': 'selRoulette',
+                        'method': 'selTournament',
+                        'args': [
+                            {'key': 'tournsize','val': 2},
+                        ],
+                    },
+                    'mate': {
+                        'probability': 0.8,
+                        'method': 'cxSimulatedBinaryBounded',
+                        'args': [
+                            {'key':'low','val':-512},
+                            {'key':'up','val':512},
+                            {'key':'eta','val':15},
+                        ],
+                    },
+                    'mutate': {
+                        'method': 'mutPolynomialBounded',
+                        'probability': 0.3,
+                        'args': [
+                            {'key':'low','val':-512},
+                            {'key':'up','val':512},
+                            {'key':'eta','val':10},
+                            {'key':'indpb','val':1.},
+                        ],
+                        # 'method': 'dynoMutGauss',
+                        # 'probability': 0.1,
+                        # 'args': [
+                        #     {'key':'low','val':-512},
+                        #     {'key':'up','val':512},
+                        #     {'key':'sigma','val':0.3},
+                        # ],
+                    },
+
+                    'limits': [
+                        {'min': -512, 'max': 512},
+                        {'min': -512, 'max': 512},
+                    ],
+                },
+{
+                    'size': 50,
+                    'hall_of_fame': 7,
+
+                    'select': {
+                    # 'method': 'selRoulette',
+                        'method': 'selTournament',
+                        'args': [
+                            {'key': 'tournsize','val': 2},
+                        ],
+                    },
+                    'mate': {
+                        'probability': 0.8,
+                        'method': 'cxSimulatedBinaryBounded',
+                        'args': [
+                            {'key':'low','val':-512},
+                            {'key':'up','val':512},
+                            {'key':'eta','val':10},
+                        ],
+                    },
+                    'mutate': {
+                        'method': 'mutPolynomialBounded',
+                        'probability': 0.3,
+                        'args': [
+                            {'key':'low','val':-512},
+                            {'key':'up','val':512},
+                            {'key':'eta','val':15},
+                            {'key':'indpb','val':1.},
+                        ],
+                        # 'method': 'dynoMutGauss',
+                        # 'probability': 0.1,
+                        # 'args': [
+                        #     {'key':'low','val':-512},
+                        #     {'key':'up','val':512},
+                        #     {'key':'sigma','val':0.3},
+                        # ],
+                    },
+
+                    'limits': [
+                        {'min': -512, 'max': 512},
+                        {'min': -512, 'max': 512},
+                    ],
+                },
+                {
+                    'size': 50,
+                    'hall_of_fame': 7,
+
+                    'select': {
+                    # 'method': 'selRoulette',
+                        'method': 'selTournament',
+                        'args': [
+                            {'key': 'tournsize','val': 2},
+                        ],
+                    },
+                    'mate': {
+                        'probability': 0.8,
+                        'method': 'cxSimulatedBinaryBounded',
+                        'args': [
+                            {'key':'low','val':-512},
+                            {'key':'up','val':512},
+                            {'key':'eta','val':5},
+                        ],
+                    },
+                    'mutate': {
+                        'method': 'mutPolynomialBounded',
+                        'probability': 0.3,
+                        'args': [
+                            {'key':'low','val':-512},
+                            {'key':'up','val':512},
+                            {'key':'eta','val':20},
+                            {'key':'indpb','val':1.},
+                        ],
+                        # 'method': 'dynoMutGauss',
+                        # 'probability': 0.1,
+                        # 'args': [
+                        #     {'key':'low','val':-512},
+                        #     {'key':'up','val':512},
+                        #     {'key':'sigma','val':0.3},
+                        # ],
+                    },
+
+                    'limits': [
+                        {'min': -512, 'max': 512},
+                        {'min': -512, 'max': 512},
+                    ],
+                },
+                {
+                    'size': 50,
+                    'hall_of_fame': 7,
+
+                    'select': {
+                    # 'method': 'selRoulette',
+                        'method': 'selTournament',
+                        'args': [
+                            {'key': 'tournsize','val': 2},
+                        ],
+                    },
+                    'mate': {
+                        'probability': 0.8,
+                        'method': 'cxSimulatedBinaryBounded',
+                        'args': [
+                            {'key':'low','val':-512},
+                            {'key':'up','val':512},
+                            {'key':'eta','val':15},
+                        ],
+                    },
+                    'mutate': {
+                        'method': 'mutPolynomialBounded',
+                        'probability': 0.3,
+                        'args': [
+                            {'key':'low','val':-512},
+                            {'key':'up','val':512},
+                            {'key':'eta','val':15},
+                            {'key':'indpb','val':1.},
+                        ],
+                        # 'method': 'dynoMutGauss',
+                        # 'probability': 0.1,
+                        # 'args': [
+                        #     {'key':'low','val':-512},
+                        #     {'key':'up','val':512},
+                        #     {'key':'sigma','val':0.3},
+                        # ],
+                    },
+
+                    'limits': [
+                        {'min': -512, 'max': 512},
+                        {'min': -512, 'max': 512},
+                    ],
+                },
+            ],
+
+            'metrics': [
+                {
+                    'name':'min',
+                    'func':'min',
+                    'package':'numpy',
+                    'plt_args': [
+                        {'key':'color', 'val': 'green'},
+                    ],
+                },
+                {'name':'avg','func':'mean','package': 'numpy'},
+            ],
+        },
+        utils.TEST_CFG_KEY_WRAP_EVALUATR_F: _test2_wrap_evaluate_f,
+        utils.TEST_CFG_KEY_WRAP_EVO_CALLBACK: _test2_wrap_evo_callback,
+        utils.TEST_CFG_KEY_VALIDATE_RESULT_F: _test2_validate_result_f,
+        # utils.TEST_CFG_KEY_TOOLBOX_SETUP_F: _test2_toolbox_setup_f,
     },
 ]
 
@@ -221,14 +820,11 @@ def run_tests(**kvargs):
         # Assert
         if utils.TEST_CFG_KEY_VALIDATE_RESULT_F in test:
             populations = scheme.get_populations()
-            for population in populations:
-                validation_inds = population.HallOfFame.items if population.HallOfFameSize > 0\
-                    else population.Inds
-                ok, sol = test[utils.TEST_CFG_KEY_VALIDATE_RESULT_F](cfg, validation_inds)
-                if ok:
-                    _test_logger.info('test #%d - successful (one of solution: [%s])', i, ','.join(map(str, sol)))
-                else:
-                    _test_logger.error('test #%d - wrong', i)
+            ok, sol = test[utils.TEST_CFG_KEY_VALIDATE_RESULT_F](cfg, populations)
+            if ok:
+                _test_logger.info('test #%d - successful (one of solution: [%s])', i, ','.join(map(str, sol)))
+            else:
+                _test_logger.error('test #%d - wrong', i)
         else:
             _test_logger.warn('test #%d - skip result validation', i)
 

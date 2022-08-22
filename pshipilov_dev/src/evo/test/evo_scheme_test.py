@@ -249,7 +249,6 @@ def _test2_toolbox_setup_f(
     ret_toolbox.register('new_population', _new_population_override)
     return ret_toolbox
 
-
 # Tests main configuration
 
 _TESTS = [
