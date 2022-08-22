@@ -211,7 +211,7 @@ def dump_inds_multi_pop_arr(
                     else:
                         dump_ind[k] = float(ind[k])
                 else:
-                    dump_ind[j] = float(ind[j])
+                    dump_ind[k] = float(ind[j])
             dump_pop[j] = dump_ind
         dump[f'pop_{i}'] = dump_pop
 

@@ -130,7 +130,7 @@ class EvoScheme(Scheme):
 
     def restore_result(self, result: Any) -> None:
         self._use_restored_result = True
-        self._result = result if isinstance(result, creator.Individual) else utils.create_ind_by_list(result, self._evaluate_f)
+        self._result = [ind if isinstance(ind, creator.Individual) else utils.create_ind_by_list(ind, self._evaluate_f) for ind in result]
 
     def save(self, dirname: str, **kvargs) -> str:
         run_pool_dir = utils.get_or_create_last_run_pool_dir(dirname, self._name)

@@ -73,7 +73,7 @@ def _test0_wrap_evo_callback(
             ax.set_xlabel('idx')
             ax.set_ylabel('fitness')
 
-            ax.set_title(f'test #0\ngeneration = {gen}')
+            ax.set_title(f'evo_scheme_multi_pop\ntest #0\ngeneration = {gen}')
 
             points = [0] * population.Size
             for j in range(population.Size):
@@ -146,7 +146,7 @@ def _test1_wrap_evo_callback(
             ax.set_xlabel('x')
             ax.set_ylabel('y')
 
-            ax.set_title(f'test #1\ngeneration = {gen}')
+            ax.set_title(f'evo_scheme_multi_pop\ntest #1\ngeneration = {gen}')
 
             ax.contour(x_grid, y_grid, f_expected)
             ax.scatter(*zip(*population.Inds), color=colors[i], s=2, zorder=0)
@@ -233,7 +233,7 @@ def _test2_wrap_evo_callback(
             ax.set_yticks(ticks)
             ax.set_yticklabels(ticks_labels)
 
-            ax.set_title(f'test #2\ngeneration = {gen}')
+            ax.set_title(f'evo_scheme_multi_pop\ntest #2\ngeneration = {gen}')
 
             # ax.contour(x_grid, y_grid, f_expected, levels=5)
             ax.scatter(*zip(*population.Inds), color=colors[i], s=2, zorder=0)
@@ -795,7 +795,7 @@ def run_tests(**kvargs):
             )
             if restored_result is not None:
                 scheme.restore_result(restored_result)
-                _test_logger.warn('restored result has been set')
+                _test_logger.info('restored result has been set')
             else:
                 _test_logger.warn('restored result has not been set')
 
