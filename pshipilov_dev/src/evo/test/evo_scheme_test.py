@@ -152,6 +152,14 @@ def _test2_wrap_evaluate_f(
         return -(y+47)*np.sin(np.sqrt(np.fabs(x/2+(y+47)))-x*np.sin(np.sqrt(np.fabs(x-(y+47))))),
     return _evaluate_f
 
+def _test2_wrap_evaluate_f(
+    cfg: EvoSchemeConfigField,
+) -> FunctionType:
+    def _evaluate_f(ind: list) -> Tuple[float]:
+        x, y = ind
+        return -(y+47)*np.sin(np.sqrt(np.fabs(x/2+(y+47))))-x*np.sin(np.sqrt(np.fabs(x-(y+47)))),
+    return _evaluate_f
+
 def _test2_validate_result_f(
     cfg: EvoSchemeConfigField,
     last_popultaion: list,

@@ -46,7 +46,7 @@ _MODE_EVO_SCHEME_2 = 'evo_scheme_2'
 
 def run_tests(**kvargs):
     # TODO :
-    # evo_scheme_test.run_tests(**kvargs)
+    evo_scheme_test.run_tests(**kvargs)
     evo_scheme_multi_pop_test.run_tests(**kvargs)
 
 def run_scheme1(**kvargs):

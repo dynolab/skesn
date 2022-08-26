@@ -164,12 +164,20 @@ def _test1_wrap_evo_callback(
 _TEST_2_EPS = 1e-2
 _TEST_2_EXPECTED = ((512.,404.2319),)
 
+# def _test2_wrap_evaluate_f(
+#     cfg: EvoSchemeMultiPopConfigField,
+# ) -> FunctionType:
+#     def _evaluate_f(ind: list) -> Tuple[float]:
+#         x, y = ind
+#         return -(y+47)*np.sin(np.sqrt(np.fabs(x/2+(y+47)))-x*np.sin(np.sqrt(np.fabs(x-(y+47))))),
+#     return _evaluate_f
+
 def _test2_wrap_evaluate_f(
     cfg: EvoSchemeMultiPopConfigField,
 ) -> FunctionType:
     def _evaluate_f(ind: list) -> Tuple[float]:
         x, y = ind
-        return -(y+47)*np.sin(np.sqrt(np.fabs(x/2+(y+47)))-x*np.sin(np.sqrt(np.fabs(x-(y+47))))),
+        return -(y+47)*np.sin(np.sqrt(np.fabs(x/2+y+47)))-x*np.sin(np.sqrt(np.fabs(x-(y+47)))),
     return _evaluate_f
 
 def _test2_validate_result_f(
@@ -248,7 +256,7 @@ def _test2_wrap_evo_callback(
 
         ax.text(-600, 650, f'best: ({best[0]};{best[1]}); value: {np.dot(best.fitness.weights, best.fitness.values)}')
 
-        plt.pause(0.0001)
+        plt.pause(0.000001)
 
     return _evo_callback
 
@@ -493,7 +501,7 @@ _TESTS = [
         utils.TEST_CFG_KEY_NAME: 'eggholder',
         utils.TEST_CFG_KEY_CFG: {
             'rand_seed': 12,
-            'max_gen_num': 500,
+            'max_gen_num': 5000,
 
             'hromo_len': 2,
 
@@ -564,21 +572,21 @@ _TESTS = [
                         ],
                     },
                     'mutate': {
-                        'method': 'mutPolynomialBounded',
-                        'probability': 0.3,
-                        'args': [
-                            {'key':'low','val':-512},
-                            {'key':'up','val':512},
-                            {'key':'eta','val':10},
-                            # {'key':'indpb','val':1.},
-                        ],
-                        # 'method': 'dynoMutGauss',
-                        # 'probability': 0.1,
+                        # 'method': 'mutPolynomialBounded',
+                        # 'probability': 0.3,
                         # 'args': [
                         #     {'key':'low','val':-512},
                         #     {'key':'up','val':512},
-                        #     {'key':'sigma','val':0.3},
+                        #     {'key':'eta','val':10},
+                        #     # {'key':'indpb','val':1.},
                         # ],
+                        'method': 'dynoMutGauss',
+                        'probability': 0.1,
+                        'args': [
+                            {'key':'low','val':-512},
+                            {'key':'up','val':512},
+                            {'key':'sigma','val':0.3},
+                        ],
                     },
 
                     'limits': [
