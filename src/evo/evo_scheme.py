@@ -1,6 +1,6 @@
-import pshipilov_dev.src.evo.utils as utils
+import src.evo.utils as utils
 
-from pshipilov_dev.src.utils import kv_config_arr_to_kvargs
+from src.utils import kv_config_arr_to_kvargs
 from .abstract import Scheme
 from ..log import get_logger
 from ..config import KVArgConfigSection, EvoSchemeConfigField

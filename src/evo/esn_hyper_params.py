@@ -1,7 +1,7 @@
 import utils
 import config
 
-from pshipilov_dev.src.evo.esn_evo_scheme import EsnEvoScheme
+from src.evo.esn_evo_scheme import EsnEvoScheme
 
 from skesn.esn import EsnForecaster
 from deap import base

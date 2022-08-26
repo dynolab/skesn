@@ -1,6 +1,6 @@
 import config
 
-from pshipilov_dev.src.evo.evo_scheme import EvoScheme
+from src.evo.evo_scheme import EvoScheme
 
 from deap import base
 

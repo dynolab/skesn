@@ -1,11 +1,11 @@
-import pshipilov_dev.src.evo.test.evo_scheme_test as evo_scheme_test
-import pshipilov_dev.src.evo.test.evo_scheme_multi_pop_test as evo_scheme_multi_pop_test
-import pshipilov_dev.src.grid as grid
-import pshipilov_dev.src.lorenz as lorenz
-import pshipilov_dev.src.utils as utils
-import pshipilov_dev.src.log as log
-import pshipilov_dev.src.dump as dump
-import pshipilov_dev.src.config as cfg
+import src.evo.test.evo_scheme_test as evo_scheme_test
+import src.evo.test.evo_scheme_multi_pop_test as evo_scheme_multi_pop_test
+import src.grid as grid
+import src.lorenz as lorenz
+import src.utils as utils
+import src.log as log
+import src.dump as dump
+import src.config as cfg
 
 import skesn.esn as esn
 
@@ -28,7 +28,7 @@ joblib.pool.Pickler = Pickler
 
 from joblib.pool import CustomizablePicklingQueue
 
-from pshipilov_dev.src.async_utils.customizable_pickler import make_methods, CustomizablePickler
+from src.async_utils.customizable_pickler import make_methods, CustomizablePickler
 
 CustomizablePicklingQueue._make_methods = make_methods
 joblib.pool.CustomizablePickler = CustomizablePickler
@@ -161,7 +161,7 @@ def _create_parser() -> argparse.ArgumentParser:
     parser.add_argument('--log-dir',
         type=str,
         nargs='?',
-        default='pshipilov_dev/logs',
+        default='logs',
         help='directory for writing log files'
     )
     parser.add_argument('--dump-dir',
@@ -191,7 +191,7 @@ def _create_parser() -> argparse.ArgumentParser:
     parser.add_argument('--test-dump-dir',
         type=str,
         nargs='?',
-        default='pshipilov_dev/dumps/tests',
+        default='dumps/tests',
         help='directory for writing dump files for tests'
     )
 

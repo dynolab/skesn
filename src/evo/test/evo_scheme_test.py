@@ -3,8 +3,8 @@ from matplotlib import pyplot as plt
 from deap import creator, tools, base
 from typing import Any, Dict, List, Tuple
 
-import pshipilov_dev.src.evo.test.utils as utils
-import pshipilov_dev.src.evo.utils as evo_utils
+import src.evo.test.utils as utils
+import src.evo.utils as evo_utils
 
 import random
 import logging
@@ -12,9 +12,9 @@ import numpy as np
 
 from ...log import get_logger
 
-from pshipilov_dev.src.utils import get_optional_arg, kv_config_arr_to_kvargs, get_args_via_kvargs
-from pshipilov_dev.src.config import EvoSchemeConfigField
-from pshipilov_dev.src.evo.evo_scheme import EvoScheme
+from src.utils import get_optional_arg, kv_config_arr_to_kvargs, get_args_via_kvargs
+from src.config import EvoSchemeConfigField
+from src.evo.evo_scheme import EvoScheme
 
 # Test 0 implementations
 

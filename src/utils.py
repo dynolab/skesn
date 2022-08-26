@@ -1,7 +1,7 @@
 from typing import Any, Dict, List
 import numpy as np
 
-from pshipilov_dev.src.config import KVArgConfigSection
+from src.config import KVArgConfigSection
 
 from .lorenz import train_to_data
 

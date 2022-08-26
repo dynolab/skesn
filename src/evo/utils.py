@@ -1,4 +1,4 @@
-import pshipilov_dev.src.evo.utils as utils
+import src.evo.utils as utils
 
 from types import FunctionType
 from deap import base, creator

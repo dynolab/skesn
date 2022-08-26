@@ -21,7 +21,7 @@ TEST_CFG_KEY_DISABLE           = 'disable'
 
 # Default values
 
-DEF_TEST_DUMP_DIR = 'pshipilov_dev/dumps/tests'
+DEF_TEST_DUMP_DIR = 'dumps/tests'
 DEF_FIG_HEIGHT_INCHES = 8
 DEF_FIG_WEIGHT_INCHES = 8
 

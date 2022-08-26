@@ -132,10 +132,10 @@ dmypy.json
 .vscode/
 
 # Pavel Shipilov dev folders
-pshipilov_dev/etc
-pshipilov_dev/logs
-pshipilov_dev/dumps
-pshipilov_dev/notebooks
+etc
+logs
+dumps
+notebooks
 
 .DS_Store
 ._.DS_Store
