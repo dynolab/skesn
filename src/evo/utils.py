@@ -1,9 +1,10 @@
-import src.evo.utils as utils
+import src.evo.utils as evo_utils
+import src.utils as utils
+import src.config as cfg
+import src.dump as dump
 
-from types import FunctionType
-from deap import base, creator
-from typing import List, Tuple, Type, Union
-from deap import tools
+from src.models.abstract import Model
+from src.models.lorenz import LorenzModel
 
 import importlib
 import os
@@ -11,13 +12,17 @@ import yaml
 import random
 import numpy as np
 
-from .. import dump
+from types import FunctionType
+from deap import base, creator
+from typing import Any, List, Tuple, Type, Union
+from deap import tools
+
 
 import sklearn.metrics as metrics
 
 from skesn.esn import EsnForecaster
 
-from ..config import Config, EvoLimitGenConfigField, EvoSchemeConfigField, EvoSchemeMultiPopConfigField, KVArgConfigSection
+
 from ..lorenz import get_lorenz_data, data_to_train, train_to_data
 
 def normalize_name(
@@ -27,12 +32,12 @@ def normalize_name(
 
 def _get_data_set(
 ) -> np.ndarray:
-    if Config.Evaluate.Model == 'lorenz':
+    if cfg.Config.Evaluate.Model == 'lorenz':
         return get_lorenz_data(
-            Config.Models.Lorenz.Ro,
-            Config.Models.Lorenz.N,
-            Config.Models.Lorenz.Dt,
-            Config.Models.Lorenz.RandSeed,
+            cfg.Config.Models.Lorenz.Ro,
+            cfg.Config.Models.Lorenz.N,
+            cfg.Config.Models.Lorenz.Dt,
+            cfg.Config.Models.Lorenz.RandSeed,
         )
     raise 'unknown evaluate model'
 
@@ -40,11 +45,11 @@ def _split_data_set(
     data: np.ndarray,
 ) -> Tuple[np.ndarray, np.ndarray]:
     train_data: np.ndarray = None
-    if Config.Evaluate.Opts.SparsityTrain > 0:
-        train_data = data[..., :Config.Models.Lorenz.N//2:Config.Evaluate.Opts.SparsityTrain]
+    if cfg.Config.Evaluate.Opts.SparsityTrain > 0:
+        train_data = data[..., :cfg.Config.Models.Lorenz.N//2:cfg.Config.Evaluate.Opts.SparsityTrain]
     else:
-        train_data = data[..., :Config.Models.Lorenz.N//2]
-    valid_data = data[..., Config.Models.Lorenz.N//2:]
+        train_data = data[..., :cfg.Config.Models.Lorenz.N//2]
+    valid_data = data[..., cfg.Config.Models.Lorenz.N//2:]
     return train_data, valid_data
 
 # Args:
@@ -75,11 +80,30 @@ class DynoExtensions:
                 individual[i] = random.triangular(up, low, random.gauss(individual[i], sigma))
         return individual,
 
+    # if use dynoMutGeneByLimit then LIMITS_CFG mokey patched (DEF_NP_RAND_STATE patch optional)
+    LIMITS_CFG: List[cfg.EvoLimitGenConfigField] = []
+    DEF_NP_RAND_STATE: np.random.RandomState = np.random.RandomState()
+
+    @staticmethod
+    def dynoMutGeneByLimit(
+        individual: List,
+        indpb: float,
+    ) -> Tuple:
+        n = len(individual)
+        for i in range(n):
+            if np.random.uniform(0, 1) < indpb:
+                individual[i] = utils.mut_gene(
+                    DynoExtensions.LIMITS_CFG[i],
+                    DynoExtensions.DEF_NP_RAND_STATE,
+                    individual[i],
+                )
+        return individual,
+
 
 # Mapping functions
 
 def map_metric_f():
-    norm_name = normalize_name(Config.Evaluate.Metric)
+    norm_name = normalize_name(cfg.Config.Evaluate.Metric)
 
     if norm_name == 'mse':
         return metrics.mean_squared_error
@@ -130,11 +154,11 @@ def map_evaluate_f(
     valid_data: np.ndarray,
     **evaluate_kvargs,
 ) -> FunctionType:
-    if Config.Evaluate.Steps < 0:
+    if cfg.Config.Evaluate.Steps < 0:
         raise 'bad evaluate.steps config field value, must be greater then 0'
 
-    if Config.Evaluate.Steps > 1:
-        n = valid_data.shape[1] // Config.Evaluate.Steps
+    if cfg.Config.Evaluate.Steps > 1:
+        n = valid_data.shape[1] // cfg.Config.Evaluate.Steps
         idxs = [int(idx) for idx in np.linspace(0, valid_data.shape[1], n, True)]
         def _valid_multi_f(model: EsnForecaster):
             model.fit(fit_data)
@@ -148,15 +172,30 @@ def map_evaluate_f(
         model.fit(fit_data)
         predict_data = np.ndarray(len(valid_data[0]))
         for i in range(len(valid_data[0])):
-            predict_data[i] = train_to_data(model.predict(1, True, Config.Esn.Inspect).T)
+            predict_data[i] = train_to_data(model.predict(1, True, cfg.Config.Esn.Inspect).T)
         return metric_f(valid_data, predict_data),
     return _valid_one_f
+
+def _convert_gen_to_dump(
+    limit_cfg: cfg.EvoLimitGenConfigField,
+    val: Any,
+) -> Any:
+    t = limit_cfg.Type.lower()
+    if t == 'int':
+        return int(val)
+    elif t == 'float':
+        return float(val)
+    elif t == 'bool':
+        return bool(val)
+    elif t == 'choice':
+        return val
+    return None
 
 def dump_inds_arr(
     hromo_len: int,
     f,
     population: List[List],
-    limits: List[EvoLimitGenConfigField]=[],
+    limits: List[cfg.EvoLimitGenConfigField]=[],
 ) -> None:
     limits_len = len(limits)
     if limits_len > 0 and limits_len != hromo_len:
@@ -168,12 +207,9 @@ def dump_inds_arr(
         dump_ind = [0] * hromo_len
         for j in range(hromo_len):
             if limits_len > 0:
-                if limits[j].IsInt:
-                    dump_ind[j] = int(ind[j])
-                else:
-                    dump_ind[j] = float(ind[j])
-            else:
-                dump_ind[j] = float(ind[j])
+                dump_ind[j] = _convert_gen_to_dump(limits[j], ind[j])
+                continue
+            dump_ind[j] = float(ind[j])
         dump[f'ind_{i}'] = dump_ind
 
     yaml.safe_dump(dump, f)
@@ -182,7 +218,7 @@ def dump_inds_multi_pop_arr(
     hromo_len: int,
     f,
     populations: List[List[List]],
-    limits_pop: List[List[EvoLimitGenConfigField]]=[],
+    limits_pop: List[List[cfg.EvoLimitGenConfigField]]=[],
 ) -> None:
     limits_pop_len = len(limits_pop)
     if limits_pop_len > 0 and limits_pop_len != len(populations):
@@ -206,12 +242,9 @@ def dump_inds_multi_pop_arr(
             dump_ind = [0] * hromo_len
             for k in range(hromo_len):
                 if limits_len > 0:
-                    if limits_pop[i][k].IsInt:
-                        dump_ind[k] = int(ind[k])
-                    else:
-                        dump_ind[k] = float(ind[k])
-                else:
-                    dump_ind[k] = float(ind[j])
+                    dump_ind[k] = _convert_gen_to_dump(limits_pop[j][k], ind[k])
+                    continue
+                dump_ind[k] = float(ind[j])
             dump_pop[j] = dump_ind
         dump[f'pop_{i}'] = dump_pop
 
@@ -327,7 +360,7 @@ def create_iter_dir(
 def ind_creator_f(
     ind_type: Type,
     hromo_len: int,
-    limits: List[EvoLimitGenConfigField]=[],
+    limits: List[cfg.EvoLimitGenConfigField]=[],
     rand: np.random.RandomState=np.random.RandomState,
 ) -> list:
     limits_len = len(limits)
@@ -337,12 +370,9 @@ def ind_creator_f(
     ret = [0] * hromo_len
     for i in range(hromo_len):
         if limits_len > 0:
-            if limits[i].IsInt:
-                ret[i] = rand.randint(limits[i].Min, limits[i].Max)
-            else:
-                ret[i] = rand.uniform(limits[i].Min, limits[i].Max)
-        else:
-            ret[i] = rand.rand()
+            ret[i] = utils.gen_gene(limits[i], rand)
+            continue
+        ret[i] = rand.rand()
 
     return ind_type(ret)
 
@@ -359,7 +389,7 @@ def bind_evo_operator(
     toolbox: base.Toolbox,
     name: str,
     func: FunctionType,
-    args: List[KVArgConfigSection],
+    args: List[cfg.KVArgConfigSection],
     **kvargs,
 ) -> None:
     if len(args) > 0:
@@ -369,10 +399,10 @@ def bind_evo_operator(
     toolbox.register(name, func, **kvargs)
 
 def get_populations_limits(
-    cfg: EvoSchemeMultiPopConfigField,
-) -> List[List[EvoLimitGenConfigField]]:
+    scheme_cfg: cfg.EvoSchemeMultiPopConfigField,
+) -> List[List[cfg.EvoLimitGenConfigField]]:
     ret = []
-    for population in cfg.Populations:
+    for population in scheme_cfg.Populations:
         for _ in range(population.IncludingCount):
             ret.append(population.Limits)
     return ret
@@ -380,7 +410,7 @@ def get_populations_limits(
 def get_evo_scheme_result_last_run_pool(
     get_result_from_file_f: FunctionType,
     ind_type: Type,
-    cfg: Union[EvoSchemeMultiPopConfigField, EvoSchemeConfigField],
+    scheme_cfg: Union[cfg.EvoSchemeMultiPopConfigField, cfg.EvoSchemeConfigField],
     root: str,
     scheme_name: str,
 ) -> List[List]:
@@ -389,27 +419,27 @@ def get_evo_scheme_result_last_run_pool(
     return get_evo_scheme_result_last_iter(
         get_result_from_file_f,
         ind_type,
-        cfg,
+        scheme_cfg,
         run_pool_dir,
     )
 
 def get_evo_scheme_result_last_iter(
     get_result_from_file_f: FunctionType,
     ind_type: Type,
-    cfg: Union[EvoSchemeMultiPopConfigField, EvoSchemeConfigField],
+    scheme_cfg: Union[cfg.EvoSchemeMultiPopConfigField, cfg.EvoSchemeConfigField],
     runpool_dir: str,
 ) -> List[List]:
     iter_dir = get_or_create_iter_dir(runpool_dir)
 
     return get_result_from_file_f(
         ind_type,
-        cfg,
+        scheme_cfg,
         iter_dir + 'result.yaml',
     )
 
 def get_evo_scheme_result_from_file(
     ind_type: Type,
-    cfg: Union[EvoSchemeMultiPopConfigField, EvoSchemeConfigField],
+    scheme_cfg: Union[cfg.EvoSchemeMultiPopConfigField, cfg.EvoSchemeConfigField],
     filename: str,
 ) -> List[List]:
     if not os.path.exists(filename):
@@ -420,10 +450,10 @@ def get_evo_scheme_result_from_file(
         if last_population_yaml is None:
             raise f'the population from the file "{filename}" is None)'
 
-        if cfg.PopulationSize != len(last_population_yaml):
-            raise f'the population size from the file "{filename}" ({len(last_population_yaml)}) does not match the config ({popultaion_size})'
+        if scheme_cfg.PopulationSize != len(last_population_yaml):
+            raise f'the population size from the file "{filename}" ({len(last_population_yaml)}) does not match the config ({cfg.PopulationSize})'
 
-        ret: List[List] = [0] * cfg.PopulationSize
+        ret: List[List] = [0] * scheme_cfg.PopulationSize
 
         if isinstance(last_population_yaml, dict):
             for i, ind in enumerate(last_population_yaml.values()):
@@ -438,7 +468,7 @@ def get_evo_scheme_result_from_file(
 
 def get_evo_scheme_multi_pop_result_from_file(
     ind_type: Type,
-    cfg: Union[EvoSchemeMultiPopConfigField, EvoSchemeConfigField],
+    scheme_cfg: Union[cfg.EvoSchemeMultiPopConfigField, cfg.EvoSchemeConfigField],
     filename: str,
 ) -> List[List]:
     if not os.path.exists(filename):
@@ -448,13 +478,13 @@ def get_evo_scheme_multi_pop_result_from_file(
         result = yaml.safe_load(f)
         if result is None:
             raise f'the population from the file "{filename}" is None)'
-        elif len(result) != utils.get_populations_cnt(cfg):
+        elif len(result) != evo_utils.get_populations_cnt(cfg):
             raise f'not correct populations length from the file "{filename}")'
 
         ret: List[List] = []
 
         k = 0
-        for pop_cfg in cfg.Populations:
+        for pop_cfg in scheme_cfg.Populations:
             if pop_cfg.IncludingCount <= 0:
                 continue
 
@@ -485,26 +515,26 @@ def ind_float_eq_f(ind_l: List[float], ind_r: List[float]) -> bool:
     return True
 
 def get_populations_cnt(
-    cfg: EvoSchemeMultiPopConfigField,
+    scheme_cfg: cfg.EvoSchemeMultiPopConfigField,
 ) -> int:
-    if cfg.Populations is None or len(cfg.Populations) == 0:
+    if scheme_cfg.Populations is None or len(scheme_cfg.Populations) == 0:
         return 0
 
     ret = 0
-    for pop_cfg in cfg.Populations:
+    for pop_cfg in scheme_cfg.Populations:
         if pop_cfg.IncludingCount <= 0:
             continue
         ret += pop_cfg.IncludingCount
     return ret
 
 def get_max_population_size(
-    cfg: EvoSchemeMultiPopConfigField,
+    scheme_cfg: cfg.EvoSchemeMultiPopConfigField,
 ) -> int:
-    if cfg.Populations is None or len(cfg.Populations) == 0:
+    if cfg.Populations is None or len(scheme_cfg.Populations) == 0:
         return 0
 
-    max = cfg.Populations[0].Size
-    for pop_cfg in cfg.Populations:
+    max = scheme_cfg.Populations[0].Size
+    for pop_cfg in scheme_cfg.Populations:
         if pop_cfg.Size > max:
             max = pop_cfg.Size
     return max
@@ -519,3 +549,10 @@ def create_ind_by_list(
         ret.fitness.values = evaluate_f(ret)
     return ret
 
+def create_model_by_type(
+    model_type: str,
+) -> Model:
+    model_type = model_type.lower()
+    if model_type == 'lorenz':
+        return LorenzModel(cfg.Config.Models.Lorenz)
+    raise f'unknown model - {model_type}'

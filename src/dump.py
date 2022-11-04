@@ -1,5 +1,7 @@
-from ast import arg
-from .log import get_logger_via_kvargs
+import logging
+import shutil
+import datetime
+from typing import Union
 from .config import Config
 
 from datetime import date
@@ -8,6 +10,8 @@ import dill
 import yaml
 import os
 import os.path
+
+import src.log as log
 
 _KVARGS_EVO_SCHEME = 'evo_scheme'
 _KVARGS_LOGGER = 'logger'
@@ -18,19 +22,31 @@ _ALL_KVARGS_KEYS = [
 ]
 
 # Arguments for startup program
+_dump_rundir: str = None
 _args = None
 
 def init(args):
-    global _args
+    if Config.Dump.Disable:
+        return
+
+    global _args, _dump_rundir
     _args = args
 
-_created_framedir: str = None
+    continue_dir = getattr(_args, 'continue_dir', None)
+    if continue_dir is None or len(continue_dir) > 0:
+        return
+    _dump_rundir = continue_dir
 
-def _create_framedir(args=None) -> str:
-    global _created_framedir
+def _get_or_create_dump_rundir(args=None) -> Union[str,None]:
+    if Config.Dump.Disable:
+        return None
 
-    if _created_framedir is not None:
-        return _created_framedir
+    if args is not None and hasattr(args, 'continue_dir'):
+        return getattr(args, 'continue_dir')
+
+    global _dump_rundir
+    if _dump_rundir is not None:
+        return _dump_rundir
 
     dumpdir = ''
     if args is not None and hasattr(args, 'dump_dir'):
@@ -48,33 +64,32 @@ def _create_framedir(args=None) -> str:
 
     max_num = 0
     for dir in dirs:
-        if dir.startswith('frame_'):
+        if dir.startswith('run_'):
             num = int(dir.split('_')[-1])
             if num > max_num:
                 max_num = num
 
-    framedir = ''
+    dump_rundir = ''
+    today = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
     if Config.Dump.Title == '':
-        framedir = '{0}frame_{1}_{2}_{3}'.format(
+        dump_rundir = '{0}run_{1}_{2}'.format(
             dumpdir,
-            str(date.today()).replace('-', '_'),
-            Config.Dump.User,
             max_num + 1,
+            today,
         )
     else:
-        framedir = '{0}frame_{1}_{2}_{3}_{4}'.format(
+        dump_rundir = '{0}{1}_run_{2}_{3}'.format(
             dumpdir,
-            str(date.today()).replace('-', '_'),
             Config.Dump.Title,
-            Config.Dump.User,
             max_num + 1,
+            today,
         )
 
-    os.makedirs(framedir)
+    os.makedirs(dump_rundir)
 
-    _created_framedir = framedir
+    _dump_rundir = dump_rundir
 
-    return framedir
+    return dump_rundir
 
 # args:
 # "evo_scheme": can be passed via kwargs (key: DO_KWARGS_EVO_SCHEME)
@@ -83,36 +98,34 @@ def do(**kvargs) -> None:
     if Config.Dump.Disable:
         return
 
-    logger = get_logger_via_kvargs(**kvargs)
-
-    framedir = _create_framedir(_args)
-
-    logger.info(f'dump config... (dir: %s)', framedir)
-    # Dump config
-    with open(f'{framedir}/config.yaml', 'w') as config_file:
-        yaml.safe_dump(Config.yaml(), config_file)
+    # logging.info(f'dump config... (dir: %s)', framedir)
+    # # Dump config
+    # with open(f'{framedir}/config.yaml', 'w') as config_file:
+    #     yaml.safe_dump(Config.yaml(), config_file)
 
     # if not Config.Logging.Disable:
-    #     logging.info(f'dump logs... (dir: %s)', framedir)
+    #     logging.info(f'dump logs... (dir: %s)', rundir)
+    #     logfile = log.get_logfile()
     #     # Dump logs
-    #     if os.path.isfile(Config.Logging.Dir):
-    #         shutil.copyfile(Config.Logging.Dir, f'{framedir}/log')
+    #     if os.path.isfile(logfile):
+    #         shutil.copyfile(logfile, f'{rundir}/log')
 
     # Dump scheme
-
     if _KVARGS_EVO_SCHEME in kvargs:
-        logger.info(f'dump evo scheme... (dir: %s)', framedir)
-        kvargs['evo_scheme'].save(f'{framedir}')
+        rundir = _get_or_create_dump_rundir(_args)
+
+        logging.info(f'dump evo scheme... (dir: %s)', rundir)
+        kvargs['evo_scheme'].save(f'{rundir}')
 
     # Dump kvargs
-    do_var(framedir, **kvargs)
+    do_var(**kvargs)
 
 # args:
 def do_np_arr(**kvargs) -> None:
     if Config.Dump.Disable:
         return
 
-    framedir = _create_framedir(_args)
+    framedir = _get_or_create_dump_rundir(_args)
 
     for k, v in kvargs.items():
         if k in _ALL_KVARGS_KEYS:
@@ -133,20 +146,18 @@ def do_var(**kvargs) -> None:
     if Config.Dump.Disable:
         return
 
-    framedir = _create_framedir(_args)
-
-    logger = get_logger_via_kvargs(**kvargs)
+    framedir = _get_or_create_dump_rundir(_args)
 
     for k, v in kvargs.items():
         if k in _ALL_KVARGS_KEYS:
             continue
 
         if isinstance(v, dict):
-            logger.info('try dump "%s" as yaml... (dir: %s)', k, framedir)
+            logging.info('try dump "%s" as yaml... (dir: %s)', k, framedir)
             with open(f'{framedir}/{k}.yaml', 'w') as dump_file:
                 yaml.safe_dump(v, dump_file)
             continue
 
-        logger.warn('"%s" was not dumped as yaml (instance not dict), try as binary via dill (dir: %s)', k, framedir)
+        logging.warn('"%s" was not dumped as yaml (instance not dict), try as binary via dill (dir: %s)', k, framedir)
         with open(f'{framedir}/{k}.dill', 'wb') as dump_file:
             dill.dump(v, dump_file)

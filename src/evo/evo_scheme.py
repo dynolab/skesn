@@ -1,14 +1,12 @@
-import src.evo.utils as utils
+from src.evo.graph_callback import GraphCallbackModule
+import src.evo.utils as evo_utils
+import src.utils as utils
 
-from src.utils import kv_config_arr_to_kvargs
 from .abstract import Scheme
 from ..log import get_logger
-from ..config import KVArgConfigSection, EvoSchemeConfigField
+from ..config import EvoSchemeConfigField
 
-import os
 import yaml
-import importlib
-import matplotlib
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -25,7 +23,9 @@ class EvoScheme(Scheme):
         evaluate_f: FunctionType,
         ind_creator_f: FunctionType=None,
         toolbox: base.Toolbox=None,
-        ) -> None:
+        graph_callback_module: GraphCallbackModule=None,
+    ) -> None:
+        self._graph_callback_module = graph_callback_module
 
         # Logger setup
         self._logger = get_logger(name=f'EvoScheme<{name}>')
@@ -37,6 +37,10 @@ class EvoScheme(Scheme):
         # Math setup
         self._rand = np.random.RandomState(seed=self._cfg.RandSeed)
 
+        # Monkey patch DynoExtensions
+        evo_utils.DynoExtensions.LIMITS_CFG = self._cfg.Limits
+        evo_utils.DynoExtensions.DEF_NP_RAND_STATE = self._rand
+
         # DEAP setup
         creator.create("Fitness", base.Fitness, weights=self._cfg.FitnessWeights)
         creator.create("Individual", list, fitness=creator.Fitness)
@@ -46,7 +50,7 @@ class EvoScheme(Scheme):
         self._evaluate_f = evaluate_f
         self._new_ind_f: FunctionType = ind_creator_f
         if self._new_ind_f is None:
-            self._new_ind_f = lambda: utils.create_ind_by_list(utils.ind_creator_f(
+            self._new_ind_f = lambda: evo_utils.create_ind_by_list(evo_utils.ind_creator_f(
                     creator.Individual,
                     self._cfg.HromoLen,
                     self._cfg.Limits,
@@ -65,34 +69,34 @@ class EvoScheme(Scheme):
             self._toolbox.register('evaluate', evaluate_f)
 
         if not hasattr(self._toolbox, 'select'):
-            utils.bind_evo_operator(
+            evo_utils.bind_evo_operator(
                 self._toolbox,
                 'select',
-                utils.map_select_f(self._cfg.Select.Method),
+                evo_utils.map_select_f(self._cfg.Select.Method),
                 self._cfg.Select.Args,
             )
         if not hasattr(self._toolbox, 'mate'):
-            utils.bind_evo_operator(
+            evo_utils.bind_evo_operator(
                 self._toolbox,
                 'mate',
-                utils.map_mate_f(self._cfg.Mate.Method),
+                evo_utils.map_mate_f(self._cfg.Mate.Method),
                 self._cfg.Mate.Args,
             )
 
         if not hasattr(self._toolbox, 'mutate'):
             if self._cfg.Mutate.Indpb > 0:
-                utils.bind_evo_operator(
+                evo_utils.bind_evo_operator(
                     self._toolbox,
                     'mutate',
-                    utils.map_mutate_f(self._cfg.Mutate.Method),
+                    evo_utils.map_mutate_f(self._cfg.Mutate.Method),
                     self._cfg.Mutate.Args,
                     indpb=self._cfg.Mutate.Indpb,
                 )
             else:
-                utils.bind_evo_operator(
+                evo_utils.bind_evo_operator(
                     self._toolbox,
                     'mutate',
-                    utils.map_mutate_f(self._cfg.Mutate.Method),
+                    evo_utils.map_mutate_f(self._cfg.Mutate.Method),
                     self._cfg.Mutate.Args,
                     indpb=1/self._cfg.HromoLen
                 )
@@ -107,12 +111,15 @@ class EvoScheme(Scheme):
         if len(self._cfg.Metrics) > 0:
             self._stats = tools.Statistics(lambda ind: ind.fitness.values)
             for metric_cfg in self._cfg.Metrics:
-                self._stats.register(metric_cfg.Name, utils.get_evo_metric_func(metric_cfg.Func, metric_cfg.Package))
+                self._stats.register(metric_cfg.Name, evo_utils.get_evo_metric_func(metric_cfg.Func, metric_cfg.Package))
 
     # Inherited methods
 
     def run(self, **kvargs) -> None:
         self._logger.info('EvoScheme<%s> is running...', self._name)
+
+        if self._graph_callback_module is not None:
+            kvargs['callback'] = self._graph_callback_module.get_deap_callback()
 
         self._result, self._logbook = algorithms.eaSimple(
             population=self._result,
@@ -130,11 +137,12 @@ class EvoScheme(Scheme):
 
     def restore_result(self, result: Any) -> None:
         self._use_restored_result = True
-        self._result = [ind if isinstance(ind, creator.Individual) else utils.create_ind_by_list(ind, self._evaluate_f) for ind in result]
+        self._result = [ind if isinstance(ind, creator.Individual) else evo_utils.create_ind_by_list(ind, self._evaluate_f) for ind in result]
 
     def save(self, dirname: str, **kvargs) -> str:
-        run_pool_dir = utils.get_or_create_last_run_pool_dir(dirname, self._name)
-        iter_dir = utils.create_iter_dir(run_pool_dir)
+        # run_pool_dir = evo_utils.get_or_create_last_run_pool_dir(dirname, self._name)
+        run_pool_dir = dirname
+        iter_dir = evo_utils.create_iter_dir(run_pool_dir)
 
         len_metrics = len(self._cfg.Metrics)
         if not kvargs.get('disable_stat', False) and len_metrics > 0:
@@ -144,7 +152,7 @@ class EvoScheme(Scheme):
 
             metrics = self._logbook.select(*[metric.Name for metric in self._cfg.Metrics])
             for i in range(len_metrics):
-                ax.plot(metrics[i], label=self._cfg.Metrics[i].Name, **kv_config_arr_to_kvargs(self._cfg.Metrics[i].PltArgs))
+                ax.plot(metrics[i], label=self._cfg.Metrics[i].Name, **utils.kv_config_arr_to_kvargs(self._cfg.Metrics[i].PltArgs))
             ax.set_xlabel('generation')
             ax.set_ylabel('fitness')
             ax.legend()
@@ -159,7 +167,7 @@ class EvoScheme(Scheme):
         if not kvargs.get('disable_dump_result', False):
             # Dump last population
             with open(f'{iter_dir}/result.yaml', 'w') as f:
-                utils.dump_inds_arr(
+                evo_utils.dump_inds_arr(
                     self._cfg.HromoLen,
                     f,
                     self._result,
@@ -168,7 +176,7 @@ class EvoScheme(Scheme):
 
         if not kvargs.get('disable_dump_hall_of_fame', False) and self._hall_of_fame is not None:
             with open(f'{iter_dir}/hall_off_fame.yaml', 'w') as f:
-                utils.dump_inds_arr(
+                evo_utils.dump_inds_arr(
                     self._cfg.HromoLen,
                     f,
                     self._hall_of_fame.items,
@@ -191,3 +199,6 @@ class EvoScheme(Scheme):
 
     def get_hall_of_fame(self) -> tools.HallOfFame:
         return self._hall_of_fame
+
+    def get_evaluate_f(self) -> FunctionType:
+        return self._evaluate_f

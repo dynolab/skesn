@@ -1,8 +1,11 @@
+from src.evo.tasks.dyno_evo_esn_hyper_param import DynoEvoEsnHyperParam
+from src.evo.abstract import Scheme
+
 import src.evo.test.evo_scheme_test as evo_scheme_test
 import src.evo.test.evo_scheme_multi_pop_test as evo_scheme_multi_pop_test
-import src.grid as grid
 import src.lorenz as lorenz
 import src.utils as utils
+import src.evo.utils as evo_utils
 import src.log as log
 import src.dump as dump
 import src.config as cfg
@@ -11,6 +14,7 @@ import skesn.esn as esn
 
 import matplotlib.pyplot as plt
 import numpy as np
+import logging
 
 from deap import base, algorithms
 
@@ -39,47 +43,59 @@ from joblib import Parallel, delayed
 
 # Modes for running
 _MODE_TESTS = 'tests'
-_MODE_TEST_MULTI = 'test_multi'
 _MODE_GRID = 'grid'
-_MODE_EVO_SCHEME_1 = 'evo_scheme_1'
-_MODE_EVO_SCHEME_2 = 'evo_scheme_2'
+_MODE_HYPER_PARAMS = 'hyper_param'
 
 def run_tests(**kvargs):
     # TODO :
     evo_scheme_test.run_tests(**kvargs)
     evo_scheme_multi_pop_test.run_tests(**kvargs)
 
-def run_scheme1(**kvargs):
-    args = utils.get_args_via_kvargs(**kvargs)
-    logger = log.get_logger_via_kvargs(**kvargs)
+def check_restore(
+    args,
+    scheme: Scheme,
+    scheme_cfg,
+) -> None:
+    if not hasattr(args, 'continue_dir'):
+        return
 
-    # scheme = Scheme_1(base.Toolbox(), args)
-    # scheme.run()
-    # scheme.show_plot()
+    continue_dir = getattr(args, 'continue_dir', None)
+    if continue_dir is None:
+        return
 
-    # dump.do(logger=logger, evo_scheme=scheme)
+    restored_result = evo_utils.get_evo_scheme_result_last_iter(
+        evo_utils.get_evo_scheme_result_from_file,
+        lambda ind: evo_utils.create_ind_by_list(ind, scheme.get_evaluate_f()),
+        scheme_cfg,
+        continue_dir,
+    )
+    # restored_result = evo_utils.get_evo_scheme_result_last_run_pool(
+    #     evo_utils.get_evo_scheme_multi_pop_result_from_file,
+    #     lambda ind: evo_utils.create_ind_by_list(ind, scheme.get_evaluate_f),
+    #     cfg,
+    #     continue_dir,
+    #     scheme.get_name(),
+    # )
 
-def run_scheme2(**kvargs):
-    args = utils.get_args_via_kvargs(**kvargs)
-    logger = log.get_logger_via_kvargs(**kvargs)
+    if restored_result is not None:
+        scheme.restore_result(restored_result)
 
-    scheme = Scheme_2(base.Toolbox(), args)
+def run_scheme_hyper_param(**kvargs):
+    args = utils.get_args_via_kvargs(kvargs)
+
+    scheme = DynoEvoEsnHyperParam(cfg.Config.Schemes.HyperParam)
+    check_restore(args, scheme, cfg.Config.Schemes.HyperParam.Evo)
     scheme.run()
-    scheme.show_plot()
 
-    dump.do(logger=logger, evo_scheme=scheme)
+    dump.do(evo_scheme=scheme)
 
-def run_grid(**kvargs):
-    args = utils.get_args_via_kvargs(**kvargs)
-    logger = log.get_logger_via_kvargs(**kvargs)
-
-    best_params = grid.esn_lorenz_grid_search(args)
-
-    dump.do(logger=logger, grid_srch_best_params=best_params)
+# def run_grid(**kvargs):
+#     args = utils.get_args_via_kvargs(**kvargs)
+#     best_params = grid.esn_lorenz_grid_search(args)
+#     dump.do(grid_srch_best_params=best_params)
 
 def run_test_multi(**kvargs):
     # args = get_args_via_kvargs(**kvargs)
-    logger = log.get_logger_via_kvargs(**kvargs)
 
     params = {
         'n_inputs': cfg.Config.Esn.NInputs,
@@ -90,7 +106,7 @@ def run_test_multi(**kvargs):
         'lambda_r': cfg.Config.Esn.LambdaR,
         'random_state': cfg.Config.Esn.RandomState,
     }
-    logger.info(f'start test ESN...  params = {params}')
+    logging.info(f'start test ESN...  params = {params}')
     test_data = lorenz.get_lorenz_data(
         cfg.Config.Models.Lorenz.Ro,
         cfg.Config.Test.MultiStep.DataN,
@@ -103,11 +119,11 @@ def run_test_multi(**kvargs):
     model = esn.EsnForecaster(**params)
     model.fit(lorenz.data_to_train(train_data).T)
     err = utils.valid_multi_f(cfg.Config.Test.MultiStep.StepN, model, valid_data)
-    logger.info(f'dumping test data...')
+    logging.info(f'dumping test data...')
     dump.do_np_arr(test_data=test_data)
-    logger.info(f'dumping hyperparameters...')
+    logging.info(f'dumping hyperparameters...')
     dump.do_var(hyperparameters=params,score={'score': float(err)})
-    logger.info(f'test has been done: err = {err} (multi step testing: step_n = 5)')
+    logging.info(f'test has been done: err = {err} (multi step testing: step_n = 5)')
 
     fig, axes = plt.subplots(3,figsize=(10,3))
 
@@ -136,7 +152,7 @@ def _create_parser() -> argparse.ArgumentParser:
     parser.add_argument('-m',
         type=str,
         required=True,
-        choices=[_MODE_TESTS, _MODE_TEST_MULTI, _MODE_GRID, _MODE_EVO_SCHEME_1, _MODE_EVO_SCHEME_2],
+        choices=[_MODE_TESTS, _MODE_GRID, _MODE_HYPER_PARAMS],
         help='run mode'
     )
 
@@ -168,6 +184,11 @@ def _create_parser() -> argparse.ArgumentParser:
         type=str,
         nargs='?',
         help='directory for writing dump files'
+    )
+    parser.add_argument('--continue-dir',
+        type=str,
+        nargs='?',
+        help='provide directory of itteration pull for continue calculation'
     )
 
     # Tests args
@@ -209,14 +230,10 @@ def main():
 
     if mode == _MODE_TESTS:
         run_tests(args=args)
-    elif mode == _MODE_TEST_MULTI:
-        run_test_multi(args=args)
-    elif mode == _MODE_GRID:
-        run_grid(args=args)
-    elif mode == _MODE_EVO_SCHEME_1:
-        run_scheme2(args=args)
-    elif mode == _MODE_EVO_SCHEME_2:
-        run_scheme2(args=args)
+    # elif mode == _MODE_GRID:
+    #     run_grid(args=args)
+    elif mode == _MODE_HYPER_PARAMS:
+        run_scheme_hyper_param(args=args)
     else:
         raise('unknown running mode')
 

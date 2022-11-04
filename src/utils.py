@@ -1,10 +1,11 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 import numpy as np
 
-from src.config import KVArgConfigSection
+from src.config import KVArgConfigSection, EvoLimitGenConfigField
 
 from .lorenz import train_to_data
 
+from scipy.stats import loguniform
 from skesn.esn import EsnForecaster
 
 def valid_multi_f(valid_multi_n, model: EsnForecaster, valid_data):
@@ -59,3 +60,99 @@ def get_args_via_kvargs(kvargs):
     if _KVARGS_ARGS in kvargs:
         ret = kvargs[_KVARGS_ARGS]
     return ret
+
+def _gen_num_by_limit(
+    limit_cfg: EvoLimitGenConfigField,
+    rand: np.random.RandomState,
+) -> Union[int, float]:
+    ret: float = 0.
+    if limit_cfg.Logspace is None:
+        ret = _gen_num(
+            min=limit_cfg.Min,
+            max=limit_cfg.Max,
+            rand=rand,
+        )
+    else:
+        ret = _gen_log_num(
+            min=limit_cfg.Min,
+            max=limit_cfg.Max,
+            n=limit_cfg.Logspace.N,
+            power=limit_cfg.Logspace.Power,
+            rand=rand,
+        )
+
+    t = limit_cfg.Type.lower()
+    if t == 'int':
+        return int(ret)
+    elif t == 'float':
+        return ret
+    raise 'unknow limit gene type'
+
+def _gen_num(
+    min: Union[float, int, None],
+    max: Union[float, int, None],
+    rand: np.random.RandomState,
+) -> float:
+    if min is not None and max is not None:
+        return rand.uniform(min, max)
+    elif min is None and max is not None:
+        return rand.uniform(0, max)
+    elif min is not None and max is None:
+        return rand.uniform(min)
+    return rand.uniform(0)
+
+_EPS_FLOAT = 1e-16
+
+def _gen_log_num(
+    min: Union[int, float, None],
+    max: Union[int, float, None],
+    n: int,
+    power: int,
+    rand: np.random.RandomState,
+) -> float:
+    if min == 0:
+        min = _EPS_FLOAT
+    if max == 0:
+        max = _EPS_FLOAT
+
+    # TODO : use base and power for generation random point
+    if min is not None and max is not None:
+        return 10**rand.uniform(np.log10(min), np.log10(max))
+    elif min is None and max is not None:
+        return 10**rand.uniform(np.log10(_EPS_FLOAT), np.log10(max))
+    elif min is not None and max is None:
+        return 10**rand.uniform(np.log10(min))
+    return 10**rand.uniform(np.log10(_EPS_FLOAT))
+
+def gen_gene(
+    limit_cfg: EvoLimitGenConfigField,
+    rand: np.random.RandomState,
+) -> Any:
+    t = limit_cfg.Type.lower()
+    if t in ('int', 'float'):
+        return _gen_num_by_limit(limit_cfg=limit_cfg, rand=rand)
+    elif t == 'bool':
+        return rand.randint(0, 2) == 1
+    elif t == 'choice':
+        idx = rand.randint(0, len(limit_cfg.Choice))
+        return limit_cfg.Choice[idx]
+    return None
+
+def mut_gene(
+    limit_cfg: EvoLimitGenConfigField,
+    rand: np.random.RandomState,
+    cur_gene: Union[int, float, bool, str]
+) -> Union[int, float, bool, str]:
+    t = limit_cfg.Type.lower()
+    if t in ('int', 'float'):
+        return _gen_num_by_limit(limit_cfg=limit_cfg, rand=rand)
+    elif t == 'bool' and isinstance(cur_gene, bool):
+        return not cur_gene
+    elif t == 'choice':
+        len_choice = len(limit_cfg.Choice)
+        idx = rand.randint(0, len_choice)
+        if limit_cfg.Choice[idx] == cur_gene:
+            offset = rand.randint(0, len_choice)
+            return limit_cfg.Choice[(idx + offset) % len_choice]
+        return limit_cfg.Choice[idx]
+    raise 'unknown limit gene type'

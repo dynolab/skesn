@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from genericpath import exists
 
 import sys
@@ -12,18 +12,16 @@ _KVARGS_NAME = 'name'
 _KVARGS_LOGGER = 'logger'
 
 _args = None
+_logfile = None
+
+def get_logfile() -> str: return _logfile
 
 def init(args):
-    global _args
-    _args = args
-
-# args:
-# "name": name of logger which will be create (key: _KVARGS_NAME)
-def get_logger(**kvargs) -> logging.Logger:
-    global _args
-
     if Config.Logging.Disable:
-        return get_disabled_loggger()
+        return
+
+    global _args, _logfile
+    _args = args
 
     logdir = Config.Logging.Dir
     if _args is not None and hasattr(_args, 'log_dir'):
@@ -35,10 +33,21 @@ def get_logger(**kvargs) -> logging.Logger:
     if len(logdir) > 0 and ord(logdir[len(logdir)-1]) != ord('/'):
         logdir += '/'
 
-    filename = f"{logdir}{str(date.today()).replace('-', '_')}_log"
+
+    today = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+    _logfile = f"{logdir}{today.replace('-', '_')}_log"
     # create file
-    if not os.path.exists(filename):
-        with open(filename, 'w'): "dummy"
+    if not os.path.exists(_logfile):
+        with open(_logfile, 'w'): 'dummy'
+
+    logging.root = get_logger(name='root')
+    logging.root
+
+# args:
+# "name": name of logger which will be create (key: _KVARGS_NAME)
+def get_logger(**kvargs) -> logging.Logger:
+    if Config.Logging.Disable:
+        return get_disabled_loggger()
 
     logFormatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s",
         '%d-%b-%y %H:%M:%S',
@@ -51,7 +60,7 @@ def get_logger(**kvargs) -> logging.Logger:
 
     log_level = _map_log_level(kvargs.get('level', Config.Logging.Level))
 
-    fileHandler = logging.FileHandler(filename, mode='a')
+    fileHandler = logging.FileHandler(_logfile, mode='a')
     fileHandler.setFormatter(logFormatter)
     fileHandler.setLevel(log_level)
     fileHandler.createLock()

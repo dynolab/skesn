@@ -1,7 +1,7 @@
 import utils
 import config
 
-from src.evo.esn_evo_scheme import EsnEvoScheme
+from src.evo.evo_esn_scheme import EvoEsnScheme
 
 from skesn.esn import EsnForecaster
 from deap import base
@@ -15,7 +15,7 @@ class HyperParamInfo:
         self.max = max
         self.is_int = is_int
 
-class EvoSchemeEsnHyperParams(EsnEvoScheme):
+class EvoSchemeEsnHyperParams(EvoEsnScheme):
     def __init__(self,
         name: str,
         cfg: config.EvoSchemeConfigField,

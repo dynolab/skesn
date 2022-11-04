@@ -19,44 +19,6 @@ class ConfigSection(object):
 def _yaml_config_section_arr(arr: List[ConfigSection]):
     return [item.yaml() for item in arr]
 
-class EvaluateOptsConfigField(ConfigSection):
-    @property
-    def SparsityTrain(self) -> int: return self._sparsity_train
-
-    def __init__(self) -> None:
-        self._sparsity_train: int = 0
-
-    def load(self, cfg: dict) -> None:
-        self._sparsity_train = Config.get_optional_value(cfg, 'sparsity_train', self._sparsity_train)
-
-    def yaml(self) -> dict:
-        return {'sparsity_train': self._sparsity_train,}
-
-class EvaluateConfigField(ConfigSection):
-    @property
-    def Metric(self) -> str: return self._metric
-    @property
-    def Model(self) -> str: return self._model
-    @property
-    def Steps(self) -> int: return self._steps
-    @property
-    def Opts(self) -> EvaluateOptsConfigField: return self._opts
-
-    def __init__(self) -> None:
-        self._metric:  str                   = NecessaryField
-        self._model: str                     = NecessaryField
-        self._steps: int                     = 1
-        self._opts:  EvaluateOptsConfigField = EvaluateOptsConfigField()
-
-    def load(self, cfg: dict) -> None:
-        self._metric  = Config.get_necessary_value(cfg, 'metric', self._metric)
-        self._model = Config.get_necessary_value(cfg, 'model', self._model)
-        self._steps = Config.get_optional_value(cfg, 'steps', self._steps)
-        self._opts = Config.get_optional_value(cfg, 'opts', self._opts)
-
-    def yaml(self) -> dict:
-        return {'metric': self._metric,'model': self._model,'steps': self._steps,'opts': self._opts.yaml()}
-
 class LoggingConfigField(ConfigSection):
     Level:          str  = 'info'
     Dir:            str  = ''
@@ -89,29 +51,62 @@ class DumpConfigField(ConfigSection):
         return {'title': DumpConfigField.Title, 'disable': DumpConfigField.Disable, 'user': DumpConfigField.User,'dirname': DumpConfigField.Dir,}
 
 class EsnConfigField(ConfigSection):
-    NInputs:        int   = NecessaryField
-    NReservoir:     int   = NecessaryField
-    SpectralRadius: float = NecessaryField
-    Sparsity:       int   = NecessaryField
-    Noise:          float = NecessaryField
-    LambdaR:        float = NecessaryField
-    Inspect:        bool  = False
-    RandomState:    int   = 0
+    @property
+    def NReservoir(self) -> int: return self._n_reservoir
+    @property
+    def SpectralRadius(self) -> float: return self._spectral_radius
+    @property
+    def Sparsity(self) -> float: return self._sparsity
+    @property
+    def LambdaR(self) -> float: return self._lambda_r
+    @property
+    def RandomState(self) -> int: return self._random_state
+
+    @property
+    def UseBias(self) -> bool: return self._use_bias
+    @property
+    def UseAdditiveNoiseWhenForecasting(self) -> bool: return self._use_additive_noise_when_forecasting
+
+    @property
+    def InActivation(self) -> str: return self._in_activation
+    @property
+    def OutActivation(self) -> str: return self._out_activation
+    @property
+    def Regularization(self) -> str: return self._regularization
+
+    def __init__(self) -> None:
+        self._n_reservoir:                         int   = None
+        self._spectral_radius:                     float = None
+        self._sparsity:                            float = None
+        self._lambda_r:                            float = None
+        self._random_state:                        int   = 0
+        self._in_activation:                       str   = 'tanh'
+        self._out_activation:                      str   = 'identity'
+        self._regularization:                      str   = 'noise'
+        self._use_bias:                            bool  = True
+        self._use_additive_noise_when_forecasting: bool  = True
 
     def load(self, cfg: dict) -> None:
-        EsnConfigField.NInputs        = Config.get_necessary_value(cfg, 'n_inputs', EsnConfigField.NInputs)
-        EsnConfigField.NReservoir     = Config.get_necessary_value(cfg, 'n_reservoir', EsnConfigField.NReservoir)
-        EsnConfigField.SpectralRadius = Config.get_necessary_value(cfg, 'spectral_radius', EsnConfigField.SpectralRadius)
-        EsnConfigField.Sparsity       = Config.get_necessary_value(cfg, 'sparsity', EsnConfigField.Sparsity)
-        EsnConfigField.Noise          = Config.get_necessary_value(cfg, 'noise', EsnConfigField.Noise)
-        EsnConfigField.LambdaR        = Config.get_necessary_value(cfg, 'lambda_r', EsnConfigField.LambdaR)
-        EsnConfigField.Inspect        = Config.get_optional_value(cfg, 'inspect', EsnConfigField.Inspect)
-        EsnConfigField.RandomState    = Config.get_optional_value(cfg, 'random_state', EsnConfigField.RandomState)
+        self._n_reservoir     = Config.get_optional_value(cfg, 'n_reservoir', self._n_reservoir)
+        self._spectral_radius = Config.get_optional_value(cfg, 'spectral_radius', self._spectral_radius)
+        self._sparsity        = Config.get_optional_value(cfg, 'sparsity', self._sparsity)
+        self._lambda_r        = Config.get_optional_value(cfg, 'lambda_r', self._lambda_r)
+        self._random_state    = Config.get_optional_value(cfg, 'random_state', self._random_state)
+        self._use_bias        = Config.get_optional_value(cfg, 'use_bias', self._use_bias)
+        self._in_activation   = Config.get_optional_value(cfg, 'in_activation', self._in_activation)
+        self._out_activation  = Config.get_optional_value(cfg, 'out_activation', self._out_activation)
+        self._regularization = Config.get_optional_value(cfg, 'regularization', self._regularization)
+        self._use_additive_noise_when_forecasting = Config.get_optional_value(cfg, 'use_additive_noise_when_forecasting', self._use_additive_noise_when_forecasting)
 
     def yaml(self) -> dict:
-        return {'n_inputs': EsnConfigField.NInputs, 'n_reservoir': EsnConfigField.NReservoir, 'spectral_radius': EsnConfigField.SpectralRadius,
-                'sparsity': EsnConfigField.Sparsity, 'noise': EsnConfigField.Noise, 'lambda_r': EsnConfigField.LambdaR, 'inspect': EsnConfigField.Inspect,
-                'random_state': EsnConfigField.RandomState,}
+        return {
+            # 'n_inputs': EsnConfigField.NInputs,
+            'n_reservoir': self._n_reservoir, 'spectral_radius': self._spectral_radius,
+            'sparsity': self._sparsity, 'lambda_r': self._lambda_r,
+            'out_activation': self._out_activation, 'in_activation': self._in_activation,
+            'regularization': self._regularization, 'random_state': self._random_state,
+            'use_bias': self._use_bias, 'use_additive_noise_when_forecasting': self._use_additive_noise_when_forecasting,
+        }
 
 class KVArgConfigSection(ConfigSection):
     @property
@@ -209,27 +204,58 @@ class EvoMutateConfigField(EvoOperatorBaseConfigField):
         })
         return ret
 
+class LogspaceConfigField(ConfigSection):
+    @property
+    def N(self) -> int: return self._n
+    @property
+    def Power(self) -> int: return self._power
+
+    def __init__(self) -> None:
+        self._n:     int = NecessaryField
+        self._power: int = 0
+
+    def load(self, cfg: dict) -> None:
+        self._n     = Config.get_necessary_value(cfg, 'n', self._n)
+        self._power = Config.get_optional_value(cfg, 'power', self._power)
+
+    def yaml(self) -> dict:
+        return {
+            'n': self._n,'power': self._power,
+        }
+
 class EvoLimitGenConfigField(ConfigSection):
+    @property
+    def Type(self) -> str: return self._type
     @property
     def Min(self) -> Union[int,float,None]: return self._min
     @property
     def Max(self) -> Union[int,float,None]: return self._max
     @property
-    def IsInt(self) -> bool: return self._is_int
+    def Choice(self) -> List[Any]: return self._choice
+    @property
+    def Logspace(self) -> Union[LogspaceConfigField, None]: return self._logspace
 
     def __init__(self) -> None:
-        self._min:    Union[int,float,None] = None
-        self._max:    Union[int,float,None] = None
-        self._is_int: bool                  = False
+        self._min:        Union[int,float,None]            = None
+        self._max:        Union[int,float,None]            = None
+        self._choice:     List[Any]                        = None
+        self._type:       bool                             = NecessaryField
+        self._logspace:   Union[LogspaceConfigField, None] = None
 
     def load(self, cfg: dict) -> None:
-        self._min    = Config.get_optional_value(cfg, 'min', self._min)
-        self._max    = Config.get_optional_value(cfg, 'max', self._max)
-        self._is_int = Config.get_optional_value(cfg, 'is_int', self._is_int)
+        self._type       = Config.get_optional_value(cfg, 'type', self._type)
+        self._min        = Config.get_optional_value(cfg, 'min', self._min)
+        self._max        = Config.get_optional_value(cfg, 'max', self._max)
+        self._choice     = Config.get_optional_value(cfg, 'choice', self._choice)
+        if 'logspace' in cfg:
+            self._logspace = LogspaceConfigField()
+            self._logspace.load(Config.get_optional_value(cfg, 'logspace', self._logspace))
 
     def yaml(self) -> dict:
         return {
-            'min': self._min,'max': self._max,'is_int': self._is_int,
+            'type': self._type,
+            'min': self._min,'max': self._max,'choice': self._choice,
+            'logspace': self._logspace.yaml() if self._logspace is not None else None,
         }
 
 class EvoMetricConfigField(ConfigSection):
@@ -313,7 +339,6 @@ class EvoPopulationConfigField(ConfigSection):
             'limits': _yaml_config_section_arr(self._limits),
         }
 
-
 class EvoSchemeMultiPopConfigField(ConfigSection):
     @property
     def MaxGenNum(self) -> int: return self._max_gen_num
@@ -360,8 +385,6 @@ class EvoSchemeMultiPopConfigField(ConfigSection):
             'fitness_weights': self._fitness_weights,'verbose': self._verbose,
             'populations': _yaml_config_section_arr(self._populations),'metrics': _yaml_config_section_arr(self._metrics),
         }
-
-
 
 class EvoSchemeConfigField(ConfigSection):
     @property
@@ -434,47 +457,6 @@ class EvoSchemeConfigField(ConfigSection):
             'limits': _yaml_config_section_arr(self._limits),'metrics': _yaml_config_section_arr(self._metrics),
         }
 
-class Scheme_1ConfigField(ConfigSection):
-    @property
-    def M(self) -> int: return self._m
-    @property
-    def C(self) -> int: return self._c
-    @property
-    def EvoSpec(self) -> EvoSchemeConfigField: return self._evo_spec
-
-    def __init__(self) -> None:
-        self._m:    int =  NecessaryField
-        self._c:    int =  NecessaryField
-
-        self._evo_spec: EvoSchemeConfigField = EvoSchemeConfigField()
-
-    def load(self, cfg: dict) -> None:
-        self._m = Config.get_necessary_value(cfg, 'm', self._m)
-        self._c = Config.get_necessary_value(cfg, 'c', self._c)
-
-        self._evo_spec.load(Config.get_necessary_value(cfg, 'evo_spec', self._evo_spec))
-
-    def yaml(self) -> dict:
-        return {'m': self._m, 'c': self._c,
-                'evo_spec': self._evo_spec.yaml(),}
-
-class EvoConfigField(ConfigSection):
-    @property
-    def Scheme_1(self) -> Scheme_1ConfigField: return self._scheme_1
-    @property
-    def Scheme_2(self) -> EvoSchemeConfigField: return self._scheme_2
-
-    def __init__(self) -> None:
-        self._scheme_1: Scheme_1ConfigField = Scheme_1ConfigField()
-        self._scheme_2: EvoSchemeConfigField = EvoSchemeConfigField()
-
-    def load(self, cfg: dict) -> None:
-        self._scheme_1.load(Config.get_necessary_value(cfg, 'scheme_1', self._scheme_1))
-        self._scheme_2.load(Config.get_necessary_value(cfg, 'scheme_2', self._scheme_2))
-
-    def yaml(self) -> dict:
-        return {'scheme_1': self._scheme_1.yaml(),'scheme_2': self._scheme_2.yaml(),}
-
 class ParamLorenzPropField(ConfigSection):
     @property
     def Start(self): return self._start
@@ -532,7 +514,7 @@ class GridConfigField(ConfigSection):
     def yaml(self) -> dict:
         return {'params_set': GridConfigField.ParamsSet.yaml(),}
 
-class LorenzModelsPropConfigField(ConfigSection):
+class LorenzModelConfig(ConfigSection):
     @property
     def N(self): return self._n
     @property
@@ -543,7 +525,7 @@ class LorenzModelsPropConfigField(ConfigSection):
     def Dt(self): return self._dt
 
     def __init__(self) -> None:
-        self._n:         int = 0
+        self._n:         int   = 0
         self._ro:        float = 0
         self._rand_seed: int   = 0
         self._dt:        float = 0
@@ -557,78 +539,116 @@ class LorenzModelsPropConfigField(ConfigSection):
     def yaml(self) -> dict:
         return {'n': self._n, 'ro': self._ro, 'rand_seed': self._rand_seed, 'dt': self._dt,}
 
-class ModelsConfigField(ConfigSection):
-    Lorenz: LorenzModelsPropConfigField = LorenzModelsPropConfigField()
-
-    def load(self, cfg: dict) -> None:
-        ModelsConfigField.Lorenz.load(Config.get_necessary_value(cfg, 'lorenz', ModelsConfigField.Lorenz))
-
-    def yaml(self) -> dict:
-        return {'lorenz': ModelsConfigField.Lorenz.yaml(),}
-
-
-class MultiStepTestPropConfigField(ConfigSection):
+class EsnEvaluateConfigField(ConfigSection):
     @property
-    def DataN(self): return self._data_n
+    def Metric(self) -> str: return self._metric
     @property
-    def StepN(self): return self._step_n
+    def MaxSteps(self) -> int: return self._max_steps
+    @property
+    def Model(self) -> str: return self._model
+    @property
+    def Data(self) -> str: return self._data
 
     def __init__(self) -> None:
-        self._data_n: int = 0
-        self._step_n: int = 0
+        self._max_steps: int = 0
+        self._metric:    str = NecessaryField
+        self._model:     str = NecessaryField
+        self._data:      str = NecessaryField
 
     def load(self, cfg: dict) -> None:
-        self._data_n = Config.get_optional_value(cfg, 'data_n', self._data_n)
-        self._step_n = Config.get_optional_value(cfg, 'step_n', self._step_n)
+        self._max_steps = Config.get_optional_value(cfg, 'max_steps', self._max_steps)
+        self._metric    = Config.get_necessary_value(cfg, 'metric', self._metric)
+        self._model     = Config.get_necessary_value(cfg, 'model', self._model)
+        self._data      = Config.get_necessary_value(cfg, 'data', self._data)
 
     def yaml(self) -> dict:
-        return {'data_n': self._data_n, 'step_n': self._step_n,}
+        return {
+            'max_steps': self._max_steps,'metric': self._metric,
+            'model': self._model,'data': self._data,
+        }
 
-class TestConfigField(ConfigSection):
+class DynoEvoEsnHyperParamConfig(ConfigSection):
     @property
-    def MultiStep(self): return self._multi_step
+    def Esn(self) -> EsnConfigField: return self._esn
+    @property
+    def Evo(self) -> EvoSchemeConfigField: return self._evo
+    @property
+    def Evaluate(self) -> EsnEvaluateConfigField: return self._evaluate
 
     def __init__(self) -> None:
-        self._multi_step: MultiStepTestPropConfigField = MultiStepTestPropConfigField()
+        self._esn:      EsnConfigField         = EsnConfigField()
+        self._evo:      EvoSchemeConfigField   = EvoSchemeConfigField()
+        self._evaluate: EsnEvaluateConfigField = EsnEvaluateConfigField()
 
     def load(self, cfg: dict) -> None:
-        self._multi_step.load(Config.get_necessary_value(cfg, 'multi_step', self._multi_step))
+        self._esn.load(Config.get_necessary_value(cfg, 'esn', self._esn))
+        self._evo.load(Config.get_necessary_value(cfg, 'evo', self._evo))
+        self._evaluate.load(Config.get_necessary_value(cfg, 'evaluate', self._evaluate))
 
     def yaml(self) -> dict:
-        return {'multi_step': self._multi_step.yaml(),}
+        return {
+            'esn': self._esn.yaml(),'evo': self._evo.yaml(),'evaluate': self._evaluate.yaml(),
+        }
+
+class SchemesConfigField(ConfigSection):
+    @property
+    def HyperParam(self) -> DynoEvoEsnHyperParamConfig: return self._hyper_param
+
+    def __init__(self) -> None:
+        self._hyper_param: DynoEvoEsnHyperParamConfig = DynoEvoEsnHyperParamConfig()
+
+    def load(self, cfg: dict) -> None:
+        self._hyper_param.load(Config.get_necessary_value(cfg, 'hyper_param', self._hyper_param))
+
+    def yaml(self) -> dict:
+        return {
+            'hyper_param': self._hyper_param.yaml(),
+        }
+
+class ModelsConfig(ConfigSection):
+    @property
+    def Lorenz(self) -> LorenzModelConfig: return self._lorenz
+
+    def __init__(self) -> None:
+        self._lorenz: LorenzModelConfig = LorenzModelConfig()
+
+    def load(self, cfg: dict) -> None:
+        self._lorenz.load(Config.get_necessary_value(cfg, 'lorenz', self._lorenz))
+
+    def yaml(self) -> dict:
+        return {
+            'lorenz': self._lorenz.yaml(),
+        }
 
 # Main config class
 
 class Config:
-    Logging:  LoggingConfigField  = LoggingConfigField()
-    Evaluate: EvaluateConfigField = EvaluateConfigField()
-    Test:     TestConfigField     = TestConfigField()
-    Dump:     DumpConfigField     = DumpConfigField()
-    Esn:      EsnConfigField      = EsnConfigField()
-    Evo:      EvoConfigField      = EvoConfigField()
-    Grid:     GridConfigField     = GridConfigField()
-    Models:   ModelsConfigField   = ModelsConfigField()
+    Logging: LoggingConfigField = LoggingConfigField()
+    Dump:    DumpConfigField    = DumpConfigField()
+    Models:  ModelsConfig       = ModelsConfig()
+    Schemes: SchemesConfigField = SchemesConfigField()
+    # Grid:     GridConfigField     = GridConfigField()
 
     def load(cfg: dict, raise_if_necessary: bool=True) -> None:
         Config.__raise_if_necessary = raise_if_necessary
 
         # Load main sections
         Config.Logging.load(Config.get_optional_value(cfg, 'logging', Config.Logging))
-        Config.Evaluate.load(Config.get_optional_value(cfg, 'evaluate', Config.Evaluate))
-        Config.Test.load(Config.get_optional_value(cfg, 'test', Config.Test))
-        Config.Dump.load(Config.get_optional_value(cfg, 'dumb', Config.Dump))
-        Config.Esn.load(Config.get_necessary_value(cfg, 'esn', Config.Esn))
-        Config.Evo.load(Config.get_necessary_value(cfg, 'evo', Config.Evo))
-        Config.Grid.load(Config.get_necessary_value(cfg, 'grid', Config.Grid))
+        Config.Dump.load(Config.get_optional_value(cfg, 'dump', Config.Dump))
         Config.Models.load(Config.get_necessary_value(cfg, 'models', Config.Models))
+        Config.Schemes.load(Config.get_necessary_value(cfg, 'schemes', Config.Schemes))
+        # Config.Grid.load(Config.get_necessary_value(cfg, 'grid', Config.Grid))
 
         Config.__raise_if_necessary = True
         Config.__patched = True
 
     # Serialization config to yaml
     def yaml() -> dict:
-        return {'logging': Config.Logging.yaml(),'evaluate': Config.Evaluate.yaml(), 'run': Config.Run.yaml(), 'test': Config.Test.yaml(), 'dumb': Config.Dump.yaml(), 'esn': Config.Esn.yaml(),
-                'evo': Config.Evo.yaml(),'grid': Config.Grid.yaml(),'models': Config.Models.yaml(),}
+        return {
+            # 'grid': Config.Grid.yaml(),
+            'logging': Config.Logging.yaml(), 'dump': Config.Dump.yaml(),
+            'models': Config.Models.yaml(),'schemes': Config.Schemes.yaml(),
+        }
 
     # Internal property for control raising exeption if field is not provided
     __raise_if_necessary: bool = True
@@ -680,7 +700,7 @@ class Config:
         Config.load(cfg, raise_if_necessary)
 
 def init(args):
-    if args is not None and hasattr(args, 'disable_config'):
+    if args is not None and getattr(args, 'disable_config', False):
         return
     if args is None or not hasattr(args, 'config_path'):
         raise 'cant provide config path'

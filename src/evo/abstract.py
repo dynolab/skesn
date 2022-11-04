@@ -1,3 +1,4 @@
+from types import FunctionType
 from typing import Any
 
 
@@ -9,3 +10,5 @@ class Scheme(object):
     def restore_result(self, result: Any) -> None: pass
 
     def get_name(self) -> str: pass
+
+    def get_evaluate_f(self) -> FunctionType: pass

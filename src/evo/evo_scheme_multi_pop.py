@@ -1,4 +1,4 @@
-import src.evo.utils as utils
+import src.evo.utils as evo_utils
 
 from .abstract import Scheme
 from ..log import get_logger
@@ -38,7 +38,7 @@ class EvoSchemeMultiPop(Scheme):
         self._evaluate_f = evaluate_f
         self._ind_creator_f = ind_creator_f
         if self._ind_creator_f is None:
-            self._ind_creator_f = lambda: utils.create_ind_by_list(utils.ind_creator_f(
+            self._ind_creator_f = lambda: evo_utils.create_ind_by_list(evo_utils.ind_creator_f(
                     creator.Individual,
                     self._cfg.HromoLen,
                     pop_cfg.Limits,
@@ -71,7 +71,7 @@ class EvoSchemeMultiPop(Scheme):
         if len(self._cfg.Metrics) > 0:
             self._stats = tools.Statistics(lambda ind: ind.fitness.values)
             for metric_cfg in self._cfg.Metrics:
-                self._stats.register(metric_cfg.Name, utils.get_evo_metric_func(metric_cfg.Func, metric_cfg.Package))
+                self._stats.register(metric_cfg.Name, evo_utils.get_evo_metric_func(metric_cfg.Func, metric_cfg.Package))
 
     # Inherited methods
 
@@ -106,13 +106,13 @@ class EvoSchemeMultiPop(Scheme):
                     self._cfg.HromoLen,
                     pop_cfg,
                 )
-                pop.Inds = [ind if isinstance(ind, creator.Individual) else utils.create_ind_by_list(ind, self._evaluate_f) for ind in result[k]]
+                pop.Inds = [ind if isinstance(ind, creator.Individual) else evo_utils.create_ind_by_list(ind, self._evaluate_f) for ind in result[k]]
                 k += 1
                 self._result.append(pop)
 
     def save(self, dirname: str, **kvargs) -> str:
-        run_pool_dir = utils.get_or_create_last_run_pool_dir(dirname, self._name)
-        iter_dir = utils.create_iter_dir(run_pool_dir)
+        run_pool_dir = evo_utils.get_or_create_last_run_pool_dir(dirname, self._name)
+        iter_dir = evo_utils.create_iter_dir(run_pool_dir)
 
         len_metrics = len(self._cfg.Metrics)
         if not kvargs.get('disable_stat', False) and len_metrics > 0:
@@ -137,21 +137,21 @@ class EvoSchemeMultiPop(Scheme):
         if not kvargs.get('disable_dump_result', False):
             # Dump last populations
             with open(f'{iter_dir}/result.yaml', 'w') as f:
-                utils.dump_inds_multi_pop_arr(
+                evo_utils.dump_inds_multi_pop_arr(
                     self._cfg.HromoLen,
                     f,
                     [popultaion.Inds for popultaion in self._result],
-                    utils.get_populations_limits(self._cfg),
+                    evo_utils.get_populations_limits(self._cfg),
                 )
 
         if not kvargs.get('disable_dump_hall_of_fame', False):
             # Dump last population hall of fames
             with open(f'{iter_dir}/hall_off_fames.yaml', 'w') as f:
-                utils.dump_inds_multi_pop_arr(
+                evo_utils.dump_inds_multi_pop_arr(
                     self._cfg.HromoLen,
                     f,
                     [popultaion.HallOfFame.items if popultaion.HallOfFameSize > 0 else [] for popultaion in self._result],
-                    utils.get_populations_limits(self._cfg),
+                    evo_utils.get_populations_limits(self._cfg),
                 )
 
     # Access methods
@@ -194,32 +194,32 @@ def _create_deap_population(
 
     toolbox.register('evaluate', evaluate_f)
 
-    utils.bind_evo_operator(
+    evo_utils.bind_evo_operator(
         toolbox,
         'select',
-        utils.map_select_f(cfg.Select.Method),
+        evo_utils.map_select_f(cfg.Select.Method),
         cfg.Select.Args,
     )
-    utils.bind_evo_operator(
+    evo_utils.bind_evo_operator(
         toolbox,
         'mate',
-        utils.map_mate_f(cfg.Mate.Method),
+        evo_utils.map_mate_f(cfg.Mate.Method),
         cfg.Mate.Args,
     )
 
     if cfg.Mutate.Indpb > 0:
-        utils.bind_evo_operator(
+        evo_utils.bind_evo_operator(
             toolbox,
             'mutate',
-            utils.map_mutate_f(cfg.Mutate.Method),
+            evo_utils.map_mutate_f(cfg.Mutate.Method),
             cfg.Mutate.Args,
             indpb=cfg.Mutate.Indpb,
         )
     else:
-        utils.bind_evo_operator(
+        evo_utils.bind_evo_operator(
             toolbox,
             'mutate',
-            utils.map_mutate_f(cfg.Mutate.Method),
+            evo_utils.map_mutate_f(cfg.Mutate.Method),
             cfg.Mutate.Args,
             indpb=1/hromo_len,
         )
