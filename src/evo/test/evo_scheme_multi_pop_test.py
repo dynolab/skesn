@@ -859,10 +859,6 @@ def run_tests(**kvargs):
             else:
                 _test_logger.warn('restored result has not been set')
 
-        # Set random state
-        random.seed(cfg.RandSeed)
-        np.random.seed(cfg.RandSeed)
-
         stop_cond = None
         if utils.TEST_CFG_KEY_VALIDATE_RESULT_F in test:
             stop_cond = lambda population, gen, **kvargs: test[utils.TEST_CFG_KEY_VALIDATE_RESULT_F](cfg, population)[0]

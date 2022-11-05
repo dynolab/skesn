@@ -1,10 +1,10 @@
 from typing import Tuple
 
-from .abstract import Scheme
-from .utils import map_crossing_f, map_select_f, map_mutate_f
+from ..abstract import Scheme
+from ..utils import map_crossing_f, map_select_f, map_mutate_f
 
-from ..lorenz import get_lorenz_data, data_to_train, train_to_data
-from ..config import Config
+from ...lorenz import get_lorenz_data, data_to_train, train_to_data
+from ...config import Config
 
 from skesn.esn import EsnForecaster
 

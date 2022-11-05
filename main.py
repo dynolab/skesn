@@ -222,6 +222,11 @@ def main():
     parser = _create_parser()
     args = parser.parse_args()
 
+    if cfg.Config.GlobalProps.RandSeed > 0:
+        # Set random state
+        random.seed(cfg.Config.GlobalProps.RandSeed)
+        np.random.seed(cfg.Config.GlobalProps.RandSeed)
+
     cfg.init(args)
     log.init(args)
     dump.init(args)

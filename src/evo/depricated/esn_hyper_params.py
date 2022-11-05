@@ -62,7 +62,6 @@ class EvoSchemeEsnHyperParams(EvoEsnScheme):
 
     def _get_esn(self, ind: list) -> EsnForecaster:
         return EsnForecaster(
-            n_inputs=self._esn_cfg.NInputs,
             lambda_r=self._esn_cfg.LambdaR,
             random_state=self._esn_cfg.RandomState,
             n_reservoir=self._esn_cfg.NReservoir,

@@ -1,9 +1,12 @@
 import numpy as np
 
 def get_lorenz_data(ro, N, dt, seed):
-    np.random.seed(seed)
+    rand = np.random
+    if seed > 0:
+        rand = np.random.RandomState(seed)
+
     Y = np.zeros((3,N))
-    Y[:,0] = np.random.random(3)
+    Y[:,0] = rand.random(3)
 
     for i in range(1,N):
         [x,y,z] = Y[:,i-1]

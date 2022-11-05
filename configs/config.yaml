@@ -1,3 +1,6 @@
+global_props:
+  rand_seed: 4
+
 logging:
   # file: logs/log
   dir: logs
@@ -34,7 +37,7 @@ schemes:
       # use_additive_noise_when_forecasting: True # 5
     evo:
       rand_seed: 1
-      max_gen_num: 100
+      max_gen_num: 200
       population_size: 10
       hall_of_fame: 2
       hromo_len: 6
@@ -79,6 +82,7 @@ schemes:
             val: 2
       mate:
         method: cxTwoPoint
+        # method: cxOnePoint
         probability: 0.8
       mutate:
         method: dynoMutGeneByLimit

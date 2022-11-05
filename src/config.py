@@ -620,19 +620,36 @@ class ModelsConfig(ConfigSection):
             'lorenz': self._lorenz.yaml(),
         }
 
+class GlobalPropsConfigField(ConfigSection):
+    @property
+    def RandSeed(self) -> int: return self._rand_seed
+
+    def __init__(self) -> None:
+        self._rand_seed: int = 0
+
+    def load(self, cfg: dict) -> None:
+        self._rand_seed = Config.get_optional_value(cfg, 'rand_seed', self._rand_seed)
+
+    def yaml(self) -> dict:
+        return {
+            'rand_seed': self._rand_seed,
+        }
+
 # Main config class
 
-class Config:
-    Logging: LoggingConfigField = LoggingConfigField()
-    Dump:    DumpConfigField    = DumpConfigField()
-    Models:  ModelsConfig       = ModelsConfig()
-    Schemes: SchemesConfigField = SchemesConfigField()
-    # Grid:     GridConfigField     = GridConfigField()
+class Config(object):
+    GlobalProps: GlobalPropsConfigField = GlobalPropsConfigField()
+    Logging:     LoggingConfigField     = LoggingConfigField()
+    Dump:        DumpConfigField        = DumpConfigField()
+    Models:      ModelsConfig           = ModelsConfig()
+    Schemes:     SchemesConfigField     = SchemesConfigField()
+    # Grid:      GridConfigField        = GridConfigField()
 
     def load(cfg: dict, raise_if_necessary: bool=True) -> None:
         Config.__raise_if_necessary = raise_if_necessary
 
         # Load main sections
+        Config.GlobalProps.load(Config.get_optional_value(cfg, 'global_props', Config.GlobalProps))
         Config.Logging.load(Config.get_optional_value(cfg, 'logging', Config.Logging))
         Config.Dump.load(Config.get_optional_value(cfg, 'dump', Config.Dump))
         Config.Models.load(Config.get_necessary_value(cfg, 'models', Config.Models))
@@ -646,6 +663,7 @@ class Config:
     def yaml() -> dict:
         return {
             # 'grid': Config.Grid.yaml(),
+            'global_props': Config.GlobalProps.yaml(),
             'logging': Config.Logging.yaml(), 'dump': Config.Dump.yaml(),
             'models': Config.Models.yaml(),'schemes': Config.Schemes.yaml(),
         }
