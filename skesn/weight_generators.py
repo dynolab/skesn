@@ -20,15 +20,12 @@ def standart_weights_generator(random_state, n_reservoir: int, sparsity: float, 
     # rescale them to reach the requested spectral radius:
     W = W * (spectral_radius / radius)
 
-    W_c = None
-    if n_exo > 0:
-        W_c = random_state.rand(n_reservoir, n_exo) * 2 - 1
-    return W_in, W, W_c
+    return W_in, W
 
 def optimal_weights_generator(verbose = 2, range_generator = np.linspace, 
     steps = 100, hidden_std = 0.5, find_optimal_input = True, thinning_step = 10):
     def _generator(random_state, n_reservoir: int, sparsity: float, spectral_radius: any, 
-        endo_states: np.ndarray, exo_states: any):
+        endo_states: np.ndarray, exo_states: any = None, controller_inst = None):
         # Preparing 
         n_endo = endo_states.shape[2]
         n_exo = 0 if exo_states is None else exo_states.shape[-1]
@@ -50,9 +47,8 @@ def optimal_weights_generator(verbose = 2, range_generator = np.linspace,
         spectral_radius = spectral_radius.reshape((steps, 1, 1))
 
         # -----------------------------
-        # Generate optimal W_in and W_c
+        # Generate optimal W_in
         # -----------------------------
-        W_c = None
         if(verbose > 0): print("\n------------Reservoir searching------------")
         if(find_optimal_input):
             if(verbose > 0): print("Input matrix generation...")
@@ -61,14 +57,11 @@ def optimal_weights_generator(verbose = 2, range_generator = np.linspace,
             W_in = random_state.uniform(-1, 1, (steps, n_reservoir, n_endo)) * spectral_radius
             W_in[random_state.rand(*W_in.shape) < 0.3] = 0
 
-            if(exo_states is not None):
-                W_c = random_state.uniform(-1, 1, (steps, n_reservoir, n_exo)) * spectral_radius
-                W_c[random_state.rand(*W_c.shape) < 0.3] = 0
-
             # Get activations 
             #   Compute input pre-activations
             input_preact = np.einsum('ijk,lk->ilj', W_in, endo_states)
-            if(exo_states is not None): input_preact += np.einsum('ijk,lk->ilj', W_c, exo_states)
+            if(exo_states is not None and controller_inst is not None):
+                input_preact = controller_inst.preact(input_preact, exo_states)
             #   Generate hidden pre-activations: half of them are zeros, 
             #   the other half are random numbers with a uniform distribution.
             hidden_preact = random_state.normal(0, hidden_std, input_preact.shape)
@@ -90,7 +83,6 @@ def optimal_weights_generator(verbose = 2, range_generator = np.linspace,
             # Optimal matrices
             idx = np.argmax(qualities)
             W_in = W_in[idx]
-            if(exo_states is not None): W_c = W_c[idx]
 
             if(verbose > 0): print("Optimal scale: %lf" % (spectral_radius[idx,0,0]))
 
@@ -111,10 +103,6 @@ def optimal_weights_generator(verbose = 2, range_generator = np.linspace,
             W_in = random_state.uniform(-1, 1, (n_reservoir, n_endo))
             W_in[random_state.rand(*W_in.shape) < 0.3] = 0
 
-            if(exo_states is not None):
-                W_c = random_state.uniform(-1, 1, (n_reservoir, n_exo))
-                W_c[random_state.rand(*W_c.shape) < 0.3] = 0
-
 
         # -----------------------------
         # Generate optimal W
@@ -129,7 +117,6 @@ def optimal_weights_generator(verbose = 2, range_generator = np.linspace,
         # Get activations
         #   Compute input pre-activations 
         input_preact = endo_states @ W_in.T
-        if(exo_states is not None): input_preact += exo_states @ W_c.T
         act = np.zeros((steps, endo_states.shape[0], n_reservoir))
 
         #   Compute hidden pre-activations
@@ -173,5 +160,5 @@ def optimal_weights_generator(verbose = 2, range_generator = np.linspace,
             plt.xlabel("activations")
             plt.ylabel("counts")
 
-        return W_in, W, W_c
+        return W_in, W
     return _generator

@@ -5,6 +5,8 @@ from skesn.base import BaseForecaster
 from skesn.misc import correct_dimensions, identity
 from skesn.weight_generators import standart_weights_generator
 
+from .esn_controllers import Controller
+
 from enum import Enum
 update_modes = Enum("update_modes", "synchronization transfer_learning refit")
 
@@ -72,9 +74,11 @@ class EsnForecaster(BaseForecaster):
         Inverse of the output activation function
     random_state : positive integer seed, np.rand.RandomState object,
                    or None to use numpy's builting RandomState.
-        Used as a seed to randomize matrices W_in, W and W_c
+        Used as a seed to randomize matrices W_in and W
     use_bias : bool
         Whether a bias term is added before activation
+    controller : Controller
+        Controller class to control the model
     """
     def __init__(self,
                  n_reservoir=200,
@@ -82,11 +86,13 @@ class EsnForecaster(BaseForecaster):
                  sparsity=0,
                  regularization='noise',
                  lambda_r=0.001,
+                 noise_theta=0.001,
                  in_activation='tanh',
                  out_activation='identity',
                  use_additive_noise_when_forecasting=True,
                  random_state=None,
-                 use_bias=True):
+                 use_bias=True,
+                 controller=None):
         self.n_reservoir = n_reservoir
         self.spectral_radius = spectral_radius
         self.sparsity = sparsity
@@ -94,12 +100,15 @@ class EsnForecaster(BaseForecaster):
         self.lambda_r = lambda_r
         self.use_additive_noise_when_forecasting = \
             use_additive_noise_when_forecasting
-        if self.regularization == 'l2':
+        if 'l2' in self.regularization:
             self.use_additive_noise_when_forecasting = False
         self.in_activation = in_activation
         self.out_activation = out_activation
         self.random_state = random_state
         self.use_bias = use_bias
+        self.noise_theta = noise_theta
+
+        self.set_controller(controller)
 
         # the given random_state might be either an actual RandomState object,
         # a seed or None (in which case we use numpy's builtin RandomState)
@@ -114,6 +123,11 @@ class EsnForecaster(BaseForecaster):
             self.random_state_ = np.random.mtrand._rand
         super().__init__()
 
+    def set_controller(self, controller):
+        if(controller is not None and not issubclass(type(controller), Controller)):
+            raise ValueError("The object must inherit from the Controller class or be None.")
+        self.controller = controller
+
     def get_fitted_params(self):
         """Get fitted parameters. Overloaded method from BaseForecaster
 
@@ -127,7 +141,6 @@ class EsnForecaster(BaseForecaster):
         return {
             'W_in': self.W_in_,
             'W': self.W_,
-            'W_c': self.W_c_,
             'W_out': self.W_out_,
         }
 
@@ -152,7 +165,7 @@ class EsnForecaster(BaseForecaster):
             Exogeneous time series to fit to or a sequence of them (batches).
             Can also be understood as a control signal
         initialization_strategy: function
-            A function generating random matrices W_in, W and W_c
+            A function generating random matrices W_in and W
         inspect : bool
             Whether to show a visualisation of the collected reservoir states
 
@@ -162,7 +175,9 @@ class EsnForecaster(BaseForecaster):
         """
         endo_states, exo_states = \
             self._treat_dimensions_and_bias(y, X, representation='3D')
-        self.W_in_, self.W_, self.W_c_ = \
+        if(self.controller):
+            self.controller.initialize(self, exo_states)
+        self.W_in_, self.W_ = \
             initialization_strategy(self.random_state_,
                                     self.n_reservoir,
                                     self.sparsity,
@@ -172,7 +187,7 @@ class EsnForecaster(BaseForecaster):
         
         return self._update_via_refit(endo_states, exo_states, inspect)
 
-    def _predict(self, n_timesteps, X=None, inspect=False):
+    def _predict(self, n_timesteps, X=None, inspect=False, save_state=False):
         """Forecast time series at further time steps.
 
         State required:
@@ -238,6 +253,11 @@ class EsnForecaster(BaseForecaster):
                 pbar.update(1)
         if inspect:
             pbar.close()
+
+        if(save_state):
+            self.last_reservoir_state_ = reservoir_states[-1, :]
+            self.last_endo_state_ = endo_states[-1, :]
+
         if self.use_bias:
             return endo_states[1:, 1:]
         else:
@@ -328,17 +348,19 @@ class EsnForecaster(BaseForecaster):
         if inspect:
             pbar.close()
 
+        if(self.controller is not None):
+            reservoir_states = self.controller.prereg(reservoir_states, endo_states, exo_states)
         reservoir_states = np.reshape(reservoir_states,
                                       (-1, reservoir_states.shape[-1]))
         endo_states = np.reshape(endo_states,
                                  (-1, endo_states.shape[-1]))
         if inspect:
             print("solving...")
-        if self.regularization == 'l2':
+        if 'l2' in self.regularization:
             idenmat = self.lambda_r * np.identity(self.n_reservoir)
             U = np.dot(reservoir_states.T, reservoir_states) + idenmat
             self.W_out_ = np.linalg.solve(U, reservoir_states.T @ endo_states).T
-        elif self.regularization == 'noise' or self.regularization is None:
+        elif 'noise' in self.regularization or self.regularization is None:
             # same formulas as above but with lambda = 0
             U = np.dot(reservoir_states.T, reservoir_states)
             self.W_out_ = np.linalg.solve(U, reservoir_states.T @ endo_states).T
@@ -350,7 +372,8 @@ class EsnForecaster(BaseForecaster):
         if exo_states is None:
             self.last_exo_state_ = 0
         else:
-            raise NotImplementedError('forgot to implement')
+            pass
+            # raise NotImplementedError('forgot to implement')
         return self
 
     def _update_via_synchronization(self, y, X=None):
@@ -448,6 +471,7 @@ class EsnForecaster(BaseForecaster):
         # remember the last state for later:
         self.last_reservoir_state_ = reservoir_states[-1, :]
         self.last_endo_input_ = endo_states[-1, :]
+        self.last_endo_state_ = endo_states[-1, :]
         return self
 
     def _iterate_reservoir_state(self, reservoir_state, endo_state,
@@ -462,12 +486,12 @@ class EsnForecaster(BaseForecaster):
         n_reservoir = reservoir_state.shape[0]
         preactivation = np.dot(self.W_, reservoir_state) + np.dot(self.W_in_,
                                                                   endo_state)
-        if exo_state is not None:
-            preactivation += np.dot(self.W_c_, exo_state)
+        if(exo_state is not None and self.controller is not None):
+            preactivation = self.controller.preact(preactivation, exo_state)
         s = ACTIVATIONS[self.in_activation]['direct'](preactivation)
         if (forecasting_mode and self.use_additive_noise_when_forecasting) or \
-           (not forecasting_mode and self.regularization == 'noise'):
-            s += self.lambda_r * (self.random_state_.rand(n_reservoir) - 0.5)
+           (not forecasting_mode and 'noise' in self.regularization):
+            s += self.noise_theta * (self.random_state_.rand(n_reservoir) - 0.5)
         return s
 
     def _treat_dimensions_and_bias(self, y, X=None, representation='2D'):
@@ -507,4 +531,5 @@ class EsnForecaster(BaseForecaster):
                                  f'{representation}')
             endo_states = np.concatenate((np.ones(ones_shape), endo_states),
                                          axis=-1)
+                                         
         return endo_states, exo_states
