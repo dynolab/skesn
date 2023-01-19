@@ -1,6 +1,10 @@
+from src.evo.tasks.duno_evo_esn_hyper_param_multi_pop_multi_crit import DynoEvoEsnHyperParamMultiPopMultiCrit
+from src.evo.tasks.duno_evo_esn_hyper_param_multi_pop import DynoEvoEsnHyperParamMultiPop
 from src.evo.tasks.dyno_evo_esn_hyper_param import DynoEvoEsnHyperParam
 from src.evo.abstract import Scheme
 
+import src.evo.evo_scheme as evo_scheme
+import src.evo.evo_scheme_multi_pop as evo_scheme_multi_pop
 import src.evo.test.evo_scheme_test as evo_scheme_test
 import src.evo.test.evo_scheme_multi_pop_test as evo_scheme_multi_pop_test
 import src.lorenz as lorenz
@@ -43,8 +47,10 @@ from joblib import Parallel, delayed
 
 # Modes for running
 _MODE_TESTS = 'tests'
-_MODE_GRID = 'grid'
+# _MODE_GRID = 'grid'
 _MODE_HYPER_PARAMS = 'hyper_param'
+_MODE_HYPER_PARAMS_MULTI_POP = 'hyper_param_multi_pop'
+_MODE_HYPER_PARAMS_MULTI_POP_MULTI_CRIT = 'hyper_param_multi_pop_multi_crit'
 
 def run_tests(**kvargs):
     # TODO :
@@ -54,7 +60,6 @@ def run_tests(**kvargs):
 def check_restore(
     args,
     scheme: Scheme,
-    scheme_cfg,
 ) -> None:
     if not hasattr(args, 'continue_dir'):
         return
@@ -63,28 +68,41 @@ def check_restore(
     if continue_dir is None:
         return
 
-    restored_result = evo_utils.get_evo_scheme_result_last_iter(
-        evo_utils.get_evo_scheme_result_from_file,
-        lambda ind: evo_utils.create_ind_by_list(ind, scheme.get_evaluate_f()),
-        scheme_cfg,
-        continue_dir,
-    )
-    # restored_result = evo_utils.get_evo_scheme_result_last_run_pool(
-    #     evo_utils.get_evo_scheme_multi_pop_result_from_file,
-    #     lambda ind: evo_utils.create_ind_by_list(ind, scheme.get_evaluate_f),
-    #     cfg,
-    #     continue_dir,
-    #     scheme.get_name(),
-    # )
+    scheme.restore_result(continue_dir)
 
-    if restored_result is not None:
-        scheme.restore_result(restored_result)
 
 def run_scheme_hyper_param(**kvargs):
     args = utils.get_args_via_kvargs(kvargs)
 
-    scheme = DynoEvoEsnHyperParam(cfg.Config.Schemes.HyperParam)
-    check_restore(args, scheme, cfg.Config.Schemes.HyperParam.Evo)
+    scheme = DynoEvoEsnHyperParam(
+        cfg.Config.Schemes.HyperParam,
+    )
+
+    check_restore(args, scheme)
+    scheme.run()
+
+    dump.do(evo_scheme=scheme)
+
+def run_scheme_hyper_param_multi_pop(**kvargs):
+    args = utils.get_args_via_kvargs(kvargs)
+
+    scheme = DynoEvoEsnHyperParamMultiPop(
+        cfg.Config.Schemes.HyperParamMultiPop,
+    )
+
+    check_restore(args, scheme)
+    scheme.run()
+
+    dump.do(evo_scheme=scheme)
+
+def run_scheme_hyper_param_multi_pop_multi_crit(**kvargs):
+    args = utils.get_args_via_kvargs(kvargs)
+
+    scheme = DynoEvoEsnHyperParamMultiPopMultiCrit(
+        cfg.Config.Schemes.HyperParamMultiPopMultiCrit,
+    )
+
+    check_restore(args, scheme)
     scheme.run()
 
     dump.do(evo_scheme=scheme)
@@ -152,7 +170,7 @@ def _create_parser() -> argparse.ArgumentParser:
     parser.add_argument('-m',
         type=str,
         required=True,
-        choices=[_MODE_TESTS, _MODE_GRID, _MODE_HYPER_PARAMS],
+        choices=[_MODE_TESTS, _MODE_HYPER_PARAMS, _MODE_HYPER_PARAMS_MULTI_POP, _MODE_HYPER_PARAMS_MULTI_POP_MULTI_CRIT],
         help='run mode'
     )
 
@@ -239,6 +257,10 @@ def main():
     #     run_grid(args=args)
     elif mode == _MODE_HYPER_PARAMS:
         run_scheme_hyper_param(args=args)
+    elif mode == _MODE_HYPER_PARAMS_MULTI_POP:
+        run_scheme_hyper_param_multi_pop(args=args)
+    elif mode == _MODE_HYPER_PARAMS_MULTI_POP_MULTI_CRIT:
+        run_scheme_hyper_param_multi_pop_multi_crit(args=args)
     else:
         raise('unknown running mode')
 

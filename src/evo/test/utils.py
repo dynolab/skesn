@@ -97,8 +97,17 @@ _colors = [
 ]
 _colors_idx = 0
 
-def get_next_color() -> str:
+def get_next_color(
+    exclude: List=[],
+) -> str:
     global _colors_idx
-    ret = _colors[_colors_idx]
-    _colors_idx = (_colors_idx + 1) % len(_colors)
+
+    ret = None
+
+    while True:
+        ret = _colors[_colors_idx]
+        _colors_idx = (_colors_idx + 1) % len(_colors)
+        if ret not in exclude:
+            break
+
     return ret

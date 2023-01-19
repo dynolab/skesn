@@ -1,3 +1,4 @@
+from copy import copy
 import numpy as np
 
 from typing import List, Union
@@ -10,11 +11,8 @@ class LorenzModel(Model):
     def __init__(self,
         cfg: config.LorenzModelConfig,
     ) -> None:
-        self._cfg: config.LorenzModelConfig = cfg
-        self._dim: int = 3
-
-    def get_dim(self) -> int:
-        return self._dim
+        self._cfg: config.LorenzModelConfig = copy(cfg)
+        super().__init__(3)
 
     def gen_data(
         self,
@@ -33,15 +31,6 @@ class LorenzModel(Model):
             ret[i,1] = y + (x*(self._cfg.Ro-z)-y)*self._cfg.Dt
             ret[i,2] = z + (x*y-8*z/3.)*self._cfg.Dt
         return ret
-
-    def valid_data(self,
-        data: Union[List, np.ndarray],
-    ) -> bool:
-        if isinstance(data, list):
-            return self._valid_list(data)
-        elif isinstance(data, np.ndarray):
-            return self._valid_ndarray(data)
-        return False
 
     def normalize(self,
         data: Union[list, np.ndarray],
@@ -71,26 +60,3 @@ class LorenzModel(Model):
             data = np.array(data)
 
         return data*[[30],[30],[30]] + [[0],[0],[25]]
-
-    def _valid_ndarray(self,
-        data: np.ndarray,
-    ) -> bool:
-        if len(data.shape) != 2:
-            return False
-
-        if data.shape[1] == self._dim:
-            return True
-
-        return False
-
-    def _valid_list(self,
-        data: List,
-    ) -> bool:
-        if len(data) == 0:
-            return True
-
-        for line in data:
-            if not (isinstance(line, list) and len(line) == self._dim or\
-                isinstance(line, np.ndarray) and line.shape == self._dim,):
-                return False
-        return True

@@ -7,11 +7,14 @@ from ..log import get_logger
 from ..config import EvoSchemeConfigField
 
 import yaml
+import os.path
+import pathlib
+import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 
 from types import FunctionType
-from typing import Any, List
+from typing import Any, List, Union
 from deap import base, algorithms
 from deap import creator
 from deap import tools
@@ -25,6 +28,7 @@ class EvoScheme(Scheme):
         toolbox: base.Toolbox=None,
         graph_callback_module: GraphCallbackModule=None,
     ) -> None:
+        # Graphics
         self._graph_callback_module = graph_callback_module
 
         # Logger setup
@@ -36,10 +40,6 @@ class EvoScheme(Scheme):
 
         # Math setup
         self._rand = np.random.RandomState(seed=self._cfg.RandSeed)
-
-        # Monkey patch DynoExtensions
-        evo_utils.DynoExtensions.LIMITS_CFG = self._cfg.Limits
-        evo_utils.DynoExtensions.DEF_NP_RAND_STATE = self._rand
 
         # DEAP setup
         creator.create("Fitness", base.Fitness, weights=self._cfg.FitnessWeights)
@@ -59,8 +59,10 @@ class EvoScheme(Scheme):
                 self._evaluate_f,
             )
 
+        self._iter_dir: str = None
+        self._set_runpool_dir()
         self._result: List = None
-        self._use_restored_result = False
+        self._use_restored_result: bool = False
 
         if self._result is None:
             self._result = tools.initRepeat(list, self._new_ind_f, n=self._cfg.PopulationSize)
@@ -76,30 +78,21 @@ class EvoScheme(Scheme):
                 self._cfg.Select.Args,
             )
         if not hasattr(self._toolbox, 'mate'):
-            evo_utils.bind_evo_operator(
-                self._toolbox,
-                'mate',
-                evo_utils.map_mate_f(self._cfg.Mate.Method),
-                self._cfg.Mate.Args,
+            evo_utils.bind_mate_operator(
+                toolbox=self._toolbox,
+                cfg=cfg,
+                rand=self._rand,
+                create_ind_by_list_f=lambda ind: evo_utils.create_ind_by_list(ind, self._evaluate_f),
             )
 
         if not hasattr(self._toolbox, 'mutate'):
-            if self._cfg.Mutate.Indpb > 0:
-                evo_utils.bind_evo_operator(
-                    self._toolbox,
-                    'mutate',
-                    evo_utils.map_mutate_f(self._cfg.Mutate.Method),
-                    self._cfg.Mutate.Args,
-                    indpb=self._cfg.Mutate.Indpb,
-                )
-            else:
-                evo_utils.bind_evo_operator(
-                    self._toolbox,
-                    'mutate',
-                    evo_utils.map_mutate_f(self._cfg.Mutate.Method),
-                    self._cfg.Mutate.Args,
-                    indpb=1/self._cfg.HromoLen
-                )
+            evo_utils.bind_mutate_operator(
+                toolbox=self._toolbox,
+                hromo_len=self._cfg.HromoLen,
+                cfg=cfg,
+                rand=self._rand,
+            )
+
         self._hall_of_fame: tools.HallOfFame = None
         if self._cfg.HallOfFame > 0:
             # self._hall_of_fame = tools.HallOfFame(self._cfg.HallOfFame, utils.ind_float_eq_f)
@@ -109,7 +102,7 @@ class EvoScheme(Scheme):
         self._logbook: tools.Logbook = None
         self._stats: tools.Statistics = None
         if len(self._cfg.Metrics) > 0:
-            self._stats = tools.Statistics(lambda ind: ind.fitness.values)
+            self._stats = tools.Statistics(lambda ind: np.dot(ind.fitness.values, ind.fitness.weights))
             for metric_cfg in self._cfg.Metrics:
                 self._stats.register(metric_cfg.Name, evo_utils.get_evo_metric_func(metric_cfg.Func, metric_cfg.Package))
 
@@ -130,22 +123,67 @@ class EvoScheme(Scheme):
             stats=self._stats,
             halloffame=self._hall_of_fame,
             verbose=self._cfg.Verbose,
+            logger=self._logger,
             **kvargs,
         )
 
+        self._best_result, self._best_result_fitness = evo_utils.calculate_best_ind(self._result)
+        self._logger.info(f'add ind to best result (ind: [{str.join(",", [str(x) for x in self._best_result])}], ind_fitness: {self._best_result_fitness})')
+
         self._logger.info('EvoScheme<%s>  has bean done', self._name)
 
-    def restore_result(self, result: Any) -> None:
-        self._use_restored_result = True
-        self._result = [ind if isinstance(ind, creator.Individual) else evo_utils.create_ind_by_list(ind, self._evaluate_f) for ind in result]
+    def restore_result(self,
+        runpool_dir: Union[str,None]=None,
+        iter_num: Union[int,None]=None,
+    ) -> None:
+        if runpool_dir is not None:
+            self._runpool_dir = os.path.normpath(runpool_dir)
 
-    def save(self, dirname: str, **kvargs) -> str:
-        # run_pool_dir = evo_utils.get_or_create_last_run_pool_dir(dirname, self._name)
-        run_pool_dir = dirname
-        iter_dir = evo_utils.create_iter_dir(run_pool_dir)
+        if not os.path.isdir(self._runpool_dir):
+            raise f'can\'t continue calculation: runpool dir isn\'t exist ({runpool_dir})'
+
+        if iter_num is None:
+            iter_num = evo_utils.get_last_iter_num(
+                runpool_dir=self._runpool_dir,
+            )
+
+        if iter_num is None:
+            raise f'can\'t continue calculation: not found last iter dir ({runpool_dir})'
+
+        self._result = evo_utils.restore_evo_scheme_result_from_iter(
+            parse_result_f=self._parse_restored_result,
+            runpool_dir=self._runpool_dir,
+            iter_num=iter_num,
+        )
+
+        self._use_restored_result = True
+        self._restored_iter = iter_num
+
+    def _create_spec(self) -> dict:
+        ret = {
+            'use_restored_result': self._use_restored_result,
+        }
+
+        if self._use_restored_result:
+            ret['restored_iter'] = self._restored_iter
+
+        return ret
+
+    def save(self, **kvargs) -> str:
+        self._iter_dir = evo_utils.get_or_create_new_iter_dir(
+            runpool_dir=self._runpool_dir,
+            iter_dir=self._iter_dir,
+        )
+
+        if not kvargs.get('disable_dump_spec', False):
+            if self._use_restored_result:
+                spec = self._create_spec()
+                with open(f'{self._iter_dir}/spec.yaml', 'w') as f:
+                    yaml.safe_dump(spec, f)
+
 
         len_metrics = len(self._cfg.Metrics)
-        if not kvargs.get('disable_stat', False) and len_metrics > 0:
+        if not kvargs.get('disable_dump_stat', False) and len_metrics > 0:
             # Dump stat graph
             fig, ax = plt.subplots()
             fig.suptitle(f'{self._name}\nevo stats')
@@ -157,16 +195,16 @@ class EvoScheme(Scheme):
             ax.set_ylabel('fitness')
             ax.legend()
 
-            fig.savefig(f'{iter_dir}/stat_graph.png', dpi=fig.dpi)
+            fig.savefig(f'{self._iter_dir}/stat_graph.png', dpi=fig.dpi)
 
         if not kvargs.get('disable_dump_cfg', False):
             # Dump config
-            with open(f'{iter_dir}/config.yaml', 'w') as f:
+            with open(f'{self._iter_dir}/config.yaml', 'w') as f:
                 yaml.safe_dump(self._cfg.yaml(), f)
 
         if not kvargs.get('disable_dump_result', False):
             # Dump last population
-            with open(f'{iter_dir}/result.yaml', 'w') as f:
+            with open(f'{self._iter_dir}/result.yaml', 'w') as f:
                 evo_utils.dump_inds_arr(
                     self._cfg.HromoLen,
                     f,
@@ -175,7 +213,7 @@ class EvoScheme(Scheme):
                 )
 
         if not kvargs.get('disable_dump_hall_of_fame', False) and self._hall_of_fame is not None:
-            with open(f'{iter_dir}/hall_off_fame.yaml', 'w') as f:
+            with open(f'{self._iter_dir}/hall_off_fame.yaml', 'w') as f:
                 evo_utils.dump_inds_arr(
                     self._cfg.HromoLen,
                     f,
@@ -202,3 +240,37 @@ class EvoScheme(Scheme):
 
     def get_evaluate_f(self) -> FunctionType:
         return self._evaluate_f
+
+    # Private methods
+
+    def _set_runpool_dir(self) -> None:
+        dump_dir = self._cfg.DumpDir
+        if dump_dir is None or\
+            len(dump_dir) == 0:
+            dump_dir = pathlib.Path().resolve()
+
+        today = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+        self._runpool_dir = os.path.join(dump_dir, f'runpool_{today}')
+
+    def _parse_restored_result(self,
+        stream,
+    ) -> Any:
+        last_population_yaml = yaml.safe_load(stream)
+        if last_population_yaml is None:
+            raise 'restored population is None'
+
+        if self._cfg.PopulationSize != len(last_population_yaml):
+            raise f'restored population size isn\'t equal config size (restored: {len(last_population_yaml)}), config: {self._cfg.PopulationSize})'
+
+        ret: List[List] = [0] * self._cfg.PopulationSize
+
+        if isinstance(last_population_yaml, dict):
+            for i, ind in enumerate(last_population_yaml.values()):
+                ret[i] = creator.Individual(ind)
+        elif isinstance(last_population_yaml, list):
+            for i, ind in enumerate(last_population_yaml):
+                ret[i] = creator.Individual(ind)
+        else:
+            raise 'unknown last popultaion yaml type'
+
+        return ret

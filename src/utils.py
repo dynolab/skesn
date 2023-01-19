@@ -1,7 +1,13 @@
+import random
+from struct import unpack
+from types import FunctionType
 from typing import Any, Dict, List, Union
 import numpy as np
 
-from src.config import KVArgConfigSection, EvoLimitGenConfigField
+import src.evo.utils as evo_utils
+import deap.tools as deap_tools
+
+import src.config as cfg
 
 from .lorenz import train_to_data
 
@@ -46,7 +52,7 @@ def get_optional_arg(
     return default
 
 def kv_config_arr_to_kvargs(
-    args: List[KVArgConfigSection],
+    args: List[cfg.KVArgConfigSection],
 ) -> Dict[str, Any]:
     ret = {}
     for kv in args:
@@ -62,11 +68,15 @@ def get_args_via_kvargs(kvargs):
     return ret
 
 def _gen_num_by_limit(
-    limit_cfg: EvoLimitGenConfigField,
+    gen_val: float,
+    limit_cfg: cfg.EvoLimitGenConfigField,
     rand: np.random.RandomState,
 ) -> Union[int, float]:
     ret: float = 0.
-    if limit_cfg.Logspace is None:
+
+    if limit_cfg.Mutate is not None:
+        ret = _gen_num_by_method(gen_val, limit_cfg.Mutate)
+    elif limit_cfg.Logspace is None:
         ret = _gen_num(
             min=limit_cfg.Min,
             max=limit_cfg.Max,
@@ -81,12 +91,62 @@ def _gen_num_by_limit(
             rand=rand,
         )
 
+
     t = limit_cfg.Type.lower()
     if t == 'int':
         return int(ret)
     elif t == 'float':
         return ret
     raise 'unknow limit gene type'
+
+def _prepare_cfg_args(
+    args: Union[List[cfg.KVArgConfigSection],None],
+) -> dict:
+    ret = {}
+    if args is None or len(args) == 0:
+        return ret
+
+    for kv in args:
+        ret[kv.Key] = kv.Val
+    return ret
+
+def _map_limit_mutate_f(
+    name: str,
+) -> FunctionType:
+    name = name.lower()
+    if name == 'gaussian':
+        def _gaussian(x, mu, sigma, low, up):
+            x += (-1 ** random.randint(1, 2)) * random.gauss(mu, sigma)
+            return min(max(low, x), up)
+        return _gaussian
+    elif name == 'polynomial_bounded':
+        def _polynomial_bounded(x, low, up, eta):
+            delta_1 = (x - low) / (up - low)
+            delta_2 = (up - x) / (up - low)
+            rand = random.random()
+            mut_pow = 1.0 / (eta + 1.)
+
+            if rand < 0.5:
+                xy = 1.0 - delta_1
+                val = 2.0 * rand + (1.0 - 2.0 * rand) * xy ** (eta + 1)
+                delta_q = val ** mut_pow - 1.0
+            else:
+                xy = 1.0 - delta_2
+                val = 2.0 * (1.0 - rand) + 2.0 * (rand - 0.5) * xy ** (eta + 1)
+                delta_q = 1.0 - val ** mut_pow
+
+            x = x + delta_q * (up - low)
+            return min(max(x, low), up)
+        return _polynomial_bounded
+    raise f'unknown limit mutate method ({name})'
+
+def _gen_num_by_method(
+    gen_val: float,
+    method_cfg: cfg.EvoOperatorBaseConfigField,
+) -> float:
+    func = _map_limit_mutate_f(method_cfg.Method)
+    args = _prepare_cfg_args(method_cfg.Args)
+    return func(x=gen_val, **args)
 
 def _gen_num(
     min: Union[float, int, None],
@@ -125,12 +185,16 @@ def _gen_log_num(
     return 10**rand.uniform(np.log10(_EPS_FLOAT))
 
 def gen_gene(
-    limit_cfg: EvoLimitGenConfigField,
+    limit_cfg: cfg.EvoLimitGenConfigField,
     rand: np.random.RandomState,
 ) -> Any:
     t = limit_cfg.Type.lower()
     if t in ('int', 'float'):
-        return _gen_num_by_limit(limit_cfg=limit_cfg, rand=rand)
+        return _gen_num_by_limit(
+            gen_val=0.,
+            limit_cfg=limit_cfg,
+            rand=rand,
+        )
     elif t == 'bool':
         return rand.randint(0, 2) == 1
     elif t == 'choice':
@@ -138,14 +202,96 @@ def gen_gene(
         return limit_cfg.Choice[idx]
     return None
 
+def cxSimulatedBinaryBoundedGene(
+    p1_gene: float,
+    p2_gene: float,
+    eta: float,
+    low: float,
+    up: float,
+    rand: np.random.RandomState=np.random.RandomState,
+) -> float:
+    # This epsilon should probably be changed for 0 since
+    # floating point arithmetic in Python is safer
+    if abs(p1_gene - p2_gene) < 1e-14:
+        return p1_gene, p2_gene
+
+    x1 = min(p1_gene, p2_gene)
+    x2 = max(p1_gene, p2_gene)
+
+    rand_n = rand.random()
+
+    beta = 1.0 + (2.0 * (x1 - low) / (x2 - x1))
+    alpha = 2.0 - beta ** -(eta + 1)
+    if rand_n <= 1.0 / alpha:
+        beta_q = (rand_n * alpha) ** (1.0 / (eta + 1))
+    else:
+        beta_q = (1.0 / (2.0 - rand_n * alpha)) ** (1.0 / (eta + 1))
+
+    ch1 = 0.5 * (x1 + x2 - beta_q * (x2 - x1))
+
+    beta = 1.0 + (2.0 * (up - x2) / (x2 - x1))
+    alpha = 2.0 - beta ** -(eta + 1)
+    if rand_n <= 1.0 / alpha:
+        beta_q = (rand_n * alpha) ** (1.0 / (eta + 1))
+    else:
+        beta_q = (1.0 / (2.0 - rand_n * alpha)) ** (1.0 / (eta + 1))
+    ch2 = 0.5 * (x1 + x2 + beta_q * (x2 - x1))
+
+    ch1 = min(max(ch1, low), up)
+    ch2 = min(max(ch2, low), up)
+
+    return (ch2, ch1) if rand.random() <= 0.5 else (ch1, ch2)
+
+def cxRandChoiceGene(
+    p1_gene: Union[int, float, bool, str],
+    p2_gene: Union[int, float, bool, str],
+    rand: np.random.RandomState=np.random.RandomState,
+) -> Union[int, float, bool, str]:
+    ch1 = p1_gene if rand.random() <= 0.5 else p2_gene
+    ch2 = p1_gene if rand.random() <= 0.5 else p2_gene
+    return ch1, ch2
+
+def _map_gene_cx(
+    method: str,
+) -> Union[FunctionType, None]:
+    if method == 'cxRandChoiceGene':
+        return cxRandChoiceGene
+    elif method == 'cxSimulatedBinaryBoundedGene':
+        return cxSimulatedBinaryBoundedGene
+    raise 'unknown cx gene method: %s' % method
+
+def cx_gene(
+    limit_cfg: cfg.EvoLimitGenConfigField,
+    rand: np.random.RandomState,
+    p1_gene: Union[int, float, bool, str],
+    p2_gene: Union[int, float, bool, str],
+) -> Union[int, float, bool, str]:
+    if limit_cfg.Mate is None:
+        raise 'limit_cfg doesn\'t contain mate config section'
+
+    func = _map_gene_cx(limit_cfg.Mate.Method)
+    if func is None:
+        raise 'unknown gene mate method: %s' % limit_cfg.Mate.Method
+
+    kvargs = {}
+    if len(limit_cfg.Mate.Args) > 0:
+        for arg in limit_cfg.Mate.Args:
+            kvargs[arg.Key] = arg.Val
+
+    return func(p1_gene, p2_gene, rand=rand, **kvargs)
+
 def mut_gene(
-    limit_cfg: EvoLimitGenConfigField,
+    limit_cfg: cfg.EvoLimitGenConfigField,
     rand: np.random.RandomState,
     cur_gene: Union[int, float, bool, str]
 ) -> Union[int, float, bool, str]:
     t = limit_cfg.Type.lower()
     if t in ('int', 'float'):
-        return _gen_num_by_limit(limit_cfg=limit_cfg, rand=rand)
+        return _gen_num_by_limit(
+            gen_val=cur_gene,
+            limit_cfg=limit_cfg,
+            rand=rand,
+        )
     elif t == 'bool' and isinstance(cur_gene, bool):
         return not cur_gene
     elif t == 'choice':

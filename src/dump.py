@@ -1,10 +1,11 @@
 import logging
-import shutil
 import datetime
 from typing import Union
 from .config import Config
 
 from datetime import date
+
+import numpy as np
 
 import dill
 import yaml
@@ -42,7 +43,9 @@ def _get_or_create_dump_rundir(args=None) -> Union[str,None]:
         return None
 
     if args is not None and hasattr(args, 'continue_dir'):
-        return getattr(args, 'continue_dir')
+        continue_dir = getattr(args, 'continue_dir')
+        if continue_dir is not None:
+            return continue_dir
 
     global _dump_rundir
     if _dump_rundir is not None:
@@ -115,30 +118,29 @@ def do(**kvargs) -> None:
         rundir = _get_or_create_dump_rundir(_args)
 
         logging.info(f'dump evo scheme... (dir: %s)', rundir)
-        kvargs['evo_scheme'].save(f'{rundir}')
+        kvargs['evo_scheme'].save()
 
     # Dump kvargs
     do_var(**kvargs)
 
-# args:
-def do_np_arr(**kvargs) -> None:
+def do_np_arr(
+    dump_dir: str,
+    name: str,
+    data: np.ndarray,
+) -> None:
     if Config.Dump.Disable:
         return
 
-    framedir = _get_or_create_dump_rundir(_args)
+    filepath = os.path.join(dump_dir, name)
 
-    for k, v in kvargs.items():
-        if k in _ALL_KVARGS_KEYS:
-            continue
-
-        with open(f'{framedir}/{k}.yaml', 'w') as dump_file:
-            if len(v.shape) == 1:
-                yaml.safe_dump({k: [float(x) for x in v]}, dump_file)
-            elif len(v.shape) == 2:
-                dump_mtx = {}
-                for i, row in enumerate(v):
-                    dump_mtx[f'row_{i}'] = [float(x) for x in row]
-                yaml.safe_dump({k: dump_mtx}, dump_file)
+    with open(filepath, 'w') as dump_file:
+        if len(data.shape) == 1:
+            yaml.safe_dump([float(x) for x in data], dump_file)
+        elif len(data.shape) == 2:
+            dump_mtx = {}
+            for i, row in enumerate(data):
+                dump_mtx[f'row_{i}'] = [float(x) for x in row]
+            yaml.safe_dump(dump_mtx, dump_file)
 
 # args:
 # "logger": argument for passing logger (key: DO_KVARGS_LOGGER)
