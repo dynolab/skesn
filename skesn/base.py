@@ -60,7 +60,7 @@ class BaseForecaster(BaseEstimator):
 
         super(BaseForecaster, self).__init__()
 
-    def fit(self, y, X=None, **kwargs):
+    def fit(self, y, X=None):
         """Fit forecaster to training data.
 
         State change:
@@ -94,7 +94,7 @@ class BaseForecaster(BaseEstimator):
         self._is_fitted = False
 
         # Pass to inner fit
-        self._fit(y=y, X=X, **kwargs)
+        self._fit(y=y, X=X)
 
         # this should happen last
         self._is_fitted = True
@@ -138,7 +138,7 @@ class BaseForecaster(BaseEstimator):
         self.check_is_fitted()
 
         # this is how it is supposed to be after the refactor is complete and effective
-        y_pred = self._predict(n_timesteps=n_timesteps, X=X, **kwargs)        
+        y_pred = self._predict(n_timesteps=n_timesteps, X=X)        
         return y_pred
 
     def fit_predict(
@@ -364,7 +364,7 @@ class BaseForecaster(BaseEstimator):
             mode=mode,
         )
 
-    def predict_residuals(self, n_timesteps, y=None, X=None, **kwargs):
+    def predict_residuals(self, n_timesteps, y=None, X=None):
         """Return residuals of time series forecasts.
 
         Residuals will be computed for forecasts at y.index.
@@ -406,7 +406,7 @@ class BaseForecaster(BaseEstimator):
         if y is None:
             y = self._y
 
-        y_pred = self.predict(n_timesteps=n_timesteps, X=X, **kwargs)
+        y_pred = self.predict(n_timesteps=n_timesteps, X=X)
         y_res = y - y_pred
 
         return y_res
