@@ -8,7 +8,7 @@ from skesn.weight_generators import standart_weights_generator
 from .esn_controllers import Controller
 
 from enum import Enum
-update_modes = Enum("update_modes", "synchronization transfer_learning refit")
+UpdateModes = Enum('UpdateModes', 'synchronization transfer_learning refit')
 
 
 ACTIVATIONS = {
