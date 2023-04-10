@@ -1,7 +1,9 @@
 import src.evo.utils as evo_utils
+import src.evo.types as evo_types
 import src.utils as utils
 import src.config as cfg
 import src.dump as dump
+
 
 from src.models.abstract import Model
 from src.models.lorenz import LorenzModel
@@ -426,7 +428,6 @@ def get_or_create_last_run_pool_dir(
     return ret
 
 def ind_creator_f(
-    ind_type: Type,
     hromo_len: int,
     limits: List[cfg.EvoLimitGenConfigField]=[],
     rand: np.random.RandomState=np.random.RandomState,
@@ -442,7 +443,7 @@ def ind_creator_f(
             continue
         ret[i] = rand.rand()
 
-    return ind_type(ret)
+    return evo_types.Individual(ret)
 
 def get_evo_metric_func(
     func_name: str,
@@ -698,8 +699,8 @@ def get_max_population_size(
 def create_ind_by_list(
     list_ind: List,
     evaluate_f: FunctionType,
-) -> List:
-    ret = creator.Individual(list_ind)
+) -> evo_types.Individual:
+    ret = evo_types.Individual(list_ind)
     if not ret.fitness.valid:
         ret.fitness.values = evaluate_f(ret)
     return ret

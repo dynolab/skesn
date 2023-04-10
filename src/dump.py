@@ -115,10 +115,8 @@ def do(**kvargs) -> None:
 
     # Dump scheme
     if _KVARGS_EVO_SCHEME in kvargs:
-        rundir = _get_or_create_dump_rundir(_args)
-
-        logging.info(f'dump evo scheme... (dir: %s)', rundir)
-        kvargs['evo_scheme'].save()
+        evo_scheme = kvargs['evo_scheme']
+        evo_scheme.save()
 
     # Dump kvargs
     do_var(**kvargs)

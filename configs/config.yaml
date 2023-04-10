@@ -12,10 +12,10 @@ dump:
 
 models:
   lorenz:
-    rand_seed: 20
-    n: 60000
+    rand_seed: 21
+    n: 15000
     dt: 0.001
-    ro: 72
+    ro: 80
   chui_moffatt:
     rand_seed: 17
     n: 55000
@@ -29,16 +29,16 @@ models:
 schemes:
   hyper_param:
     evaluate:
-      split_n: 50000
-      fit_step: 5
+      split_n: 9000
+      fit_step: 10
       normalize: true
-      model: chui_moffatt
+      model: lorenz # chui_moffatt
       data: model # model or yaml filename with values
       metric: mse
       # max_steps: 2000
     esn:
       n_reservoir: 600
-      random_state: 1
+      random_state: 2
       # spectral_radius: 0.95 # 0
       # sparsity: 0.001 # 1
       # lambda_r: 0.001 # 2
@@ -50,7 +50,7 @@ schemes:
     evo:
       dump_dir: dumps
       rand_seed: 1
-      max_gen_num: 5
+      max_gen_num: 2
       population_size: 30
       hall_of_fame: 3
       hromo_len: 6
@@ -65,11 +65,11 @@ schemes:
             val: 2
       mate:
         method: dynoCxGeneByLimit
-        probability: 0.9
+        probability: 0.8
       mutate:
         method: dynoMutGeneByLimit
-        probability: 0.3
-        # indpb: 0.25
+        probability: 0.2
+        indpb: 0.25
       limits:
         # spectral_radius
         - type: float
@@ -83,7 +83,7 @@ schemes:
               - key: low
                 val: 1.e-12
               - key: eta
-                val: 20
+                val: 10
           mutate:
             method: polynomial_bounded
             args:
@@ -92,7 +92,7 @@ schemes:
               - key: low
                 val: 1.e-12
               - key: eta
-                val: 15
+                val: 10
         # sparsity
         - type: float
           min: 1.e-8
@@ -105,7 +105,7 @@ schemes:
               - key: low
                 val: 1.e-8
               - key: eta
-                val: 20
+                val: 10
           mutate:
             method: polynomial_bounded
             args:
@@ -114,7 +114,7 @@ schemes:
               - key: low
                 val: 1.e-8
               - key: eta
-                val: 15
+                val: 10
         # lambda_r
         - type: float
           min: 1.e-12
@@ -127,7 +127,7 @@ schemes:
               - key: low
                 val: 1.e-12
               - key: eta
-                val: 20
+                val: 10
           mutate:
             method: polynomial_bounded
             args:
@@ -136,7 +136,7 @@ schemes:
               - key: low
                 val: 1.e-12
               - key: eta
-                val: 15
+                val: 10
         # regulirization
         - type: choice
           choice: ['noise', 'l2', null]

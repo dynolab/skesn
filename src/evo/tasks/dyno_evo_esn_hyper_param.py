@@ -6,11 +6,10 @@ from skesn.esn import EsnForecaster
 
 from src.evo.graph_callback import GraphCallbackModule
 from src.evo.evo_esn_scheme import EvoEsnScheme
-from src.evo.esn_data_holder import EsnDataHolder
 
 import src.config as cfg
-import src.evo.utils as evo_utils
 
+from multiprocess.pool import Pool
 
 SPECTRAL_RADIUS_IDX = 0
 SPARSITY_IDX = 1
@@ -22,6 +21,7 @@ USE_BIAS_IDX = 5
 class DynoEvoEsnHyperParam(EvoEsnScheme):
     def __init__(self,
         cfg: cfg.DynoEvoEsnHyperParamConfig,
+        pool: Pool=None,
     ) -> None:
         self._cfg = cfg
 
@@ -36,6 +36,7 @@ class DynoEvoEsnHyperParam(EvoEsnScheme):
             evaluate_cfg=self._cfg.Evaluate,
             esn_creator_by_ind_f=self._esn_creator_by_ind_f,
             graph_callback_module=graph_callback_module,
+            pool=pool,
         )
 
     def run(self, **kvargs) -> None:

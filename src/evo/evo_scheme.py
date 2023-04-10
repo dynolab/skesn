@@ -1,38 +1,47 @@
 from src.evo.graph_callback import GraphCallbackModule
 import src.evo.utils as evo_utils
+import src.evo.types as evo_types
 import src.utils as utils
+import src.config as config
+import src.log as log
+import src.dump as dump
 
-from .abstract import Scheme
-from ..log import get_logger
-from ..config import EvoSchemeConfigField
+from src.evo.abstract import Scheme
 
 import yaml
+import shutil
 import os.path
 import pathlib
 import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 
+from multiprocess.pool import Pool
+
+from functools import partial, partialmethod
 from types import FunctionType
 from typing import Any, List, Union
 from deap import base, algorithms
 from deap import creator
 from deap import tools
 
+
 class EvoScheme(Scheme):
     def __init__(self,
         name: str,
-        cfg: EvoSchemeConfigField,
+        cfg: config.EvoSchemeConfigField,
         evaluate_f: FunctionType,
         ind_creator_f: FunctionType=None,
         toolbox: base.Toolbox=None,
         graph_callback_module: GraphCallbackModule=None,
+        pool: Pool=None,
     ) -> None:
         # Graphics
         self._graph_callback_module = graph_callback_module
 
         # Logger setup
-        self._logger = get_logger(name=f'EvoScheme<{name}>')
+        # self._logger = log.get_logger(name=f'EvoScheme<{name}>')
+        self._logger = log.logging.root
 
         # Config setup
         self._name = name
@@ -42,16 +51,22 @@ class EvoScheme(Scheme):
         self._rand = np.random.RandomState(seed=self._cfg.RandSeed)
 
         # DEAP setup
-        creator.create("Fitness", base.Fitness, weights=self._cfg.FitnessWeights)
-        creator.create("Individual", list, fitness=creator.Fitness)
+        # creator.create("Fitness", base.Fitness, weights=self._cfg.FitnessWeights)
+        # creator.create("Individual", list, fitness=creator.Fitness)
+        evo_types.Fitness.patch_weights(self._cfg.FitnessWeights)
 
         self._toolbox: base.Toolbox() = base.Toolbox() if toolbox is None else toolbox
+
+        if pool is not None:
+            # self._toolbox.register('map', pool.map)
+            # from scoop import futures
+            self._toolbox.register('map', pool.map)
 
         self._evaluate_f = evaluate_f
         self._new_ind_f: FunctionType = ind_creator_f
         if self._new_ind_f is None:
-            self._new_ind_f = lambda: evo_utils.create_ind_by_list(evo_utils.ind_creator_f(
-                    creator.Individual,
+            self._new_ind_f = partial(evo_utils.create_ind_by_list,
+                evo_utils.ind_creator_f(
                     self._cfg.HromoLen,
                     self._cfg.Limits,
                     self._rand,
@@ -82,7 +97,7 @@ class EvoScheme(Scheme):
                 toolbox=self._toolbox,
                 cfg=cfg,
                 rand=self._rand,
-                create_ind_by_list_f=lambda ind: evo_utils.create_ind_by_list(ind, self._evaluate_f),
+                create_ind_by_list_f=self._create_ind_by_list_f,
             )
 
         if not hasattr(self._toolbox, 'mutate'):
@@ -102,7 +117,8 @@ class EvoScheme(Scheme):
         self._logbook: tools.Logbook = None
         self._stats: tools.Statistics = None
         if len(self._cfg.Metrics) > 0:
-            self._stats = tools.Statistics(lambda ind: np.dot(ind.fitness.values, ind.fitness.weights))
+
+            self._stats = tools.Statistics(_ind_stat)
             for metric_cfg in self._cfg.Metrics:
                 self._stats.register(metric_cfg.Name, evo_utils.get_evo_metric_func(metric_cfg.Func, metric_cfg.Package))
 
@@ -169,18 +185,21 @@ class EvoScheme(Scheme):
 
         return ret
 
+    def _create_ind_by_list_f(self, ind: List[Any]) -> evo_types.Individual: return evo_utils.create_ind_by_list(ind, self._evaluate_f)
+
     def save(self, **kvargs) -> str:
         self._iter_dir = evo_utils.get_or_create_new_iter_dir(
             runpool_dir=self._runpool_dir,
             iter_dir=self._iter_dir,
         )
 
+        self._logger.info(f'dump evo scheme... (dir: %s)', self._iter_dir)
+
         if not kvargs.get('disable_dump_spec', False):
             if self._use_restored_result:
                 spec = self._create_spec()
                 with open(f'{self._iter_dir}/spec.yaml', 'w') as f:
                     yaml.safe_dump(spec, f)
-
 
         len_metrics = len(self._cfg.Metrics)
         if not kvargs.get('disable_dump_stat', False) and len_metrics > 0:
@@ -200,7 +219,13 @@ class EvoScheme(Scheme):
         if not kvargs.get('disable_dump_cfg', False):
             # Dump config
             with open(f'{self._iter_dir}/config.yaml', 'w') as f:
-                yaml.safe_dump(self._cfg.yaml(), f)
+                yaml.safe_dump(config.Config.yaml(), f)
+
+        if not kvargs.get('disable_dump_logs', False):
+            # Dump logs
+            logfile = log.get_logfile()
+            if os.path.isfile(logfile):
+                shutil.copyfile(logfile, f'{self._iter_dir}/log')
 
         if not kvargs.get('disable_dump_result', False):
             # Dump last population
@@ -266,11 +291,14 @@ class EvoScheme(Scheme):
 
         if isinstance(last_population_yaml, dict):
             for i, ind in enumerate(last_population_yaml.values()):
-                ret[i] = creator.Individual(ind)
+                ret[i] = evo_types.Individual(ind)
         elif isinstance(last_population_yaml, list):
             for i, ind in enumerate(last_population_yaml):
-                ret[i] = creator.Individual(ind)
+                ret[i] = evo_types.Individual(ind)
         else:
             raise 'unknown last popultaion yaml type'
 
         return ret
+
+def _ind_stat(ind) -> float: return np.dot(ind.fitness.values, ind.fitness.weights)
+

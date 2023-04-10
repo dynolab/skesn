@@ -3,47 +3,24 @@ from src.evo.tasks.duno_evo_esn_hyper_param_multi_pop import DynoEvoEsnHyperPara
 from src.evo.tasks.dyno_evo_esn_hyper_param import DynoEvoEsnHyperParam
 from src.evo.abstract import Scheme
 
-import src.evo.evo_scheme as evo_scheme
-import src.evo.evo_scheme_multi_pop as evo_scheme_multi_pop
 import src.evo.test.evo_scheme_test as evo_scheme_test
 import src.evo.test.evo_scheme_multi_pop_test as evo_scheme_multi_pop_test
 import src.lorenz as lorenz
 import src.utils as utils
-import src.evo.utils as evo_utils
 import src.log as log
 import src.dump as dump
 import src.config as cfg
 
 import skesn.esn as esn
+from multiprocess.managers import SyncManager
 
 import matplotlib.pyplot as plt
 import numpy as np
 import logging
 
-from deap import base, algorithms
-
-from dill import Pickler
-
 import argparse
 import random
 
-import dill
-import joblib
-
-joblib.parallel.pickle = dill
-joblib.pool.dumps = dill.dumps
-joblib.pool.Pickler = Pickler
-
-from joblib.pool import CustomizablePicklingQueue
-
-from src.async_utils.customizable_pickler import make_methods, CustomizablePickler
-
-CustomizablePicklingQueue._make_methods = make_methods
-joblib.pool.CustomizablePickler = CustomizablePickler
-
-from joblib import Parallel, delayed
-
-# import pickle
 
 # Modes for running
 _MODE_TESTS = 'tests'
@@ -73,39 +50,51 @@ def check_restore(
 
 def run_scheme_hyper_param(**kvargs):
     args = utils.get_args_via_kvargs(kvargs)
+    pool = utils.get_via_kvargs(kvargs, utils._KVARGS_POOL)
 
     scheme = DynoEvoEsnHyperParam(
         cfg.Config.Schemes.HyperParam,
+        pool,
     )
 
     check_restore(args, scheme)
     scheme.run()
 
     dump.do(evo_scheme=scheme)
+
+    scheme.close()
 
 def run_scheme_hyper_param_multi_pop(**kvargs):
     args = utils.get_args_via_kvargs(kvargs)
+    pool = utils.get_via_kvargs(kvargs, utils._KVARGS_POOL)
 
     scheme = DynoEvoEsnHyperParamMultiPop(
         cfg.Config.Schemes.HyperParamMultiPop,
+        pool,
     )
 
     check_restore(args, scheme)
     scheme.run()
 
     dump.do(evo_scheme=scheme)
+
+    scheme.close()
 
 def run_scheme_hyper_param_multi_pop_multi_crit(**kvargs):
     args = utils.get_args_via_kvargs(kvargs)
+    pool = utils.get_via_kvargs(kvargs, utils._KVARGS_POOL)
 
     scheme = DynoEvoEsnHyperParamMultiPopMultiCrit(
         cfg.Config.Schemes.HyperParamMultiPopMultiCrit,
+        pool,
     )
 
     check_restore(args, scheme)
     scheme.run()
 
     dump.do(evo_scheme=scheme)
+
+    scheme.close()
 
 # def run_grid(**kvargs):
 #     args = utils.get_args_via_kvargs(**kvargs)
@@ -236,7 +225,7 @@ def _create_parser() -> argparse.ArgumentParser:
 
     return parser
 
-def main():
+def main(pool):
     parser = _create_parser()
     args = parser.parse_args()
 
@@ -256,16 +245,16 @@ def main():
     # elif mode == _MODE_GRID:
     #     run_grid(args=args)
     elif mode == _MODE_HYPER_PARAMS:
-        run_scheme_hyper_param(args=args)
+        run_scheme_hyper_param(args=args, pool=pool)
     elif mode == _MODE_HYPER_PARAMS_MULTI_POP:
-        run_scheme_hyper_param_multi_pop(args=args)
+        run_scheme_hyper_param_multi_pop(args=args, pool=pool)
     elif mode == _MODE_HYPER_PARAMS_MULTI_POP_MULTI_CRIT:
-        run_scheme_hyper_param_multi_pop_multi_crit(args=args)
+        run_scheme_hyper_param_multi_pop_multi_crit(args=args, pool=pool)
     else:
         raise('unknown running mode')
 
-def CustomMap(f, *iters):
-    return Parallel(n_jobs=-1)(delayed(f)(*args) for args in zip(*iters))
 
 if __name__ == '__main__':
-    main()
+    # with Pool(processes=8) as pool:
+    with SyncManager() as manager:
+        main(manager.Pool())

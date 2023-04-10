@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Tuple
 
 import src.evo.test.utils as utils
 import src.evo.utils as evo_utils
+import src.evo.types as evo_types
 
 import random
 import logging
@@ -25,7 +26,7 @@ def _test0_wrap_ind_creator_f(
         ret = [0] * cfg.HromoLen
         for i in range(cfg.HromoLen):
             ret[i] = np.random.randint(2)
-        return creator.Individual(ret)
+        return evo_types.Individual(cfg.FitnessWeights, ret)
     return _ind_creator_f
 
 def _test0_wrap_evaluate_f(
@@ -245,7 +246,7 @@ def _test2_toolbox_setup_f(
         ind_cnt = 0
         for i in range(n):
             for j in range(n):
-                ret[ind_cnt] = creator.Individual([x[i], y[j]])
+                ret[ind_cnt] = evo_types.Individual(cfg.FitnessWeights, [x[i], y[j]])
                 ind_cnt += 1
 
         while ind_cnt < cfg.PopulationSize:
@@ -480,7 +481,7 @@ def run_tests(**kvargs):
         if restore_result:
             restored_result = evo_utils.get_evo_scheme_result_last_run_pool(
                 evo_utils.get_evo_scheme_result_from_file,
-                creator.Individual,
+                lambda ind: evo_types.Individual(cfg.FitnessWeights, ind),
                 cfg,
                 dumpdir,
                 name,

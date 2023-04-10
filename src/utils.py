@@ -60,12 +60,20 @@ def kv_config_arr_to_kvargs(
     return ret
 
 _KVARGS_ARGS = 'args'
+_KVARGS_POOL = 'pool'
 
 def get_args_via_kvargs(kvargs):
     ret = None
     if _KVARGS_ARGS in kvargs:
         ret = kvargs[_KVARGS_ARGS]
     return ret
+
+def get_via_kvargs(kvargs, name: str):
+    ret = None
+    if name in kvargs:
+        ret = kvargs[name]
+    return ret
+
 
 def _gen_num_by_limit(
     gen_val: float,
