@@ -122,7 +122,7 @@ class EvoEsnScheme(EvoScheme):
             predict_data = evo_utils.get_predict_data(
                 model,
                 self._evaluate_cfg,
-                self._valid_data,
+                self._valid_data.shape,
             )
 
             for i in range(dim):
@@ -147,27 +147,6 @@ class EvoEsnScheme(EvoScheme):
     def close(self) -> None:
         self._shm_fit.close()
         self._shm_valid.close()
-
-    # def _evaluate_esn(self,
-    #     ind: List,
-    # ) -> Tuple[float]:
-    #     if ind.fitness.valid:
-    #         return ind.fitness.values
-
-    #     model: esn.EsnForecaster = self._esn_creator_by_ind_f(ind)
-    #     model.fit(self._fit_data)
-
-    #     predict_data = evo_utils.get_predict_data(
-    #         model,
-    #         self._evaluate_cfg,
-    #         self._valid_data,
-    #     )
-
-    #     return evo_utils.calc_metric(
-    #         self._evaluate_cfg.Metric,
-    #         self._valid_data,
-    #         predict_data,
-    #     ),
 
 
 class ShmArrayProvider(object):
@@ -223,7 +202,7 @@ class EvaluatorEsn(object):
         predict_data = evo_utils.get_predict_data(
             model,
             self._evaluate_cfg,
-            self._valid_data,
+            self._valid_data.shape,
         )
 
         return evo_utils.calc_metric(

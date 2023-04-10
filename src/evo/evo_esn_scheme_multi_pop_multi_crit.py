@@ -153,7 +153,7 @@ class EvoEsnSchemeMultiPopMultiCrit(EvoSchemeMultiPop):
             predict_data = evo_utils.get_predict_data(
                 model,
                 self._evaluate_cfg,
-                self._valid_datas[i],
+                self._valid_datas[i].shape,
             )
 
             ret[i] = evo_utils.calc_metric(

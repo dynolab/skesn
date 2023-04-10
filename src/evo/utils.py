@@ -754,15 +754,15 @@ def calc_metric(
 def get_predict_data(
     model: esn.EsnForecaster,
     evaluate_cfg: cfg.EsnEvaluateConfigField,
-    data: np.ndarray,
+    data_shape: np.ndarray,
 ) -> np.ndarray:
     if evaluate_cfg.MaxSteps <= 0:
-        return model.predict(data.shape[0])
+        return model.predict(data_shape[0])
 
-    ret = np.ndarray(data.shape)
+    ret = np.ndarray(data_shape)
 
     i = 0
-    max_i = data.shape[0]
+    max_i = data_shape[0]
     n = evaluate_cfg.MaxSteps
     while i < max_i:
         if i + n >= max_i:

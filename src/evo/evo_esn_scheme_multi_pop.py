@@ -112,7 +112,7 @@ class EvoEsnSchemeMultiPop(EvoSchemeMultiPop):
             predict_data = evo_utils.get_predict_data(
                 model,
                 self._evaluate_cfg,
-                self._valid_data,
+                self._valid_data.shape,
             )
 
             for i in range(dim):
@@ -139,7 +139,7 @@ class EvoEsnSchemeMultiPop(EvoSchemeMultiPop):
             #     predict_data = evo_utils.get_predict_data(
             #         model,
             #         self._evaluate_cfg,
-            #         self._valid_data,
+            #         self._valid_data.shape,
             #     )
 
             #     for j in range(dim):
@@ -169,7 +169,7 @@ class EvoEsnSchemeMultiPop(EvoSchemeMultiPop):
         predict_data = evo_utils.get_predict_data(
             model,
             self._evaluate_cfg,
-            self._valid_data,
+            self._valid_data.shape,
         )
 
         return evo_utils.calc_metric(
