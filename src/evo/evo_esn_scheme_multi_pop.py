@@ -142,7 +142,7 @@ class EvoEsnSchemeMultiPop(EvoSchemeMultiPop):
                 axes[i].legend(loc='upper left')
 
             # for i, best_ind in enumerate(self._best_result):
-            #     model: esn.EsnForecaster = self._esn_creator_by_ind_f(best_ind)
+            #     model: esn.EsnForecaster = self._esn_creator(best_ind)
             #     model.fit(self._fit_data)
 
             #     ind_color = evo_utils.get_next_color(exclude=['blue'])
