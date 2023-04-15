@@ -1,15 +1,17 @@
 import matplotlib.pyplot as plt
 
-from typing import List
+from typing import Any, List
 
 from skesn.esn import EsnForecaster
 
+from src.evo.esn_data_holder import EsnDataHolder
 from src.evo.graph_callback import GraphCallbackModule
 from src.evo.evo_esn_scheme import EvoEsnScheme
 
-import src.config as cfg
+import src.config as scheme_cfg
+import src.evo.types as evo_types
 
-from multiprocess.pool import Pool
+from multiprocess.managers import SyncManager
 
 SPECTRAL_RADIUS_IDX = 0
 SPARSITY_IDX = 1
@@ -20,23 +22,22 @@ USE_BIAS_IDX = 5
 
 class DynoEvoEsnHyperParam(EvoEsnScheme):
     def __init__(self,
-        cfg: cfg.DynoEvoEsnHyperParamConfig,
-        pool: Pool=None,
+        scheme_cfg: scheme_cfg.DynoEvoEsnHyperParamConfig,
+        async_manager: SyncManager=None,
     ) -> None:
-        self._cfg = cfg
+        self._scheme_cfg = scheme_cfg
 
         # graph_callback_module = self._create_graph_callback_module()
-
         graph_callback_module = None
 
         super().__init__(
             name='hyper_param',
-            evo_cfg=self._cfg.Evo,
-            esn_cfg=self._cfg.Esn,
-            evaluate_cfg=self._cfg.Evaluate,
-            esn_creator_by_ind_f=self._esn_creator_by_ind_f,
+            evo_cfg=self._scheme_cfg.Evo,
+            esn_cfg=self._scheme_cfg.Esn,
+            evaluate_cfg=self._scheme_cfg.Evaluate,
+            esn_creator=evo_types.HyperParamEsnCreatorByInd(self._scheme_cfg.Esn),
             graph_callback_module=graph_callback_module,
-            pool=pool,
+            async_manager=async_manager,
         )
 
     def run(self, **kvargs) -> None:
@@ -50,8 +51,8 @@ class DynoEvoEsnHyperParam(EvoEsnScheme):
         ax = ret.get_axes()
         ax.set_title('error per generation graph')
         ax.set_xlabel('gen')
-        ax.set_xlim((0, self._cfg.Evo.MaxGenNum + 1))
-        ax.set_ylabel(self._cfg.Evaluate.Metric)
+        ax.set_xlim((0, self._scheme_cfg.Evo.MaxGenNum + 1))
+        ax.set_ylabel(self._scheme_cfg.Evaluate.Metric)
 
         return ret
 
@@ -72,19 +73,3 @@ class DynoEvoEsnHyperParam(EvoEsnScheme):
             gen = kvargs['gen']
         points = [(gen, item.fitness.values[0]) for item in items]
         ax.scatter(*zip(*points), marker='o', color='blue', zorder=1)
-
-    def _esn_creator_by_ind_f(self,
-        ind: List,
-    ) -> EsnForecaster:
-        return EsnForecaster(
-            n_reservoir=self._esn_cfg.NReservoir,
-            spectral_radius=ind[SPECTRAL_RADIUS_IDX],
-            sparsity=ind[SPARSITY_IDX],
-            regularization=ind[REGULIRIZATION_IDX],
-            lambda_r=ind[LAMBDA_R_IDX],
-            in_activation=self._esn_cfg.InActivation,
-            out_activation=self._esn_cfg.OutActivation,
-            use_additive_noise_when_forecasting=ind[USE_ADDITIVE_NOISE_WHEN_FORECASTING_IDX],
-            random_state=self._esn_cfg.RandomState,
-            use_bias=ind[USE_BIAS_IDX],
-        )

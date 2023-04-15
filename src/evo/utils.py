@@ -1,7 +1,7 @@
 import src.evo.utils as evo_utils
 import src.evo.types as evo_types
 import src.utils as utils
-import src.config as cfg
+import src.config as scheme_cfg
 import src.dump as dump
 
 
@@ -38,12 +38,12 @@ def normalize_name(
 
 def _get_data_set(
 ) -> np.ndarray:
-    if cfg.Config.Evaluate.Model == 'lorenz':
+    if scheme_cfg.Config.Evaluate.Model == 'lorenz':
         return get_lorenz_data(
-            cfg.Config.Models.Lorenz.Ro,
-            cfg.Config.Models.Lorenz.N,
-            cfg.Config.Models.Lorenz.Dt,
-            cfg.Config.Models.Lorenz.RandSeed,
+            scheme_cfg.Config.Models.Lorenz.Ro,
+            scheme_cfg.Config.Models.Lorenz.N,
+            scheme_cfg.Config.Models.Lorenz.Dt,
+            scheme_cfg.Config.Models.Lorenz.RandSeed,
         )
     raise 'unknown evaluate model'
 
@@ -51,11 +51,11 @@ def _split_data_set(
     data: np.ndarray,
 ) -> Tuple[np.ndarray, np.ndarray]:
     train_data: np.ndarray = None
-    if cfg.Config.Evaluate.Opts.SparsityTrain > 0:
-        train_data = data[..., :cfg.Config.Models.Lorenz.N//2:cfg.Config.Evaluate.Opts.SparsityTrain]
+    if scheme_cfg.Config.Evaluate.Opts.SparsityTrain > 0:
+        train_data = data[..., :scheme_cfg.Config.Models.Lorenz.N//2:scheme_cfg.Config.Evaluate.Opts.SparsityTrain]
     else:
-        train_data = data[..., :cfg.Config.Models.Lorenz.N//2]
-    valid_data = data[..., cfg.Config.Models.Lorenz.N//2:]
+        train_data = data[..., :scheme_cfg.Config.Models.Lorenz.N//2]
+    valid_data = data[..., scheme_cfg.Config.Models.Lorenz.N//2:]
     return train_data, valid_data
 
 # Args:
@@ -90,7 +90,7 @@ class DynoExtensions:
     def dynoMutGeneByLimit(
         individual: List,
         indpb: float,
-        limits_cfg: List[cfg.EvoLimitGenConfigField]=[],
+        limits_cfg: List[scheme_cfg.EvoLimitGenConfigField]=[],
         rand: np.random.RandomState=np.random.RandomState(),
     ) -> Tuple:
         n = len(individual)
@@ -107,9 +107,9 @@ class DynoExtensions:
     def dynoCxGeneByLimit(
         p1_ind: List,
         p2_ind: List,
-        limits_cfg: List[cfg.EvoLimitGenConfigField]=[],
+        limits_cfg: List[scheme_cfg.EvoLimitGenConfigField]=[],
         rand: np.random.RandomState=np.random.RandomState(),
-        create_ind_by_list_f: FunctionType=None,
+        # create_ind_by_list_f: FunctionType=None,
     ) -> Tuple[List, List]:
         n = len(p1_ind)
         ch1_ind = [None] * n
@@ -122,15 +122,15 @@ class DynoExtensions:
                 p2_gene=p2_ind[i],
             )
 
-        if create_ind_by_list_f is not None:
-            return create_ind_by_list_f(ch1_ind), create_ind_by_list_f(ch2_ind)
+        # if create_ind_by_list_f is not None:
+        #     return create_ind_by_list_f(ch1_ind), create_ind_by_list_f(ch2_ind)
 
-        return ch1_ind, ch2_ind
+        return evo_types.Individual(ch1_ind), evo_types.Individual(ch2_ind)
 
 # Mapping functions
 
 def map_metric_f():
-    norm_name = normalize_name(cfg.Config.Evaluate.Metric)
+    norm_name = normalize_name(scheme_cfg.Config.Evaluate.Metric)
 
     if norm_name == 'mse':
         return metrics.mean_squared_error
@@ -181,11 +181,11 @@ def map_evaluate_f(
     valid_data: np.ndarray,
     **evaluate_kvargs,
 ) -> FunctionType:
-    if cfg.Config.Evaluate.Steps < 0:
+    if scheme_cfg.Config.Evaluate.Steps < 0:
         raise 'bad evaluate.steps config field value, must be greater then 0'
 
-    if cfg.Config.Evaluate.Steps > 1:
-        n = valid_data.shape[1] // cfg.Config.Evaluate.Steps
+    if scheme_cfg.Config.Evaluate.Steps > 1:
+        n = valid_data.shape[1] // scheme_cfg.Config.Evaluate.Steps
         idxs = [int(idx) for idx in np.linspace(0, valid_data.shape[1], n, True)]
         def _valid_multi_f(model: EsnForecaster):
             model.fit(fit_data)
@@ -199,12 +199,12 @@ def map_evaluate_f(
         model.fit(fit_data)
         predict_data = np.ndarray(len(valid_data[0]))
         for i in range(len(valid_data[0])):
-            predict_data[i] = train_to_data(model.predict(1, True, cfg.Config.Esn.Inspect).T)
+            predict_data[i] = train_to_data(model.predict(1, True, scheme_cfg.Config.Esn.Inspect).T)
         return metric_f(valid_data, predict_data),
     return _valid_one_f
 
 def _convert_gen_to_dump(
-    limit_cfg: cfg.EvoLimitGenConfigField,
+    limit_cfg: scheme_cfg.EvoLimitGenConfigField,
     val: Any,
 ) -> Any:
     t = limit_cfg.Type.lower()
@@ -222,7 +222,7 @@ def dump_inds_arr(
     hromo_len: int,
     f,
     population: List[List],
-    limits: List[cfg.EvoLimitGenConfigField]=[],
+    limits: List[scheme_cfg.EvoLimitGenConfigField]=[],
 ) -> None:
     limits_len = len(limits)
     if limits_len > 0 and limits_len != hromo_len:
@@ -245,7 +245,7 @@ def dump_inds_multi_pop_arr(
     hromo_len: int,
     f,
     populations: List[List[List]],
-    limits_pop: List[List[cfg.EvoLimitGenConfigField]]=[],
+    limits_pop: List[List[scheme_cfg.EvoLimitGenConfigField]]=[],
 ) -> None:
     limits_pop_len = len(limits_pop)
     if limits_pop_len > 0 and limits_pop_len != len(populations):
@@ -429,7 +429,7 @@ def get_or_create_last_run_pool_dir(
 
 def ind_creator_f(
     hromo_len: int,
-    limits: List[cfg.EvoLimitGenConfigField]=[],
+    limits: List[scheme_cfg.EvoLimitGenConfigField]=[],
     rand: np.random.RandomState=np.random.RandomState,
 ) -> list:
     limits_len = len(limits)
@@ -456,14 +456,14 @@ def get_evo_metric_func(
 
 def bind_mate_operator(
     toolbox: base.Toolbox,
-    cfg: cfg.EvoPopulationConfigField,
+    cfg: scheme_cfg.EvoPopulationConfigField,
     rand: np.random.RandomState=None,
-    create_ind_by_list_f: FunctionType=None,
+    # create_ind_by_list_f: FunctionType=None,
 ) -> None:
     kvargs = {}
     if cfg.Mate.Method == 'dynoCxGeneByLimit':
         kvargs['limits_cfg'] = cfg.Limits
-        kvargs['create_ind_by_list_f'] = create_ind_by_list_f
+        # kvargs['create_ind_by_list_f'] = create_ind_by_list_f
         if rand is not None:
             kvargs['rand'] = rand
 
@@ -478,7 +478,7 @@ def bind_mate_operator(
 def bind_mutate_operator(
     toolbox: base.Toolbox,
     hromo_len: int,
-    cfg: cfg.EvoPopulationConfigField,
+    cfg: scheme_cfg.EvoPopulationConfigField,
     rand: np.random.RandomState=None,
 ) -> None:
     kvargs = {}
@@ -511,7 +511,7 @@ def bind_evo_operator(
     toolbox: base.Toolbox,
     name: str,
     func: FunctionType,
-    args: List[cfg.KVArgConfigSection],
+    args: List[scheme_cfg.KVArgConfigSection],
     **kvargs,
 ) -> None:
     if len(args) > 0:
@@ -521,8 +521,8 @@ def bind_evo_operator(
     toolbox.register(name, func, **kvargs)
 
 def get_populations_limits(
-    scheme_cfg: cfg.EvoSchemeMultiPopConfigField,
-) -> List[List[cfg.EvoLimitGenConfigField]]:
+    scheme_cfg: scheme_cfg.EvoSchemeMultiPopConfigField,
+) -> List[List[scheme_cfg.EvoLimitGenConfigField]]:
     ret = []
     for population in scheme_cfg.Populations:
         for _ in range(population.IncludingCount):
@@ -531,7 +531,7 @@ def get_populations_limits(
 
 def get_evo_scheme_result_last_run_pool(
     ind_type: Type,
-    scheme_cfg: Union[cfg.EvoSchemeMultiPopConfigField, cfg.EvoSchemeConfigField],
+    scheme_cfg: Union[scheme_cfg.EvoSchemeMultiPopConfigField, scheme_cfg.EvoSchemeConfigField],
     root: str,
     scheme_name: str,
 ) -> List[List]:
@@ -572,20 +572,20 @@ def restore_evo_scheme_result_from_iter(
 
 def get_evo_scheme_result_last_iter(
     ind_type: Type,
-    scheme_cfg: Union[cfg.EvoSchemeMultiPopConfigField, cfg.EvoSchemeConfigField],
+    scheme_cfg: Union[scheme_cfg.EvoSchemeMultiPopConfigField, scheme_cfg.EvoSchemeConfigField],
     runpool_dir: str,
 ) -> List[List]:
     iter_dir = create_new_iter_dir(runpool_dir)
     if iter_dir is None or iter_dir == '':
         raise f'no iteration folders (dir: {runpool_dir})'
 
-    if isinstance(scheme_cfg, cfg.EvoSchemeConfigField):
+    if isinstance(scheme_cfg, scheme_cfg.EvoSchemeConfigField):
         return get_evo_scheme_result_from_file(
             ind_type=ind_type,
             scheme_cfg=scheme_cfg,
             filename=iter_dir+'result.yaml',
         )
-    elif isinstance(scheme_cfg, cfg.EvoSchemeMultiPopConfigField):
+    elif isinstance(scheme_cfg, scheme_cfg.EvoSchemeMultiPopConfigField):
         return get_evo_scheme_multi_pop_result_from_file(
             ind_type=ind_type,
             scheme_cfg=scheme_cfg,
@@ -596,7 +596,7 @@ def get_evo_scheme_result_last_iter(
 
 def get_evo_scheme_result_from_file(
     ind_type: Type,
-    scheme_cfg: cfg.EvoSchemeConfigField,
+    scheme_cfg: scheme_cfg.EvoSchemeConfigField,
     filename: str,
 ) -> List[List]:
     if not os.path.exists(filename):
@@ -608,7 +608,7 @@ def get_evo_scheme_result_from_file(
             raise f'the population from the file "{filename}" is None)'
 
         if scheme_cfg.PopulationSize != len(last_population_yaml):
-            raise f'the population size from the file "{filename}" ({len(last_population_yaml)}) does not match the config ({cfg.PopulationSize})'
+            raise f'the population size from the file "{filename}" ({len(last_population_yaml)}) does not match the config ({scheme_cfg.PopulationSize})'
 
         ret: List[List] = [0] * scheme_cfg.PopulationSize
 
@@ -625,7 +625,7 @@ def get_evo_scheme_result_from_file(
 
 def get_evo_scheme_multi_pop_result_from_file(
     ind_type: Type,
-    scheme_cfg: cfg.EvoSchemeMultiPopConfigField,
+    scheme_cfg: scheme_cfg.EvoSchemeMultiPopConfigField,
     filename: str,
 ) -> List[List]:
     if not os.path.exists(filename):
@@ -672,7 +672,7 @@ def ind_float_eq_f(ind_l: List[float], ind_r: List[float]) -> bool:
     return True
 
 def get_populations_cnt(
-    scheme_cfg: cfg.EvoSchemeMultiPopConfigField,
+    scheme_cfg: scheme_cfg.EvoSchemeMultiPopConfigField,
 ) -> int:
     if scheme_cfg.Populations is None or len(scheme_cfg.Populations) == 0:
         return 0
@@ -685,9 +685,9 @@ def get_populations_cnt(
     return ret
 
 def get_max_population_size(
-    scheme_cfg: cfg.EvoSchemeMultiPopConfigField,
+    scheme_cfg: scheme_cfg.EvoSchemeMultiPopConfigField,
 ) -> int:
-    if cfg.Populations is None or len(scheme_cfg.Populations) == 0:
+    if scheme_cfg.Populations is None or len(scheme_cfg.Populations) == 0:
         return 0
 
     max = scheme_cfg.Populations[0].Size
@@ -700,9 +700,11 @@ def create_ind_by_list(
     list_ind: List,
     evaluate_f: FunctionType,
 ) -> evo_types.Individual:
-    ret = evo_types.Individual(list_ind)
-    if not ret.fitness.valid:
-        ret.fitness.values = evaluate_f(ret)
+    ret = list_ind
+    if not isinstance(list_ind, evo_types.Individual):
+        ret = evo_types.Individual(list_ind)
+    # if not ret.fitness.valid:
+    #     ret.fitness.values = evaluate_f(ret)
     return ret
 
 def create_model_by_type(
@@ -710,9 +712,9 @@ def create_model_by_type(
 ) -> Model:
     model_type = model_type.lower()
     if model_type == 'lorenz':
-        return LorenzModel(cfg.Config.Models.Lorenz)
+        return LorenzModel(scheme_cfg.Config.Models.Lorenz)
     if model_type == 'chui_moffatt':
-        return ChuiMoffattModel(cfg.Config.Models.ChuiMoffat)
+        return ChuiMoffattModel(scheme_cfg.Config.Models.ChuiMoffat)
     raise f'unknown model - {model_type}'
 
 
@@ -753,7 +755,7 @@ def calc_metric(
 
 def get_predict_data(
     model: esn.EsnForecaster,
-    evaluate_cfg: cfg.EsnEvaluateConfigField,
+    evaluate_cfg: scheme_cfg.EsnEvaluateConfigField,
     data_shape: np.ndarray,
 ) -> np.ndarray:
     if evaluate_cfg.MaxSteps <= 0:
@@ -778,7 +780,7 @@ def get_predict_data(
 
 def get_fit_predict_data(
     model: esn.EsnForecaster,
-    evaluate_cfg: cfg.EsnEvaluateConfigField,
+    evaluate_cfg: scheme_cfg.EsnEvaluateConfigField,
     fit_data: np.ndarray,
     valid_data: np.ndarray,
 ) -> np.ndarray:
@@ -823,3 +825,8 @@ def get_next_color(
             break
 
     return ret
+
+def ind_stat(
+    ind: evo_types.Individual,
+) -> float:
+    return np.dot(ind.fitness.values, ind.fitness.weights)

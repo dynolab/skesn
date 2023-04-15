@@ -1,13 +1,11 @@
-from src.evo.graph_callback import GraphCallbackModule
 
-import src.config as cfg
+import src.config as scheme_cfg
 import src.evo.utils as evo_utils
 import src.evo.types as evo_types
 
 import matplotlib.pyplot as plt
 
-from multiprocess.pool import Pool
-from multiprocess.shared_memory import SharedMemory
+from multiprocess.managers import SyncManager
 
 from types import FunctionType
 from typing import Any, Dict, List, Tuple, Union
@@ -16,6 +14,7 @@ import skesn.esn as esn
 
 import numpy as np
 
+from src.evo.graph_callback import GraphCallbackModule
 from src.evo.evo_scheme import EvoScheme
 from src.evo.esn_data_holder import EsnDataHolder
 
@@ -23,56 +22,45 @@ from src.evo.esn_data_holder import EsnDataHolder
 class EvoEsnScheme(EvoScheme):
     def __init__(self,
         name: str,
-        evo_cfg: cfg.EvoSchemeConfigField,
-        esn_cfg: cfg.EsnConfigField,
-        evaluate_cfg: cfg.EsnEvaluateConfigField,
-        esn_creator_by_ind_f: FunctionType,
-        ind_creator_f: FunctionType=None,
+        evo_cfg: scheme_cfg.EvoSchemeConfigField,
+        esn_cfg: scheme_cfg.EsnConfigField,
+        evaluate_cfg: scheme_cfg.EsnEvaluateConfigField,
+        esn_creator: FunctionType,
         graph_callback_module: GraphCallbackModule=None,
-        pool: Pool=None,
+        async_manager: SyncManager=None,
     ) -> None:
         # Init configs
-        self._esn_cfg: cfg.EsnConfigField = esn_cfg
-        self._evo_cfg: cfg.EvoSchemeConfigField = evo_cfg
-        self._evaluate_cfg: cfg.EsnEvaluateConfigField = evaluate_cfg
+        self._esn_cfg: scheme_cfg.EsnConfigField = esn_cfg
+        self._evaluate_cfg: scheme_cfg.EsnEvaluateConfigField = evaluate_cfg
 
-        # Init graphics
-        self._graph_callback_module: GraphCallbackModule = graph_callback_module
-
-        # Init callback
-        self._esn_creator_by_ind_f: FunctionType = esn_creator_by_ind_f
+        self._esn_creator: FunctionType = esn_creator
 
         # Init evaluate data
-        self._model = evo_utils.create_model_by_type(evaluate_cfg.Model)
-        self._data_holder: EsnDataHolder = EsnDataHolder(
-            self._model,
-            evaluate_cfg.SplitN,
-            evaluate_cfg.FitStep,
-            evaluate_cfg.Normalize,
+        self._data_holder = EsnDataHolder(
+            evo_utils.create_model_by_type(self._evaluate_cfg.Model),
+            self._evaluate_cfg.SplitN,
+            self._evaluate_cfg.FitStep,
+            self._evaluate_cfg.Normalize,
         )
 
         self._fit_data: np.ndarray = self._data_holder.FitData
-        self._shm_fit = SharedMemory(create=True, size=self._fit_data.nbytes)
-        shm_fit_data = np.ndarray(self._fit_data.shape, self._fit_data.dtype, buffer=self._shm_fit.buf)
-        np.copyto(shm_fit_data, self._fit_data)
-
         self._valid_data: np.ndarray = self._data_holder.ValidData
-        self._shm_valid = SharedMemory(create=True, size=self._valid_data.nbytes)
-        shm_valid_data = np.ndarray(self._valid_data.shape, self._valid_data.dtype, buffer=self._shm_valid.buf)
-        np.copyto(shm_valid_data, self._valid_data)
 
         super().__init__(
             name=name,
-            cfg=self._evo_cfg,
-            evaluate_f=EvaluatorEsn(
-                evaluate_cfg,
-                esn_creator_by_ind_f,
-                ShmArrayProvider(self._fit_data.nbytes, self._fit_data.dtype, self._fit_data.shape, self._shm_fit),
-                ShmArrayProvider(self._valid_data.nbytes, self._valid_data.dtype, self._valid_data.shape, self._shm_valid)
+            cfg=evo_cfg,
+            evaluator=evo_types.EsnEvaluator(
+                self._evaluate_cfg,
+                esn_creator,
+                self._fit_data,
+                self._valid_data,
             ),
-            ind_creator_f=ind_creator_f,
             graph_callback_module=graph_callback_module,
-            pool=pool,
+            pool=async_manager.Pool(
+                processes=2,
+                initializer=evo_types.esn_pool_init,
+                initargs=(esn_creator, self._evaluate_cfg, self._data_holder),
+            ),
         )
 
     def save(self,
@@ -114,7 +102,7 @@ class EvoEsnScheme(EvoScheme):
 
             fig.text(0, 0, f'best ind: [{str.join(",", [str(x) for x in self._best_result])}], best fitness: {self._best_result_fitness}')
 
-            model: esn.EsnForecaster = self._esn_creator_by_ind_f(self._best_result)
+            model: esn.EsnForecaster = self._esn_creator(self._best_result)
             model.fit(self._fit_data)
 
             ind_color = evo_utils.get_next_color(exclude=['blue'])
@@ -145,85 +133,6 @@ class EvoEsnScheme(EvoScheme):
         super().save(**kvargs)
 
     def close(self) -> None:
-        self._shm_fit.close()
-        self._shm_valid.close()
-
-
-class ShmArrayProvider(object):
-    def __init__(self, nbytes: int, dtype, shape, shm: SharedMemory):
-        self._shape = shape
-        self._nbytes = nbytes
-        self._dtype = dtype
-        self._shm = shm
-
-    @property
-    def nbytes(self) -> int: return self._nbytes
-
-    @property
-    def shape(self) -> Union[int, Tuple[int]]: return self._shape
-
-    @property
-    def dtype(self): return self._dtype
-
-    @property
-    def shm(self): return self._shm
-
-
-class EvaluatorEsn(object):
-    def __init__(self,
-            cfg: cfg.EsnEvaluateConfigField,
-            esn_creator: FunctionType,
-            shm_valid_data: ShmArrayProvider,
-            shm_fit_data: ShmArrayProvider,
-    ) -> None:
-        self._evaluate_cfg = cfg
-        self._esn_creator = esn_creator
-        self._shm_valid_data = shm_valid_data
-        self._shm_fit_data = shm_fit_data
-
-        self._fit_data = self.fit_data
-        self._valid_data = self.valid_data
-
-    @property
-    def valid_data(self) -> np.ndarray: return np.ndarray(self._shm_valid_data.shape, dtype=self._shm_valid_data.dtype, buffer=self._shm_valid_data.shm.buf)
-
-    @property
-    def fit_data(self) -> np.ndarray: return np.ndarray(self._shm_fit_data.shape, dtype=self._shm_fit_data.dtype, buffer=self._shm_fit_data.shm.buf)
-
-    def __call__(self,
-        ind: evo_types.Individual,
-    ) -> Tuple[float]:
-        if ind.fitness.valid:
-            return ind.fitness.values
-
-        model: esn.EsnForecaster = self._esn_creator(ind)
-        model.fit(self._fit_data)
-
-        predict_data = evo_utils.get_predict_data(
-            model,
-            self._evaluate_cfg,
-            self._valid_data.shape,
-        )
-
-        return evo_utils.calc_metric(
-            self._evaluate_cfg.Metric,
-            self._valid_data,
-            predict_data,
-        ),
-
-    def __getstate__(self) -> Dict[int, Any]:
-        return {
-            '_evaluate_cfg': self._evaluate_cfg,
-            '_esn_creator': self._esn_creator,
-            '_shm_valid_data': self._shm_valid_data,
-            '_shm_fit_data': self._shm_fit_data,
-        }
-
-    def __setstate__(self, state: Dict[int, Any]) -> None:
-        self._evaluate_cfg = state['_evaluate_cfg']
-        self._esn_creator = state['_esn_creator']
-        self._shm_valid_data = state['_shm_valid_data']
-        self._shm_fit_data = state['_shm_fit_data']
-
-        self._valid_data = self.valid_data
-        self._fit_data = self.fit_data
+        'dummy'
+        # self._shm_fit.close()
+        # self._shm_valid.close()

@@ -3,8 +3,9 @@ import logging
 
 import yaml
 import src.dump as dump
-import src.config as cfg
+import src.config as scheme_cfg
 import src.evo.utils as evo_utils
+import src.evo.types as evo_types
 
 from src.evo.graph_callback import GraphCallbackModule
 from src.evo.evo_scheme_multi_pop import EvoSchemeMultiPop
@@ -16,40 +17,50 @@ import matplotlib.pyplot as plt
 
 from types import FunctionType
 from typing import List, Tuple
+from multiprocess.managers import SyncManager
 
 class EvoEsnSchemeMultiPop(EvoSchemeMultiPop):
     def __init__(self,
         name: str,
-        evo_cfg: cfg.EvoSchemeMultiPopConfigField,
-        esn_cfg: cfg.EsnConfigField,
-        evaluate_cfg: cfg.EsnEvaluateConfigField,
-        data_holder: EsnDataHolder,
-        esn_creator_by_ind_f: FunctionType,
-        ind_creator_f: FunctionType=None,
+        evo_cfg: scheme_cfg.EvoSchemeMultiPopConfigField,
+        esn_cfg: scheme_cfg.EsnConfigField,
+        evaluate_cfg: scheme_cfg.EsnEvaluateConfigField,
+        esn_creator: FunctionType,
         graph_callback_module: GraphCallbackModule=None,
+        async_manager: SyncManager=None,
     ) -> None:
         # Init configs
-        self._esn_cfg: cfg.EsnConfigField = esn_cfg
-        self._evo_cfg: cfg.EvoSchemeMultiPopConfigField = evo_cfg
-        self._evaluate_cfg: cfg.EsnEvaluateConfigField = evaluate_cfg
+        self._esn_cfg: scheme_cfg.EsnConfigField = esn_cfg
+        self._evaluate_cfg: scheme_cfg.EsnEvaluateConfigField = evaluate_cfg
 
-        # Init graphics
-        self._graph_callback_module: GraphCallbackModule = graph_callback_module
-
-        # Init callbacks
-        self._esn_creator_by_ind_f: FunctionType = esn_creator_by_ind_f
+        self._esn_creator: FunctionType = esn_creator
 
         # Init train data
-        self._data_holder: EsnDataHolder = data_holder
-        self._fit_data = self._data_holder.FitData
-        self._valid_data = self._data_holder.ValidData
+        self._data_holder: EsnDataHolder = EsnDataHolder(
+            evo_utils.create_model_by_type(self._evaluate_cfg.Model),
+            self._evaluate_cfg.SplitN,
+            self._evaluate_cfg.FitStep,
+            self._evaluate_cfg.Normalize,
+        )
+
+        self._fit_data: np.ndarray = self._data_holder.FitData
+        self._valid_data: np.ndarray = self._data_holder.ValidData
 
         super().__init__(
             name=name,
-            evo_cfg=self._evo_cfg,
-            evaluate_f=self._evaluate_esn,
-            ind_creator_f=ind_creator_f,
+            evo_cfg=evo_cfg,
+            evaluator=evo_types.EsnEvaluator(
+                self._evaluate_cfg,
+                esn_creator,
+                self._fit_data,
+                self._valid_data,
+            ),
             graph_callback_module=graph_callback_module,
+            pool=async_manager.Pool(
+                processes=2,
+                initializer=evo_types.esn_pool_init,
+                initargs=(esn_creator, self._evaluate_cfg, self._data_holder),
+            ),
         )
 
     def save(self,
@@ -104,7 +115,7 @@ class EvoEsnSchemeMultiPop(EvoSchemeMultiPop):
             best_ind, best_ind_fitness = evo_utils.calculate_best_ind(self._best_result)
             fig.text(0, 0, f'best ind: [{str.join(",", [str(x) for x in best_ind])}], best fitness: {best_ind_fitness}')
 
-            model: esn.EsnForecaster = self._esn_creator_by_ind_f(best_ind)
+            model: esn.EsnForecaster = self._esn_creator(best_ind)
             model.fit(self._fit_data)
 
             ind_color = evo_utils.get_next_color(exclude=['blue'])
@@ -156,25 +167,3 @@ class EvoEsnSchemeMultiPop(EvoSchemeMultiPop):
             fig.savefig(f'{self._iter_dir}/graph_best.png', dpi=fig.dpi)
 
         super().save(**kvargs)
-
-    def _evaluate_esn(self,
-        ind: List,
-    ) -> Tuple[float]:
-        if ind.fitness.valid:
-            return ind.fitness.values
-
-        model: esn.EsnForecaster = self._esn_creator_by_ind_f(ind)
-        model.fit(self._fit_data)
-
-        predict_data = evo_utils.get_predict_data(
-            model,
-            self._evaluate_cfg,
-            self._valid_data.shape,
-        )
-
-        return evo_utils.calc_metric(
-            self._evaluate_cfg.Metric,
-            self._valid_data,
-            predict_data,
-        ),
-

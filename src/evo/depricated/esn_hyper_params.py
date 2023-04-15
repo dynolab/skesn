@@ -33,9 +33,9 @@ class EvoSchemeEsnHyperParams(EvoEsnScheme):
 
     def _setup_hyper_params(self):
         # self._n_reservoir = HyperParamInfo('n_reservoir', self._cfg.Limits.NReservoir.Min, self._cfg.Limits.NReservoir.Max, self._cfg.Limits.NReservoir.IsInt)
-        self._spectral_radius = HyperParamInfo('spectral_radius', self._cfg.Limits.SpectralRadius.Min, self._cfg.Limits.SpectralRadius.Max, self._cfg.Limits.SpectralRadius.IsInt)
-        self._sparsity = HyperParamInfo('sparsity', self._cfg.Limits.Sparsity.Min, self._cfg.Limits.Sparsity.Max, self._cfg.Limits.Sparsity.IsInt)
-        self._noise = HyperParamInfo('noise', self._cfg.Limits.Noise.Min, self._cfg.Limits.Noise.Max, self._cfg.Limits.Noise.IsInt)
+        self._spectral_radius = HyperParamInfo('spectral_radius', self._evo_cfg.Limits.SpectralRadius.Min, self._evo_cfg.Limits.SpectralRadius.Max, self._evo_cfg.Limits.SpectralRadius.IsInt)
+        self._sparsity = HyperParamInfo('sparsity', self._evo_cfg.Limits.Sparsity.Min, self._evo_cfg.Limits.Sparsity.Max, self._evo_cfg.Limits.Sparsity.IsInt)
+        self._noise = HyperParamInfo('noise', self._evo_cfg.Limits.Noise.Min, self._evo_cfg.Limits.Noise.Max, self._evo_cfg.Limits.Noise.IsInt)
         # self._lambda_r = HyperParamInfo('lambda_r', self._cfg.Limits.LambdaR.Min, self._cfg.Limits.LambdaR.Max, self._cfg.Limits.LambdaR.IsInt)
         self._hyper_params = (
             # self._n_reservoir,

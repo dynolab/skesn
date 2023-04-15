@@ -1,10 +1,11 @@
 import datetime
 import pathlib
 import src.evo.utils as evo_utils
+import src.evo.types as evo_types
 
-from .abstract import Scheme
-from ..log import get_logger
-from ..config import EvoSchemeMultiPopConfigField, EvoPopulationConfigField
+from src.evo.abstract import Scheme
+from src.log import get_logger
+from src.config import EvoSchemeMultiPopConfigField, EvoPopulationConfigField
 from src.utils import kv_config_arr_to_kvargs
 from src.evo.graph_callback import GraphCallbackModule
 
@@ -14,20 +15,20 @@ import os.path
 import numpy as np
 import matplotlib.pyplot as plt
 
+from multiprocess.pool import Pool
 from types import FunctionType
 from typing import Any, List, Union
 from deap import base, algorithms
-from deap import creator
 from deap import tools
 
 class EvoSchemeMultiPop(Scheme):
     def __init__(self,
         name: str,
         evo_cfg: EvoSchemeMultiPopConfigField,
-        evaluate_f: FunctionType,
-        ind_creator_f: FunctionType=None,
+        evaluator: FunctionType,
         graph_callback_module: GraphCallbackModule=None,
-        ) -> None:
+        pool: Pool=None,
+    ) -> None:
         # Graphics
         self._graph_callback_module = graph_callback_module
 
@@ -35,40 +36,40 @@ class EvoSchemeMultiPop(Scheme):
         self._logger: logging.Logger = get_logger(name=f'EvoSchemeMultiPop<{name}>')
 
         # Config setup
-        self._name: str                          = name
-        self._cfg:  EvoSchemeMultiPopConfigField = evo_cfg
+        self._name:    str                          = name
+        self._evo_cfg: EvoSchemeMultiPopConfigField = evo_cfg
 
         # Math setup
-        self._rand: np.random.RandomState = np.random.RandomState(seed=self._cfg.RandSeed)
+        self._rand: np.random.RandomState = np.random.RandomState(seed=self._evo_cfg.RandSeed)
+
+        # Async setup
+        self._pool: Pool = pool
 
         # DEAP setup
-        self._evaluate_f = evaluate_f
-        # self._ind_creator_f = ind_creator_f
-        # if self._ind_creator_f is None:
-        #     self._ind_creator_f = lambda: evo_utils.create_ind_by_list(evo_utils.ind_creator_f(
-        #             creator.Individual,
-        #             self._cfg.HromoLen,
-        #             pop_cfg.Limits,
-        #             self._rand,
-        #         ),
-        #         self._evaluate_f,
-        #     )
+        evo_types.Fitness.patch_weights(self._evo_cfg.FitnessWeights)
+        self._pop_len = len(evo_cfg.Populations)
+        self._evaluator = evaluator
+        self._ind_creators = [None] * self._pop_len
+        for i in range(self._pop_len):
+            self._ind_creators[i] = lambda: evo_utils.ind_creator_f(
+                self._evo_cfg.HromoLen,
+                self._evo_cfg.Populations[i].Limits,
+                self._rand,
+            )
 
-        creator.create("Fitness", base.Fitness, weights=self._cfg.FitnessWeights)
-        creator.create("Individual", list, fitness=creator.Fitness)
-
+        # Set up iter dir
         self._iter_dir: str = None
         self._set_runpool_dir()
         self._use_restored_result: bool = False
         self._result: List[algorithms.Popolation] = []
-        self._best_result: List[creator.Individual] = []
+        self._best_result: List[evo_types.Individual] = []
 
         # Evo stats
         self._logbook: tools.Logbook = None
         self._stats: tools.Statistics = None
-        if len(self._cfg.Metrics) > 0:
-            self._stats = tools.Statistics(lambda ind: np.dot(ind.fitness.values, ind.fitness.weights))
-            for metric_cfg in self._cfg.Metrics:
+        if len(self._evo_cfg.Metrics) > 0:
+            self._stats = tools.Statistics(evo_utils.ind_stat)
+            for metric_cfg in self._evo_cfg.Metrics:
                 self._stats.register(metric_cfg.Name, evo_utils.get_evo_metric_func(metric_cfg.Func, metric_cfg.Package))
 
     # Inherited methods
@@ -84,11 +85,11 @@ class EvoSchemeMultiPop(Scheme):
 
         self._result, self._logbook = algorithms.eaSimpleMultiPop(
             populations=self._result,
-            ngen=self._cfg.MaxGenNum,
+            ngen=self._evo_cfg.MaxGenNum,
             stats=self._stats,
             pbcltex=0.5,
             cltex_f=cltex,
-            verbose=self._cfg.Verbose,
+            verbose=self._evo_cfg.Verbose,
             logger=self._logger,
             **kvargs,
         )
@@ -124,7 +125,7 @@ class EvoSchemeMultiPop(Scheme):
     #                 pop_cfg,
     #                 self._rand,
     #             )
-    #             pop.Inds = [ind if isinstance(ind, creator.Individual) else evo_utils.create_ind_by_list(ind, self._evaluate_f) for ind in result[k]]
+    #             pop.Inds = [ind if isinstance(ind, evo_types.Individual) else evo_utils.create_ind_by_list(ind, self._evaluate_f) for ind in result[k]]
     #             k += 1
     #             self._result.append(pop)
 
@@ -156,17 +157,18 @@ class EvoSchemeMultiPop(Scheme):
             self._result.clear()
 
         k = 0
-        for pop_cfg in self._cfg.Populations:
+        for pop_cfg in self._evo_cfg.Populations:
             if pop_cfg.IncludingCount <= 0:
                 continue
 
             for _ in range(pop_cfg.IncludingCount):
                 pop = _create_deap_population(
                     inds=restored_result[k],
-                    evaluate_f=self._evaluate_f,
-                    hromo_len=self._cfg.HromoLen,
+                    evaluate_f=self._evaluator,
+                    hromo_len=self._evo_cfg.HromoLen,
                     cfg=pop_cfg,
                     rand=self._rand,
+                    pool=self._pool,
                 )
 
                 k += 1
@@ -190,15 +192,15 @@ class EvoSchemeMultiPop(Scheme):
                 with open(f'{self._iter_dir}/spec.yaml', 'w') as f:
                     yaml.safe_dump(spec, f)
 
-        len_metrics = len(self._cfg.Metrics)
+        len_metrics = len(self._evo_cfg.Metrics)
         if not kvargs.get('disable_dump_stat', False) and len_metrics > 0:
             # Dump stat graph
             fig, ax = plt.subplots()
             fig.suptitle(f'{self._name}\nevo stats')
 
-            metrics = self._logbook.select(*[metric.Name for metric in self._cfg.Metrics])
+            metrics = self._logbook.select(*[metric.Name for metric in self._evo_cfg.Metrics])
             for i in range(len_metrics):
-                ax.plot(metrics[i], label=self._cfg.Metrics[i].Name, **kv_config_arr_to_kvargs(self._cfg.Metrics[i].PltArgs))
+                ax.plot(metrics[i], label=self._evo_cfg.Metrics[i].Name, **kv_config_arr_to_kvargs(self._evo_cfg.Metrics[i].PltArgs))
             ax.set_xlabel('generation')
             ax.set_ylabel('fitness')
             ax.legend()
@@ -208,30 +210,30 @@ class EvoSchemeMultiPop(Scheme):
         if not kvargs.get('disable_dump_cfg', False):
             # Dump config
             with open(f'{self._iter_dir}/config.yaml', 'w') as f:
-                yaml.safe_dump(self._cfg.yaml(), f)
+                yaml.safe_dump(self._evo_cfg.yaml(), f)
 
         if not kvargs.get('disable_dump_result', False):
             # Dump last populations
             with open(f'{self._iter_dir}/result.yaml', 'w') as f:
                 evo_utils.dump_inds_multi_pop_arr(
-                    self._cfg.HromoLen,
+                    self._evo_cfg.HromoLen,
                     f,
                     [popultaion.Inds for popultaion in self._result],
-                    evo_utils.get_populations_limits(self._cfg),
+                    evo_utils.get_populations_limits(self._evo_cfg),
                 )
 
         if not kvargs.get('disable_dump_hall_of_fame', False):
             # Dump last population hall of fames
             with open(f'{self._iter_dir}/hall_off_fames.yaml', 'w') as f:
                 evo_utils.dump_inds_multi_pop_arr(
-                    self._cfg.HromoLen,
+                    self._evo_cfg.HromoLen,
                     f,
                     [popultaion.HallOfFame.items if popultaion.HallOfFameSize > 0 else [] for popultaion in self._result],
-                    evo_utils.get_populations_limits(self._cfg),
+                    evo_utils.get_populations_limits(self._evo_cfg),
                 )
 
     def get_evaluate_f(self) -> FunctionType:
-        return self._evaluate_f
+        return self._evaluator
 
     # Access methods
 
@@ -247,30 +249,21 @@ class EvoSchemeMultiPop(Scheme):
     # Private methods
 
     def _set_result(self) -> None:
-        for pop_cfg in self._cfg.Populations:
+        self._result = [None] * self._pop_len
+        for i, pop_cfg in enumerate(self._evo_cfg.Populations):
             if pop_cfg.IncludingCount <= 0:
                 continue
 
-            ind_creator_f = lambda: evo_utils.create_ind_by_list(evo_utils.ind_creator_f(
-                    creator.Individual,
-                    self._cfg.HromoLen,
-                    pop_cfg.Limits,
-                    self._rand,
-                ),
-                self._evaluate_f,
-            )
-
             for _ in range(pop_cfg.IncludingCount):
-                inds = [ind_creator_f() for _ in range(pop_cfg.Size)]
-
-                pop = _create_deap_population(
-                    inds=inds,
-                    evaluate_f=self._evaluate_f,
-                    hromo_len=self._cfg.HromoLen,
+                pop = [self._ind_creators[i]() for _ in range(pop_cfg.Size)]
+                self._result[i] = _create_deap_population(
+                    inds=pop,
+                    evaluate_f=self._evaluator,
+                    hromo_len=self._evo_cfg.HromoLen,
                     cfg=pop_cfg,
                     rand=self._rand,
+                    pool=self._pool,
                 )
-                self._result.append(pop)
 
     def _create_spec(self) -> dict:
         ret = {
@@ -289,7 +282,7 @@ class EvoSchemeMultiPop(Scheme):
         if result is None:
             raise 'restored result is None'
 
-        populations_cnt = evo_utils.get_populations_cnt(self._cfg)
+        populations_cnt = evo_utils.get_populations_cnt(self._evo_cfg)
 
         if len(result) != populations_cnt:
             raise f'restored popultations size isn\'t equal config (restored: {len(result)}, config: {populations_cnt})'
@@ -297,7 +290,7 @@ class EvoSchemeMultiPop(Scheme):
         ret: List[List] = []
 
         k = 0
-        for pop_cfg in self._cfg.Populations:
+        for pop_cfg in self._evo_cfg.Populations:
             if pop_cfg.IncludingCount <= 0:
                 continue
 
@@ -312,9 +305,11 @@ class EvoSchemeMultiPop(Scheme):
                     raise f'restored popultation size isn\'t equal config (restored: {len(inds)}, config: {pop_cfg.Size})'
 
                 if isinstance(inds, dict):
-                    ret.append([evo_utils.create_ind_by_list(ind, self._evaluate_f) for _, ind in inds.values()])
+                    # ret.append([evo_utils.create_ind_by_list(ind, self._evaluator) for _, ind in inds.values()])
+                    ret.append([evo_types.Individual(ind) for _, ind in inds.values()])
                 elif isinstance(inds, list):
-                    ret.append([evo_utils.create_ind_by_list(ind, self._evaluate_f) for ind in inds])
+                    # ret.append([evo_utils.create_ind_by_list(ind, self._evaluator) for ind in inds])
+                    ret.append([evo_types.Individual(ind) for ind in inds])
                 else:
                     raise 'unknown last popultaion yaml type'
 
@@ -323,7 +318,7 @@ class EvoSchemeMultiPop(Scheme):
         return ret
 
     def _set_runpool_dir(self) -> None:
-        dump_dir = self._cfg.DumpDir
+        dump_dir = self._evo_cfg.DumpDir
         if dump_dir is None or\
             len(dump_dir) == 0:
             dump_dir = pathlib.Path().resolve()
@@ -356,8 +351,12 @@ def _create_deap_population(
     hromo_len: int,
     cfg: EvoPopulationConfigField,
     rand: np.random.RandomState,
+    pool: Pool=None,
 ) -> algorithms.Popolation:
     toolbox = base.Toolbox()
+
+    if pool is not None:
+        toolbox.register('map', pool.map)
 
     toolbox.register('evaluate', evaluate_f)
 
@@ -372,7 +371,6 @@ def _create_deap_population(
         toolbox=toolbox,
         cfg=cfg,
         rand=rand,
-        create_ind_by_list_f=lambda ind: evo_utils.create_ind_by_list(ind, evaluate_f),
     )
     evo_utils.bind_mutate_operator(
         toolbox=toolbox,
@@ -381,11 +379,7 @@ def _create_deap_population(
         rand=rand,
     )
 
-    inds=[
-        ind if isinstance(ind, creator.Individual) else evo_utils.create_ind_by_list(ind, evaluate_f)\
-        for ind in inds
-    ]
-
+    inds=[ evo_types.Individual(ind) for ind in inds ]
     return algorithms.Popolation(
         inds=inds,
         cxpb=cfg.Mate.Probability,

@@ -1,17 +1,15 @@
 import matplotlib.pyplot as plt
 
 from typing import List
+from multiprocess.managers import SyncManager
 
 from src.evo.graph_callback import GraphCallbackModule
-from src.evo.esn_data_holder import EsnDataHolder
 
 import src.evo.evo_esn_scheme_multi_pop as evo_esn_scheme_multi_pop
 
 import src.config as cfg
-import src.evo.utils as evo_utils
+import src.evo.types as evo_types
 
-
-from skesn.esn import EsnForecaster
 
 SPECTRAL_RADIUS_IDX = 0
 SPARSITY_IDX = 1
@@ -23,31 +21,22 @@ USE_BIAS_IDX = 5
 class DynoEvoEsnHyperParamMultiPop(evo_esn_scheme_multi_pop.EvoEsnSchemeMultiPop):
     def __init__(self,
         scheme_cfg: cfg.DynoEvoEsnHyperParamMultiPopConfig,
+        async_manager: SyncManager=None,
     ) -> None:
-        self._cfg: cfg.DynoEvoEsnHyperParamMultiPopConfig = scheme_cfg
+        self._scheme_cfg: cfg.DynoEvoEsnHyperParamMultiPopConfig = scheme_cfg
 
-        model = evo_utils.create_model_by_type(self._cfg.Evaluate.Model)
-        esn_data_holder = EsnDataHolder(
-            model,
-            self._cfg.Evaluate.SplitN,
-            self._cfg.Evaluate.FitStep,
-            self._cfg.Evaluate.Normalize,
-        )
         # graph_callback_module = self._create_graph_callback_module()
+        graph_callback_module = None
 
         super().__init__(
             name='hyper_param',
-            evo_cfg=self._cfg.Evo,
-            esn_cfg=self._cfg.Esn,
-            evaluate_cfg=self._cfg.Evaluate,
-            data_holder=esn_data_holder,
-            esn_creator_by_ind_f=self._esn_creator_by_ind_f,
-            # graph_callback_module=graph_callback_module,
+            evo_cfg=self._scheme_cfg.Evo,
+            esn_cfg=self._scheme_cfg.Esn,
+            evaluate_cfg=self._scheme_cfg.Evaluate,
+            esn_creator=evo_types.HyperParamEsnCreatorByInd(self._scheme_cfg.Esn),
+            graph_callback_module=graph_callback_module,
+            async_manager=async_manager,
         )
-
-    # def run(self, **kvargs) -> None:
-    #     super().run(**kvargs)
-    #     plt.show()
 
     def _create_graph_callback_module(self) -> GraphCallbackModule:
         ret = GraphCallbackModule(1)
@@ -56,8 +45,8 @@ class DynoEvoEsnHyperParamMultiPop(evo_esn_scheme_multi_pop.EvoEsnSchemeMultiPop
         ax = ret.get_axes()
         ax.set_title('error per generation graph')
         ax.set_xlabel('gen')
-        ax.set_xlim((0, self._cfg.Evo.MaxGenNum + 1))
-        ax.set_ylabel(self._cfg.Evaluate.Metric)
+        ax.set_xlim((0, self._scheme_cfg.Evo.MaxGenNum + 1))
+        ax.set_ylabel(self._scheme_cfg.Evaluate.Metric)
 
         return ret
 
@@ -78,19 +67,3 @@ class DynoEvoEsnHyperParamMultiPop(evo_esn_scheme_multi_pop.EvoEsnSchemeMultiPop
             gen = kvargs['gen']
         points = [(gen, item.fitness.values[0]) for item in items]
         ax.scatter(*zip(*points), marker='o', color='blue', zorder=1)
-
-    def _esn_creator_by_ind_f(self,
-        ind: List,
-    ) -> EsnForecaster:
-        return EsnForecaster(
-            n_reservoir=self._esn_cfg.NReservoir,
-            spectral_radius=ind[SPECTRAL_RADIUS_IDX],
-            sparsity=ind[SPARSITY_IDX],
-            regularization=ind[REGULIRIZATION_IDX],
-            lambda_r=ind[LAMBDA_R_IDX],
-            in_activation=self._esn_cfg.InActivation,
-            out_activation=self._esn_cfg.OutActivation,
-            use_additive_noise_when_forecasting=ind[USE_ADDITIVE_NOISE_WHEN_FORECASTING_IDX],
-            random_state=self._esn_cfg.RandomState,
-            use_bias=ind[USE_BIAS_IDX],
-        )
