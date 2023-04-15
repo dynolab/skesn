@@ -13,7 +13,7 @@ import src.lorenz as lorenz
 import src.utils as utils
 import src.log as log
 import src.dump as dump
-import src.config as scheme_cfg
+import src.config as cfg
 
 import skesn.esn as esn
 from multiprocess.managers import SyncManager
@@ -143,12 +143,12 @@ def main(manager: SyncManager):
     parser = _create_parser()
     args = parser.parse_args()
 
-    if scheme_cfg.Config.GlobalProps.RandSeed > 0:
+    if cfg.Config.GlobalProps.RandSeed > 0:
         # Set random state
-        random.seed(scheme_cfg.Config.GlobalProps.RandSeed)
-        np.random.seed(scheme_cfg.Config.GlobalProps.RandSeed)
+        random.seed(cfg.Config.GlobalProps.RandSeed)
+        np.random.seed(cfg.Config.GlobalProps.RandSeed)
 
-    scheme_cfg.init(args)
+    cfg.init(args)
     log.init(args)
     dump.init(args)
 
@@ -159,11 +159,11 @@ def main(manager: SyncManager):
     # elif mode == _MODE_GRID:
     #     run_grid(args=args)
     elif mode == _MODE_HYPER_PARAMS:
-        run_scheme(DynoEvoEsnHyperParam, scheme_cfg.Config.Schemes.HyperParam, args=args, async_manager=manager)
+        run_scheme(DynoEvoEsnHyperParam, cfg.Config.Schemes.HyperParam, args=args, async_manager=manager)
     elif mode == _MODE_HYPER_PARAMS_MULTI_POP:
-        run_scheme(DynoEvoEsnHyperParamMultiPop, scheme_cfg.Config.Schemes.HyperParamMultiPop, args=args, async_manager=manager)
+        run_scheme(DynoEvoEsnHyperParamMultiPop, cfg.Config.Schemes.HyperParamMultiPop, args=args, async_manager=manager)
     elif mode == _MODE_HYPER_PARAMS_MULTI_POP_MULTI_CRIT:
-        run_scheme(DynoEvoEsnHyperParamMultiPopMultiCrit, scheme_cfg.Config.Schemes.HyperParamMultiPopMultiCrit, args=args, async_manager=manager)
+        run_scheme(DynoEvoEsnHyperParamMultiPopMultiCrit, cfg.Config.Schemes.HyperParamMultiPopMultiCrit, args=args, async_manager=manager)
     else:
         raise('unknown running mode')
 

@@ -7,7 +7,7 @@ import numpy as np
 import src.evo.utils as evo_utils
 import deap.tools as deap_tools
 
-import src.config as scheme_cfg
+import src.config as cfg
 
 from .lorenz import train_to_data
 
@@ -52,7 +52,7 @@ def get_optional_arg(
     return default
 
 def kv_config_arr_to_kvargs(
-    args: List[scheme_cfg.KVArgConfigSection],
+    args: List[cfg.KVArgConfigSection],
 ) -> Dict[str, Any]:
     ret = {}
     for kv in args:
@@ -77,7 +77,7 @@ def get_via_kvargs(kvargs, name: str):
 
 def _gen_num_by_limit(
     gen_val: float,
-    limit_cfg: scheme_cfg.EvoLimitGenConfigField,
+    limit_cfg: cfg.EvoLimitGenConfigField,
     rand: np.random.RandomState,
 ) -> Union[int, float]:
     ret: float = 0.
@@ -108,7 +108,7 @@ def _gen_num_by_limit(
     raise 'unknow limit gene type'
 
 def _prepare_cfg_args(
-    args: Union[List[scheme_cfg.KVArgConfigSection],None],
+    args: Union[List[cfg.KVArgConfigSection],None],
 ) -> dict:
     ret = {}
     if args is None or len(args) == 0:
@@ -150,7 +150,7 @@ def _map_limit_mutate_f(
 
 def _gen_num_by_method(
     gen_val: float,
-    method_cfg: scheme_cfg.EvoOperatorBaseConfigField,
+    method_cfg: cfg.EvoOperatorBaseConfigField,
 ) -> float:
     func = _map_limit_mutate_f(method_cfg.Method)
     args = _prepare_cfg_args(method_cfg.Args)
@@ -193,7 +193,7 @@ def _gen_log_num(
     return 10**rand.uniform(np.log10(_EPS_FLOAT))
 
 def gen_gene(
-    limit_cfg: scheme_cfg.EvoLimitGenConfigField,
+    limit_cfg: cfg.EvoLimitGenConfigField,
     rand: np.random.RandomState,
 ) -> Any:
     t = limit_cfg.Type.lower()
@@ -269,7 +269,7 @@ def _map_gene_cx(
     raise 'unknown cx gene method: %s' % method
 
 def cx_gene(
-    limit_cfg: scheme_cfg.EvoLimitGenConfigField,
+    limit_cfg: cfg.EvoLimitGenConfigField,
     rand: np.random.RandomState,
     p1_gene: Union[int, float, bool, str],
     p2_gene: Union[int, float, bool, str],
@@ -289,7 +289,7 @@ def cx_gene(
     return func(p1_gene, p2_gene, rand=rand, **kvargs)
 
 def mut_gene(
-    limit_cfg: scheme_cfg.EvoLimitGenConfigField,
+    limit_cfg: cfg.EvoLimitGenConfigField,
     rand: np.random.RandomState,
     cur_gene: Union[int, float, bool, str]
 ) -> Union[int, float, bool, str]:

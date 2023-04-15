@@ -8,7 +8,7 @@ import numpy as np
 import skesn.esn as esn
 from src.evo.esn_data_holder import EsnDataHolder
 
-import src.config as scheme_cfg
+import src.config as cfg
 import src.evo.utils as evo_utils
 
 class Fitness(base.Fitness):
@@ -32,7 +32,7 @@ valid_data = None
 
 def esn_pool_init(
     creator: FunctionType,
-    eval_cfg: scheme_cfg.EsnEvaluateConfigField,
+    eval_cfg: cfg.EsnEvaluateConfigField,
     data_holder: EsnDataHolder,
 ) -> None:
     global evaluate_cfg, esn_creator, fit_data, valid_data
@@ -44,7 +44,7 @@ def esn_pool_init(
 
 class EsnEvaluator(object):
     def __init__(self,
-            _evaluate_cfg: scheme_cfg.EsnEvaluateConfigField=None,
+            _evaluate_cfg: cfg.EsnEvaluateConfigField=None,
             _esn_creator: FunctionType=None,
             _fit_data: np.ndarray=None,
             _valid_data: np.ndarray=None,
@@ -96,7 +96,7 @@ class HyperParamEsnCreatorByInd(object):
     USE_ADDITIVE_NOISE_WHEN_FORECASTING_IDX = 4
     USE_BIAS_IDX = 5
 
-    def __init__(self, esn_cfg: scheme_cfg.EsnConfigField) -> None:
+    def __init__(self, esn_cfg: cfg.EsnConfigField) -> None:
         self._cfg = esn_cfg
 
     def __call__(self, ind: Individual) -> esn.EsnForecaster:

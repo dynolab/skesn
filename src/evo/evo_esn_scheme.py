@@ -1,5 +1,5 @@
 
-import src.config as scheme_cfg
+import src.config as cfg
 import src.evo.utils as evo_utils
 import src.evo.types as evo_types
 
@@ -22,16 +22,16 @@ from src.evo.esn_data_holder import EsnDataHolder
 class EvoEsnScheme(EvoScheme):
     def __init__(self,
         name: str,
-        evo_cfg: scheme_cfg.EvoSchemeConfigField,
-        esn_cfg: scheme_cfg.EsnConfigField,
-        evaluate_cfg: scheme_cfg.EsnEvaluateConfigField,
+        evo_cfg: cfg.EvoSchemeConfigField,
+        esn_cfg: cfg.EsnConfigField,
+        evaluate_cfg: cfg.EsnEvaluateConfigField,
         esn_creator: FunctionType,
         graph_callback_module: GraphCallbackModule=None,
         async_manager: SyncManager=None,
     ) -> None:
         # Init configs
-        self._esn_cfg: scheme_cfg.EsnConfigField = esn_cfg
-        self._evaluate_cfg: scheme_cfg.EsnEvaluateConfigField = evaluate_cfg
+        self._esn_cfg: cfg.EsnConfigField = esn_cfg
+        self._evaluate_cfg: cfg.EsnEvaluateConfigField = evaluate_cfg
 
         self._esn_creator: FunctionType = esn_creator
 

@@ -8,7 +8,7 @@ from src.evo.esn_data_holder import EsnDataHolder
 from src.evo.graph_callback import GraphCallbackModule
 from src.evo.evo_esn_scheme import EvoEsnScheme
 
-import src.config as scheme_cfg
+import src.config as cfg
 import src.evo.types as evo_types
 
 from multiprocess.managers import SyncManager
@@ -22,7 +22,7 @@ USE_BIAS_IDX = 5
 
 class DynoEvoEsnHyperParam(EvoEsnScheme):
     def __init__(self,
-        scheme_cfg: scheme_cfg.DynoEvoEsnHyperParamConfig,
+        scheme_cfg: cfg.DynoEvoEsnHyperParamConfig,
         async_manager: SyncManager=None,
     ) -> None:
         self._scheme_cfg = scheme_cfg
