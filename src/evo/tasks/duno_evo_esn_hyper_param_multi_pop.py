@@ -11,13 +11,6 @@ import src.config as cfg
 import src.evo.types as evo_types
 
 
-SPECTRAL_RADIUS_IDX = 0
-SPARSITY_IDX = 1
-LAMBDA_R_IDX = 2
-REGULIRIZATION_IDX = 3
-USE_ADDITIVE_NOISE_WHEN_FORECASTING_IDX = 4
-USE_BIAS_IDX = 5
-
 class DynoEvoEsnHyperParamMultiPop(evo_esn_scheme_multi_pop.EvoEsnSchemeMultiPop):
     def __init__(self,
         scheme_cfg: cfg.DynoEvoEsnHyperParamMultiPopConfig,

@@ -1,5 +1,7 @@
 import datetime
 import pathlib
+import shutil
+import src.log as log
 import src.evo.utils as evo_utils
 import src.evo.types as evo_types
 
@@ -91,6 +93,7 @@ class EvoSchemeMultiPop(Scheme):
             cltex_f=cltex,
             verbose=self._evo_cfg.Verbose,
             logger=self._logger,
+            # pool=self._pool,
             **kvargs,
         )
 
@@ -186,6 +189,8 @@ class EvoSchemeMultiPop(Scheme):
             iter_dir=self._iter_dir,
         )
 
+        self._logger.info(f'dump evo scheme... (dir: %s)', self._iter_dir)
+
         if not kvargs.get('disable_dump_spec', False):
             if self._use_restored_result:
                 spec = self._create_spec()
@@ -206,6 +211,12 @@ class EvoSchemeMultiPop(Scheme):
             ax.legend()
 
             fig.savefig(f'{self._iter_dir}/stat_graph.png', dpi=fig.dpi)
+
+        if not kvargs.get('disable_dump_logs', False):
+            # Dump logs
+            logfile = log.get_logfile()
+            if os.path.isfile(logfile):
+                shutil.copyfile(logfile, f'{self._iter_dir}/log')
 
         if not kvargs.get('disable_dump_cfg', False):
             # Dump config

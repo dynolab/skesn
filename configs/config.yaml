@@ -162,6 +162,7 @@ schemes:
     evaluate:
       split_n: 50000
       # fit_step: 10
+      normalize: true
       model: chui_moffatt
       data: model # model or yaml filename with values
       metric: mse
@@ -180,7 +181,7 @@ schemes:
     evo:
       dump_dir: dumps
       rand_seed: 3
-      max_gen_num: 3
+      max_gen_num: 1
 
       hromo_len: 6
       fitness_weights: [ -1.0 ]
@@ -196,8 +197,8 @@ schemes:
           package: numpy
 
       populations:
-        - size: 10
-          hall_of_fame: 2
+        - size: 40
+          hall_of_fame: 3
           select:
             method: selTournament
             args:
@@ -291,8 +292,8 @@ schemes:
               mate:
                 method: cxRandChoiceGene
 
-        - size: 10
-          hall_of_fame: 2
+        - size: 40
+          hall_of_fame: 3
           select:
             method: selTournament
             args:
@@ -386,8 +387,8 @@ schemes:
               mate:
                 method: cxRandChoiceGene
 
-        - size: 10
-          hall_of_fame: 2
+        - size: 40
+          hall_of_fame: 3
           select:
             method: selTournament
             args:
@@ -481,8 +482,8 @@ schemes:
               mate:
                 method: cxRandChoiceGene
 
-        - size: 10
-          hall_of_fame: 2
+        - size: 40
+          hall_of_fame: 3
           select:
             method: selTournament
             args:
