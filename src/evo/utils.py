@@ -8,6 +8,7 @@ import src.dump as dump
 from src.models.abstract import Model
 from src.models.lorenz import LorenzModel
 from src.models.chui_moffatt import ChuiMoffattModel
+from src.models.moehlis import MoehlisModel
 
 import skesn.esn as esn
 
@@ -715,6 +716,8 @@ def create_model_by_type(
         return LorenzModel(cfg.Config.Models.Lorenz)
     if model_type == 'chui_moffatt':
         return ChuiMoffattModel(cfg.Config.Models.ChuiMoffat)
+    if model_type == 'moehlis':
+        return MoehlisModel(cfg.Config.Models.Moehlis)
     raise f'unknown model - {model_type}'
 
 

@@ -2,6 +2,7 @@ import pathlib
 from typing import Any, List, Union, Type, Dict
 
 import yaml
+import numpy as np
 
 # Mark for necessary field
 class NecessaryField: pass
@@ -561,6 +562,43 @@ class GridConfigField(ConfigSection):
     def yaml(self) -> dict:
         return {'params_set': GridConfigField.ParamsSet.yaml(),}
 
+class MoehlisModelConfig(ConfigSection):
+    @property
+    def N(self): return self._n
+    @property
+    def Re(self): return self._re
+    @property
+    def Lx(self): return self._lx_pi
+    @property
+    def Lz(self): return self._lz_pi
+    @property
+    def RandSeed(self): return self._rand_seed
+    @property
+    def Dt(self): return self._dt
+
+    def __init__(self) -> None:
+        self._n:         int   = 0
+        self._re:        float = 0
+        self._lx_pi:        float = 0
+        self._lz_pi:        float = 0
+        self._rand_seed: int   = 0
+        self._dt:        float = 0
+
+    def load(self, cfg: dict) -> None:
+        self._n = Config.get_necessary_value(cfg, 'n', self._n)
+        self._re = Config.get_necessary_value(cfg, 're', self._re)
+        self._lx_pi = Config.get_necessary_value(cfg, 'lx_pi', 0 if self._lx_pi is None else self._lx_pi/np.pi) * np.pi
+        self._lz_pi = Config.get_necessary_value(cfg, 'lz_pi', 0 if self._lz_pi is None else self._lz_pi/np.pi) * np.pi
+        self._rand_seed = Config.get_necessary_value(cfg, 'rand_seed', self.RandSeed)
+        self._dt = Config.get_necessary_value(cfg, 'dt', self._dt)
+
+    def yaml(self) -> dict:
+        return {
+            'n': self._n,
+            're': self._re, 'lx_pi': self._lx_pi/np.pi, 'lz_pi': self._lz_pi/np.pi,
+            'rand_seed': self.RandSeed, 'dt': self._dt,
+        }
+
 class LorenzModelConfig(ConfigSection):
     @property
     def N(self): return self._n
@@ -750,19 +788,24 @@ class ModelsConfig(ConfigSection):
     def Lorenz(self) -> LorenzModelConfig: return self._lorenz
     @property
     def ChuiMoffat(self) -> ChuiMoffattModelConfig: return self._chui_moffatt
+    @property
+    def Moehlis(self) -> MoehlisModelConfig: return self._moehlis
 
     def __init__(self) -> None:
         self._lorenz:       LorenzModelConfig      = None
         self._chui_moffatt: ChuiMoffattModelConfig = None
+        self._moehlis:      MoehlisModelConfig     = None
 
     def load(self, cfg: dict) -> None:
         self._lorenz       = _load_optional_config_section(cfg, 'lorenz', LorenzModelConfig)
         self._chui_moffatt = _load_optional_config_section(cfg, 'chui_moffatt', ChuiMoffattModelConfig)
+        self._moehlis      = _load_optional_config_section(cfg, 'moehlis', MoehlisModelConfig)
 
     def yaml(self) -> dict:
         return {
             'lorenz': _yaml_optional_config_section(self._lorenz),
             'chui_moffatt': _yaml_optional_config_section(self._chui_moffatt),
+            'moehlis': _yaml_optional_config_section(self._moehlis),
         }
 
 class GlobalPropsConfigField(ConfigSection):

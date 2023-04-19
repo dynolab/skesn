@@ -13,3 +13,4 @@ setuptools<58.0.0
 scikit-learn
 git+https://github.com/DHorrible/dyno_deap
 git+https://github.com/dynolab/skesn
+git+https://github.com/anton-pershin/thequickmath

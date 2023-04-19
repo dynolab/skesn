@@ -8,12 +8,12 @@ logging:
 
 dump:
   user: pavel
-  title: evo_srch_lorenz
+  title: evo_srch_moehlis
 
 models:
   lorenz:
     rand_seed: 22
-    n: 15000
+    n: 60000
     dt: 0.001
     ro: 80
   chui_moffatt:
@@ -25,14 +25,21 @@ models:
     eta: 4
     kappa: 4
     xi: 40 # [2;40] ?
+  moehlis:
+    rand_seed: 1
+    n: 60000
+    dt: 0.001
+    re: 500
+    lx_pi: 1.75
+    lz_pi: 1.2
 
 schemes:
   hyper_param:
     evaluate:
-      split_n: 50000
+      split_n: 55000
       # fit_step: 10
-      normalize: true
-      model: chui_moffatt # chui_moffatt
+      # normalize: true
+      model: moehlis # chui_moffatt
       data: model # model or yaml filename with values
       metric: mse
       # max_steps: 2000
