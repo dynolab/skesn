@@ -5,6 +5,9 @@ import yaml
 import src.dump as dump
 import src.config as cfg
 import src.evo.utils as evo_utils
+import src.evo.types as evo_types
+import src.config as cfg
+
 
 from src.evo.graph_callback import GraphCallbackModule
 from src.evo.evo_scheme_multi_pop import EvoSchemeMultiPop
@@ -30,7 +33,6 @@ class EvoEsnSchemeMultiPopMultiCrit(EvoSchemeMultiPop):
     ) -> None:
         # Init configs
         self._esn_cfg: cfg.EsnConfigField = esn_cfg
-        self._evo_cfg: cfg.EvoSchemeMultiPopConfigField = evo_cfg
         self._evaluate_cfg: cfg.EsnEvaluateConfigField = evaluate_cfg
 
         # Init graphics
@@ -39,8 +41,22 @@ class EvoEsnSchemeMultiPopMultiCrit(EvoSchemeMultiPop):
         # Init callbacks
         self._esn_creator_by_ind_f: FunctionType = esn_creator_by_ind_f
 
+        # TODO :
+        old_lorenz_seed = cfg.Config.Models.Lorenz.RandSeed
+        models_cnt = len(evo_cfg.FitnessWeights)
+        models = [None] * models_cnt
+        for i in range(models_cnt):
+            models[i] = evo_utils.create_model_by_type(self._evaluate_cfg.Model)
+            cfg.Config.Models.Lorenz.RandSeed += 1
+        cfg.Config.Models.Lorenz.RandSeed = old_lorenz_seed
+
         # Init train data
-        self._data_holder: EsnMultiDataHolder = data_holder
+        self._data_holder = EsnMultiDataHolder(
+            models,
+            self._evaluate_cfg.SplitN,
+            self._evaluate_cfg.FitStep,
+            self._evaluate_cfg.Normalize,
+        )
         crit_cnt = len(self._data_holder.Models)
         self._fit_datas = [self._data_holder.FitDataByN(i) for i in range(crit_cnt)]
         self._valid_datas = [self._data_holder.ValidDataByN(i) for i in range(crit_cnt)]
@@ -48,7 +64,10 @@ class EvoEsnSchemeMultiPopMultiCrit(EvoSchemeMultiPop):
         super().__init__(
             name=name,
             evo_cfg=self._evo_cfg,
-            evaluate_f=self._evaluate_esn,
+            evaluator=evo_types.EsnEvaluator(
+                self._evaluate_cfg,
+                ind_creator_f
+            ),
             ind_creator_f=ind_creator_f,
             graph_callback_module=graph_callback_module,
         )
@@ -76,7 +95,7 @@ class EvoEsnSchemeMultiPopMultiCrit(EvoSchemeMultiPop):
         if not kvargs.get('disable_dump_graph_best', False):
             best_ind, _ = evo_utils.calculate_best_ind(self._best_result)
 
-            esn_model: esn.EsnForecaster = self._esn_creator_by_ind_f(best_ind)
+            esn_model: esn.EsnForecaster = self._esn_creator(best_ind)
             # esn_model.fit(self._fit_datas[0])
 
             ind_color = evo_utils.get_next_color(exclude=['blue'])
@@ -118,7 +137,7 @@ class EvoEsnSchemeMultiPopMultiCrit(EvoSchemeMultiPop):
                     predict_data,
                 )
 
-                fig.text(0, 0, f'best ind: [{str.join(",", [str(x) for x in best_ind])}], best fitness: {crit_val * self._cfg.FitnessWeights[i]}')
+                fig.text(0, 0, f'best ind: [{str.join(",", [str(x) for x in best_ind])}], best fitness: {crit_val * self._evo_cfg.FitnessWeights[i]}')
 
                 for j in range(dim):
                     axes[j].plot([x for x in range(fit_len, fit_len + valid_len)], predict_data[:,j],
@@ -133,33 +152,3 @@ class EvoEsnSchemeMultiPopMultiCrit(EvoSchemeMultiPop):
                 fig.savefig(f'{self._iter_dir}/graph_best_{i}.png', dpi=fig.dpi)
 
         super().save(**kvargs)
-
-    def _evaluate_esn(self,
-        ind: List,
-    ) -> Tuple[float]:
-        if ind.fitness.valid:
-            return ind.fitness.values
-
-        model: esn.EsnForecaster = self._esn_creator_by_ind_f(ind)
-        model.fit(self._fit_datas[0])
-
-        crit_cnt = len(self._cfg.FitnessWeights)
-        ret = [None] * crit_cnt
-        for i in range(crit_cnt):
-            if i > 0:
-                len_fit_data = len(self._fit_datas[i])
-                model._update_via_synchronization(self._fit_datas[i][len_fit_data-9:])
-
-            predict_data = evo_utils.get_predict_data(
-                model,
-                self._evaluate_cfg,
-                self._valid_datas[i].shape,
-            )
-
-            ret[i] = evo_utils.calc_metric(
-                self._evaluate_cfg.Metric,
-                self._valid_datas[i],
-                predict_data,
-            )
-
-        return ret

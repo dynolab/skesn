@@ -181,7 +181,7 @@ schemes:
     evo:
       dump_dir: dumps
       rand_seed: 3
-      max_gen_num: 1
+      max_gen_num: 5
 
       hromo_len: 6
       fitness_weights: [ -1.0 ]
