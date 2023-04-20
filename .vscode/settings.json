@@ -1,0 +1,10 @@
+{
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+
+    "python.analysis.autoImportCompletions": true,
+    "python.formatting.autopep8Args": ["--max-line-length", "120"],
+    "python.formatting.yapfArgs": ["--style", "{based_on_style: chromium, indent_width: 20}"],
+    "python.analysis.autoSearchPaths": true,
+    "python.sortImports.args": ["-rc", "--atomic"],
+}
