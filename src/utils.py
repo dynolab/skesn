@@ -1,7 +1,7 @@
 import random
 from struct import unpack
 from types import FunctionType
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Tuple, Union
 import numpy as np
 
 import src.evo.utils as evo_utils
@@ -210,6 +210,42 @@ def gen_gene(
         return limit_cfg.Choice[idx]
     return None
 
+def boundVaule(
+    value: float,
+    low: float,
+    up: float,
+) -> float:
+    if value < low:
+        return low
+    if value > up:
+        return up
+    return value
+
+def cxGaussianBoundedGene(
+    p1_gene: float,
+    p2_gene: float,
+    eta: float,
+    low: float,
+    up: float,
+    rand: np.random.RandomState=np.random.RandomState,
+) -> Tuple[float, float]:
+    # This epsilon should probably be changed for 0 since
+    # floating point arithmetic in Python is safer
+    if abs(p1_gene - p2_gene) < 1e-14:
+        return p1_gene, p2_gene
+
+    beta = 0
+    u = rand.rand()
+    if u <= 0.5:
+        beta = np.power(2 * u, 1 / (eta + 1))
+    else:
+        beta = np.power(0.5 / (1 - u), 1 / (eta + 1))
+
+    x1 = boundVaule(0.5 * ((1 + beta) * p1_gene + (1 - beta) * p2_gene), low, up)
+    x2 = boundVaule(0.5 * ((1 - beta) * p1_gene + (1 + beta) * p2_gene), low, up)
+
+    return x1, x2
+
 def cxSimulatedBinaryBoundedGene(
     p1_gene: float,
     p2_gene: float,
@@ -217,7 +253,7 @@ def cxSimulatedBinaryBoundedGene(
     low: float,
     up: float,
     rand: np.random.RandomState=np.random.RandomState,
-) -> float:
+) -> Tuple[float, float]:
     # This epsilon should probably be changed for 0 since
     # floating point arithmetic in Python is safer
     if abs(p1_gene - p2_gene) < 1e-14:
@@ -266,6 +302,8 @@ def _map_gene_cx(
         return cxRandChoiceGene
     elif method == 'cxSimulatedBinaryBoundedGene':
         return cxSimulatedBinaryBoundedGene
+    elif method == 'cxGaussianBoundedGene':
+        return cxGaussianBoundedGene
     raise 'unknown cx gene method: %s' % method
 
 def cx_gene(

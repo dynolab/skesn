@@ -31,7 +31,7 @@ class MoehlisModel(Model):
         ret = np.zeros((n, self._dim))
         ret[0,:] = self._rand.random(self._dim)
         for i in range(1, n):
-            ret[i,:] = self._model.f(ret[i-1])
+            ret[i,:] = ret[i-1] + self._cfg.Dt * self._model.f(ret[i-1])
 
         return ret
 
