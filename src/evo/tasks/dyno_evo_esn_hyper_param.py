@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 
-from typing import Any, List
+from typing import Any, List, Union
 
 from skesn.esn import EsnForecaster
 
@@ -24,6 +24,7 @@ class DynoEvoEsnHyperParam(EvoEsnScheme):
     def __init__(self,
         scheme_cfg: cfg.DynoEvoEsnHyperParamConfig,
         async_manager: SyncManager=None,
+        job_n: Union[None, int]=None,
     ) -> None:
         self._scheme_cfg = scheme_cfg
 
@@ -38,6 +39,7 @@ class DynoEvoEsnHyperParam(EvoEsnScheme):
             esn_creator=evo_types.HyperParamEsnCreatorByInd(self._scheme_cfg.Esn),
             graph_callback_module=graph_callback_module,
             async_manager=async_manager,
+            job_n=job_n,
         )
 
     def run(self, **kvargs) -> None:

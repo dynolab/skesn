@@ -1,27 +1,18 @@
-from src.evo.esn_data_holder import EsnDataHolder
-from src.evo.tasks.duno_evo_esn_hyper_param_multi_pop_multi_crit import DynoEvoEsnHyperParamMultiPopMultiCrit
-from src.evo.tasks.duno_evo_esn_hyper_param_multi_pop import DynoEvoEsnHyperParamMultiPop
-from src.evo.tasks.dyno_evo_esn_hyper_param import DynoEvoEsnHyperParam
 from src.evo.abstract import Scheme
+from src.evo.tasks.dyno_evo_esn_hyper_param import DynoEvoEsnHyperParam
+from src.evo.tasks.duno_evo_esn_hyper_param_multi_pop import DynoEvoEsnHyperParamMultiPop
+from src.evo.tasks.duno_evo_esn_hyper_param_multi_pop_multi_crit import DynoEvoEsnHyperParamMultiPopMultiCrit
 
-
-import src.evo.types as evo_types
-import src.evo.utils as evo_utils
 import src.evo.test.evo_scheme_test as evo_scheme_test
 import src.evo.test.evo_scheme_multi_pop_test as evo_scheme_multi_pop_test
-import src.lorenz as lorenz
 import src.utils as utils
 import src.log as log
 import src.dump as dump
 import src.config as cfg
 
-import skesn.esn as esn
 from multiprocess.managers import SyncManager
 
-import matplotlib.pyplot as plt
 import numpy as np
-import logging
-
 import argparse
 import random
 
@@ -58,6 +49,7 @@ def run_scheme(scheme_type, scheme_cfg, **kvargs):
     scheme: Scheme = scheme_type(
         scheme_cfg=scheme_cfg,
         async_manager=async_manager,
+        job_n=args.job_n,
     )
 
     check_restore(args, scheme)
@@ -73,7 +65,12 @@ def _create_parser() -> argparse.ArgumentParser:
     parser.add_argument('-m',
         type=str,
         required=True,
-        choices=[_MODE_TESTS, _MODE_HYPER_PARAMS, _MODE_HYPER_PARAMS_MULTI_POP, _MODE_HYPER_PARAMS_MULTI_POP_MULTI_CRIT],
+        choices=[
+            _MODE_TESTS,
+            _MODE_HYPER_PARAMS,
+            _MODE_HYPER_PARAMS_MULTI_POP,
+            _MODE_HYPER_PARAMS_MULTI_POP_MULTI_CRIT,
+        ],
         help='run mode'
     )
 
@@ -86,6 +83,15 @@ def _create_parser() -> argparse.ArgumentParser:
     parser.add_argument('-v', '--verbose',
         action='store_true',
         help='print all logs'
+    )
+
+    # Numbers
+
+    parser.add_argument('--job-n',
+        type=int,
+        nargs='?',
+        default=-1,
+        help='Number of parallel processes for runing scheme'
     )
 
     # Paths
