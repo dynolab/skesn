@@ -33,12 +33,13 @@ models:
 schemes:
   hyper_param:
     evaluate:
+      n: 55000
       split_n: 50000
       # fit_step: 10
       normalize: true
       model: moehlis # chui_moffatt
       # model: chui_moffatt
-      data: model # model or yaml filename with values
+      # data: model # model or yaml filename with values
       metric: mse
       # max_steps: 2000
     esn:
@@ -56,7 +57,7 @@ schemes:
       dump_dir: dumps
       rand_seed: 2
       max_gen_num: 3
-      population_size: 30
+      population_size: 50
       hall_of_fame: 3
       hromo_len: 6
       verbose: true
