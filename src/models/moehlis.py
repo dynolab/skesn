@@ -23,11 +23,8 @@ class MoehlisModel(Model):
 
     def gen_data(
         self,
-        n: int=None,
+        n: int,
     ) -> np.ndarray:
-        if n is None:
-            n = self._cfg.N
-
         ret = np.zeros((n, self._dim))
         ret[0,:] = self._rand.random(self._dim)
         for i in range(1, n):
@@ -36,22 +33,22 @@ class MoehlisModel(Model):
         return ret
 
     def normalize(self,
-        data: Union[list, np.ndarray],
+        data: np.ndarray,
     ) -> np.ndarray:
         if not self.valid_data(data):
             raise 'data is not valid for Moehlis model'
 
-        ret: np.ndarray = None
-        if isinstance(data, list):
-            ret = np.array(data)
-        elif isinstance(data, np.ndarray):
-            ret = data.copy()
+        # ret: np.ndarray = None
+        # if isinstance(data, list):
+        #     ret = np.array(data)
+        # elif isinstance(data, np.ndarray):
+        #     ret = data.copy()
 
-        n = len(data)
-        for i in range(n):
-            ret[i] = (ret[i] - [0,0,25]) / [30,30,30]
-
-        return ret
+        # n = len(data)
+        # for i in range(n):
+        #     ret[i] = (ret[i] - [0,0,25]) / [30,30,30]
+        # return ret
+        return data/[0.25,0.5,0.25,0.5,0.5,0.5,0.5,0.5,0.5]
 
     def denormalize(self,
         data: Union[list, np.ndarray],
@@ -62,4 +59,4 @@ class MoehlisModel(Model):
         if isinstance(data, list):
             data = np.array(data)
 
-        return data*[[30],[30],[30]] + [[0],[0],[25]]
+        return data*[[0.25],[0.5],[0.25],[0.5],[0.5],[0.5],[0.5],[0.5],[0.5]]

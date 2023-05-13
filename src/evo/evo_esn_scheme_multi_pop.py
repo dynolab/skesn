@@ -36,12 +36,7 @@ class EvoEsnSchemeMultiPop(EvoSchemeMultiPop):
         self._esn_creator: FunctionType = esn_creator
 
         # Init train data
-        self._data_holder: EsnDataHolder = EsnDataHolder(
-            evo_utils.create_model_by_type(self._evaluate_cfg.Model),
-            self._evaluate_cfg.SplitN,
-            self._evaluate_cfg.FitStep,
-            self._evaluate_cfg.Normalize,
-        )
+        self._data_holder: EsnDataHolder = EsnDataHolder(self._evaluate_cfg)
 
         self._fit_data: np.ndarray = self._data_holder.FitData
         self._valid_data: np.ndarray = self._data_holder.ValidData

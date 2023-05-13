@@ -11,7 +11,7 @@ class Model(object):
 
     # Abstract methods
 
-    def gen_data(self,  n: int=None) -> np.ndarray: pass
+    def gen_data(self,  n: int) -> np.ndarray: pass
 
     def normalize(self, data: Union[list, np.ndarray]) -> np.ndarray: pass
 

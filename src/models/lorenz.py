@@ -16,11 +16,8 @@ class LorenzModel(Model):
 
     def gen_data(
         self,
-        n: int=None,
+        n: int,
     ) -> np.ndarray:
-        if n is None:
-            n = self._cfg.N
-
         ret = np.zeros((n, self._dim))
 
         rand = np.random.RandomState(self._cfg.RandSeed)

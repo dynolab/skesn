@@ -708,19 +708,6 @@ def create_ind_by_list(
     #     ret.fitness.values = evaluate_f(ret)
     return ret
 
-def create_model_by_type(
-    model_type: str,
-) -> Model:
-    model_type = model_type.lower()
-    if model_type == 'lorenz':
-        return LorenzModel(cfg.Config.Models.Lorenz)
-    if model_type == 'chui_moffatt':
-        return ChuiMoffattModel(cfg.Config.Models.ChuiMoffat)
-    if model_type == 'moehlis':
-        return MoehlisModel(cfg.Config.Models.Moehlis)
-    raise f'unknown model - {model_type}'
-
-
 # Evo schemes utils
 
 def _rmse(

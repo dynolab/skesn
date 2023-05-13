@@ -564,8 +564,6 @@ class GridConfigField(ConfigSection):
 
 class MoehlisModelConfig(ConfigSection):
     @property
-    def N(self): return self._n
-    @property
     def Re(self): return self._re
     @property
     def Lx(self): return self._lx_pi
@@ -577,31 +575,26 @@ class MoehlisModelConfig(ConfigSection):
     def Dt(self): return self._dt
 
     def __init__(self) -> None:
-        self._n:         int   = 0
         self._re:        float = 0
-        self._lx_pi:        float = 0
-        self._lz_pi:        float = 0
+        self._lx_pi:     float = 0
+        self._lz_pi:     float = 0
         self._rand_seed: int   = 0
         self._dt:        float = 0
 
     def load(self, cfg: dict) -> None:
-        self._n = Config.get_necessary_value(cfg, 'n', self._n)
-        self._re = Config.get_necessary_value(cfg, 're', self._re)
-        self._lx_pi = Config.get_necessary_value(cfg, 'lx_pi', 0 if self._lx_pi is None else self._lx_pi/np.pi) * np.pi
-        self._lz_pi = Config.get_necessary_value(cfg, 'lz_pi', 0 if self._lz_pi is None else self._lz_pi/np.pi) * np.pi
+        self._re        = Config.get_necessary_value(cfg, 're', self._re)
+        self._lx_pi     = Config.get_necessary_value(cfg, 'lx_pi', 0 if self._lx_pi is None else self._lx_pi/np.pi) * np.pi
+        self._lz_pi     = Config.get_necessary_value(cfg, 'lz_pi', 0 if self._lz_pi is None else self._lz_pi/np.pi) * np.pi
         self._rand_seed = Config.get_necessary_value(cfg, 'rand_seed', self.RandSeed)
-        self._dt = Config.get_necessary_value(cfg, 'dt', self._dt)
+        self._dt        = Config.get_necessary_value(cfg, 'dt', self._dt)
 
     def yaml(self) -> dict:
         return {
-            'n': self._n,
             're': self._re, 'lx_pi': self._lx_pi/np.pi, 'lz_pi': self._lz_pi/np.pi,
             'rand_seed': self.RandSeed, 'dt': self._dt,
         }
 
 class LorenzModelConfig(ConfigSection):
-    @property
-    def N(self): return self._n
     @property
     def Ro(self): return self._ro
     # @property
@@ -610,23 +603,19 @@ class LorenzModelConfig(ConfigSection):
     def Dt(self): return self._dt
 
     def __init__(self) -> None:
-        self._n:         int   = 0
         self._ro:        float = 0
         self.RandSeed: int   = 0
         self._dt:        float = 0
 
     def load(self, cfg: dict) -> None:
-        self._n = Config.get_necessary_value(cfg, 'n', self._n)
         self._ro = Config.get_necessary_value(cfg, 'ro', self._ro)
         self.RandSeed = Config.get_necessary_value(cfg, 'rand_seed', self.RandSeed)
         self._dt = Config.get_necessary_value(cfg, 'dt', self._dt)
 
     def yaml(self) -> dict:
-        return {'n': self._n, 'ro': self._ro, 'rand_seed': self.RandSeed, 'dt': self._dt,}
+        return {'ro': self._ro, 'rand_seed': self.RandSeed, 'dt': self._dt,}
 
 class ChuiMoffattModelConfig(ConfigSection):
-    @property
-    def N(self): return self._n
     # @property
     # def RandSeed(self): return self._rand_seed
     @property
@@ -644,7 +633,6 @@ class ChuiMoffattModelConfig(ConfigSection):
     def Xi(self): return self._xi
 
     def __init__(self) -> None:
-        self._n:         int   = NecessaryField
         self.RandSeed:   int   = NecessaryField
         self._dt:        float = NecessaryField
 
@@ -655,7 +643,6 @@ class ChuiMoffattModelConfig(ConfigSection):
         self._xi:    float     = NecessaryField
 
     def load(self, cfg: dict) -> None:
-        self._n       = Config.get_necessary_value(cfg, 'n', self._n)
         self.RandSeed = Config.get_necessary_value(cfg, 'rand_seed', self.RandSeed)
         self._dt      = Config.get_necessary_value(cfg, 'dt', self._dt)
         self._alpha   = Config.get_necessary_value(cfg, 'alpha', self._alpha)
@@ -666,7 +653,7 @@ class ChuiMoffattModelConfig(ConfigSection):
 
     def yaml(self) -> dict:
         return {
-            'n': self._n, 'rand_seed': self.RandSeed, 'dt': self._dt,
+            'rand_seed': self.RandSeed, 'dt': self._dt,
             'alpha': self._alpha,'omega': self._omega,'eta': self._eta,'kappa': self._kappa,'xi': self._xi,
         }
 
@@ -675,6 +662,8 @@ class EsnEvaluateConfigField(ConfigSection):
     def Metric(self) -> str: return self._metric
     @property
     def MaxSteps(self) -> int: return self._max_steps
+    @property
+    def N(self) -> int: return self._n
     @property
     def SplitN(self) -> int: return self._split_n
     @property
@@ -688,26 +677,31 @@ class EsnEvaluateConfigField(ConfigSection):
 
     def __init__(self) -> None:
         self._max_steps: int  = 0
-        self._split_n:   int  = 0
+        self._n:         int  = NecessaryField
+        self._split_n:   int  = NecessaryField
         self._fit_step:  int  = 0
         self._normalize: bool = False
         self._metric:    str  = NecessaryField
-        self._model:     str  = NecessaryField
-        self._data:      str  = NecessaryField
+        self._model:     str  = None
+        self._data:      str  = None
 
     def load(self, cfg: dict) -> None:
         self._max_steps = Config.get_optional_value(cfg, 'max_steps', self._max_steps)
-        self._split_n   = Config.get_optional_value(cfg, 'split_n', self._split_n)
+        self._n         = Config.get_necessary_value(cfg, 'n', self._n)
+        self._split_n   = Config.get_necessary_value(cfg, 'split_n', self._split_n)
         self._fit_step  = Config.get_optional_value(cfg, 'fit_step', self._fit_step)
         self._normalize = Config.get_optional_value(cfg, 'normalize', self._normalize)
         self._metric    = Config.get_necessary_value(cfg, 'metric', self._metric)
-        self._model     = Config.get_necessary_value(cfg, 'model', self._model)
-        self._data      = Config.get_necessary_value(cfg, 'data', self._data)
+
+        self._model     = Config.get_optional_value(cfg, 'model', self._model)
+        self._data      = Config.get_optional_value(cfg, 'data', self._data)
+        if self._data is None and self._model is None:
+            raise '"model" or "data" fields should be passed to evaluate config'
 
     def yaml(self) -> dict:
         return {
-            'split_n': self._split_n,'fit_step': self._fit_step,'normalize': self._normalize,
-            'max_steps': self._max_steps,'metric': self._metric,
+            'n': self._n,'split_n': self._split_n,'fit_step': self._fit_step,
+            'normalize': self._normalize,'max_steps': self._max_steps,'metric': self._metric,
             'model': self._model,'data': self._data,
         }
 
@@ -904,6 +898,19 @@ class Config(object):
 
     def patch_from_dict(cfg: dict, raise_if_necessary: bool=True) -> None:
         Config.load(cfg, raise_if_necessary)
+
+# Config Interfaces
+
+class ConfigInterface(object):
+    def __init__(self) -> None: pass
+
+class IEvoConfig(ConfigInterface):
+    @property
+    def MaxGenNum(self) -> int: pass
+    @property
+    def RandSeed(self) -> int: pass
+    @property
+    def HromoLen(self) -> int: pass
 
 def init(args):
     if args is not None and getattr(args, 'disable_config', False):
