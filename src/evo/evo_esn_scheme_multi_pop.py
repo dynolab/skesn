@@ -16,7 +16,7 @@ import skesn.esn as esn
 import matplotlib.pyplot as plt
 
 from types import FunctionType
-from typing import List, Tuple
+from typing import List, Tuple, Union
 from multiprocess.managers import SyncManager
 
 class EvoEsnSchemeMultiPop(EvoSchemeMultiPop):
@@ -28,6 +28,7 @@ class EvoEsnSchemeMultiPop(EvoSchemeMultiPop):
         esn_creator: FunctionType,
         graph_callback_module: GraphCallbackModule=None,
         async_manager: SyncManager=None,
+        job_n: Union[None, int]=None,
     ) -> None:
         # Init configs
         self._esn_cfg: cfg.EsnConfigField = esn_cfg
@@ -46,6 +47,14 @@ class EvoEsnSchemeMultiPop(EvoSchemeMultiPop):
         self._fit_data: np.ndarray = self._data_holder.FitData
         self._valid_data: np.ndarray = self._data_holder.ValidData
 
+        pool = None
+        if async_manager is not None and job_n > 0:
+            pool = async_manager.Pool(
+                processes=job_n,
+                initializer=evo_types.esn_pool_init,
+                initargs=(esn_creator, self._evaluate_cfg, self._data_holder),
+            )
+
         super().__init__(
             name=name,
             evo_cfg=evo_cfg,
@@ -56,11 +65,7 @@ class EvoEsnSchemeMultiPop(EvoSchemeMultiPop):
                 self._valid_data,
             ),
             graph_callback_module=graph_callback_module,
-            pool=async_manager.Pool(
-                processes=2,
-                initializer=evo_types.esn_pool_init,
-                initargs=(esn_creator, self._evaluate_cfg, self._data_holder),
-            ),
+            pool=pool,
         )
 
     def save(self,
