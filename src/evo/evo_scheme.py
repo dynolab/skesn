@@ -54,6 +54,9 @@ class EvoScheme(Scheme):
 
         self._toolbox: base.Toolbox() = base.Toolbox() if toolbox is None else toolbox
 
+        if cfg.MandatoryNewNum > 0:
+            self._toolbox.register('mandatory_new_num', lambda: cfg.MandatoryNewNum)
+
         if pool is not None:
             self._toolbox.register('map', pool.map)
 
@@ -129,6 +132,7 @@ class EvoScheme(Scheme):
             halloffame=self._hall_of_fame,
             verbose=self._evo_cfg.Verbose,
             logger=self._logger,
+            ind_creator_f=self._evo_ind_creator,
             **kvargs,
         )
 

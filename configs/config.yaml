@@ -55,11 +55,14 @@ schemes:
       # use_additive_noise_when_forecasting: True # 5
     evo:
       dump_dir: dumps
+
       rand_seed: 2
       max_gen_num: 30
       population_size: 50
       hall_of_fame: 3
       hromo_len: 6
+      mandatory_new_num: 4
+
       verbose: true
 
       fitness_weights: [ -1.0 ]
@@ -200,6 +203,7 @@ schemes:
       populations:
         - size: 32
           hall_of_fame: 3
+          mandatory_new_num: 4
           select:
             method: selTournament
             args:
@@ -295,6 +299,7 @@ schemes:
 
         - size: 32
           hall_of_fame: 3
+          mandatory_new_num: 4
           select:
             method: selTournament
             args:
@@ -390,6 +395,7 @@ schemes:
 
         - size: 32
           hall_of_fame: 3
+          mandatory_new_num: 4
           select:
             method: selTournament
             args:
@@ -485,6 +491,7 @@ schemes:
 
         - size: 32
           hall_of_fame: 3
+          mandatory_new_num: 4
           select:
             method: selTournament
             args:
@@ -611,7 +618,7 @@ schemes:
     evo:
       dump_dir: dumps
       rand_seed: 3
-      max_gen_num: 15
+      max_gen_num: 30
 
       hromo_len: 7
       fitness_weights: [ -1.0 ]
@@ -621,6 +628,7 @@ schemes:
       populations:
         - size: 32
           hall_of_fame: 3
+          mandatory_new_num: 4
           select:
             method: selTournament
             args:
@@ -632,28 +640,28 @@ schemes:
           mutate:
             method: dynoMutGeneByLimit
             probability: 0.2
-            indpb: 0.5
+            indpb: 0.4
           limits:
             # spectral_radius
             - type: float
-              min: 1.e-12
-              max: 1.5
+              min: 1.e-10
+              max: 2
               mate:
                 method: cxGaussianBoundedGene
                 args:
                   - key: up
-                    val: 1.5
+                    val: 2
                   - key: low
-                    val: 1.e-12
+                    val: 1.e-10
                   - key: eta
                     val: 20
               mutate:
                 method: polynomial_bounded
                 args:
                   - key: up
-                    val: 1.5
+                    val: 2
                   - key: low
-                    val: 1.e-12
+                    val: 1.e-10
                   - key: eta
                     val: 20
             # sparsity
@@ -731,6 +739,7 @@ schemes:
 
         - size: 32
           hall_of_fame: 3
+          mandatory_new_num: 4
           select:
             method: selTournament
             args:
@@ -742,28 +751,28 @@ schemes:
           mutate:
             method: dynoMutGeneByLimit
             probability: 0.2
-            indpb: 0.5
+            indpb: 0.4
           limits:
             # spectral_radius
             - type: float
-              min: 1.e-12
-              max: 1.5
+              min: 1.e-10
+              max: 2
               mate:
                 method: cxGaussianBoundedGene
                 args:
                   - key: up
-                    val: 1.5
+                    val: 2
                   - key: low
-                    val: 1.e-12
+                    val: 1.e-10
                   - key: eta
                     val: 15
               mutate:
                 method: polynomial_bounded
                 args:
                   - key: up
-                    val: 1.5
+                    val: 2
                   - key: low
-                    val: 1.e-12
+                    val: 1.e-10
                   - key: eta
                     val: 15
             # sparsity
@@ -841,6 +850,7 @@ schemes:
 
         - size: 32
           hall_of_fame: 3
+          mandatory_new_num: 4
           select:
             method: selTournament
             args:
@@ -852,28 +862,28 @@ schemes:
           mutate:
             method: dynoMutGeneByLimit
             probability: 0.2
-            indpb: 0.5
+            indpb: 0.4
           limits:
             # spectral_radius
             - type: float
-              min: 1.e-12
-              max: 1.5
+              min: 1.e-10
+              max: 2
               mate:
                 method: cxGaussianBoundedGene
                 args:
                   - key: up
-                    val: 1.5
+                    val: 2
                   - key: low
-                    val: 1.e-12
+                    val: 1.e-10
                   - key: eta
                     val: 10
               mutate:
                 method: polynomial_bounded
                 args:
                   - key: up
-                    val: 1.5
+                    val: 2
                   - key: low
-                    val: 1.e-12
+                    val: 1.e-10
                   - key: eta
                     val: 10
             # sparsity
@@ -951,6 +961,7 @@ schemes:
 
         - size: 32
           hall_of_fame: 3
+          mandatory_new_num: 4
           select:
             method: selTournament
             args:
@@ -962,28 +973,28 @@ schemes:
           mutate:
             method: dynoMutGeneByLimit
             probability: 0.2
-            indpb: 0.5
+            indpb: 0.4
           limits:
             # spectral_radius
             - type: float
-              min: 1.e-12
-              max: 1.5
+              min: 1.e-10
+              max: 2
               mate:
                 method: cxGaussianBoundedGene # cxSimulatedBinaryBoundedGene
                 args:
                   - key: up
-                    val: 1.5
+                    val: 2
                   - key: low
-                    val: 1.e-12
+                    val: 1.e-10
                   - key: eta
                     val: 5
               mutate:
                 method: polynomial_bounded
                 args:
                   - key: up
-                    val: 1.5
+                    val: 2
                   - key: low
-                    val: 1.e-12
+                    val: 1.e-10
                   - key: eta
                     val: 5
             # sparsity

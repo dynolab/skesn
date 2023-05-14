@@ -93,7 +93,7 @@ class EvoSchemeMultiPop(Scheme):
             cltex_f=cltex,
             verbose=self._evo_cfg.Verbose,
             logger=self._logger,
-            # pool=self._pool,
+            ind_creators_f=self._ind_creators,
             **kvargs,
         )
 
@@ -388,6 +388,9 @@ def _create_deap_population(
         cfg=cfg,
         rand=rand,
     )
+
+    if cfg.MandatoryNewNum > 0:
+        toolbox.register('mandatory_new_num', lambda: cfg.MandatoryNewNum)
 
     inds=[ evo_types.Individual(ind) for ind in inds ]
     return algorithms.Popolation(

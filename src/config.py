@@ -327,6 +327,8 @@ class EvoPopulationConfigField(ConfigSection):
     def IncludingCount(self) -> int: return self._including_count
     @property
     def HallOfFame(self) -> int: return self._hall_of_fame
+    @property
+    def MandatoryNewNum(self) -> int: return self._mandatory_new_num
 
     @property
     def Size(self) -> int: return self._size
@@ -344,6 +346,7 @@ class EvoPopulationConfigField(ConfigSection):
     def __init__(self) -> None:
         self._including_count:     int = 1
         self._hall_of_fame:        int = 0
+        self._mandatory_new_num:   int = 0
 
         self._size:     int = NecessaryField
 
@@ -354,9 +357,10 @@ class EvoPopulationConfigField(ConfigSection):
         self._limits: List[EvoLimitGenConfigField] = []
 
     def load(self, cfg: dict) -> None:
-        self._size            = Config.get_necessary_value(cfg, 'size', self._size)
-        self._including_count = Config.get_optional_value(cfg, 'including_count', self._including_count)
-        self._hall_of_fame    = Config.get_optional_value(cfg, 'hall_of_fame', self._including_count)
+        self._size              = Config.get_necessary_value(cfg, 'size', self._size)
+        self._including_count   = Config.get_optional_value(cfg, 'including_count', self._including_count)
+        self._hall_of_fame      = Config.get_optional_value(cfg, 'hall_of_fame', self._including_count)
+        self._mandatory_new_num = Config.get_optional_value(cfg, 'mandatory_new_num', self._mandatory_new_num)
 
         self._select.load(Config.get_necessary_value(cfg, 'select', self._select))
         self._mate.load(Config.get_necessary_value(cfg, 'mate', self._mate))
@@ -366,6 +370,7 @@ class EvoPopulationConfigField(ConfigSection):
 
     def yaml(self) -> dict:
         return {
+            'mandatory_new_num': self._mandatory_new_num,
             'including_count': self._including_count,'hall_of_fame': self._hall_of_fame,'size': self._size,
             'select': self._select.yaml(),'mate': self._mate.yaml(),'mutate': self._mutate.yaml(),
             'limits': _yaml_config_section_arr(self._limits),
@@ -441,6 +446,9 @@ class EvoSchemeConfigField(ConfigSection):
     @property
     def HallOfFame(self) -> int: return self._hall_of_fame
     @property
+    def MandatoryNewNum(self) -> int: return self._mandatory_new_num
+
+    @property
     def Verbose(self) -> bool: return self._verbose
 
     @property
@@ -466,6 +474,8 @@ class EvoSchemeConfigField(ConfigSection):
         self._rand_seed:       int = NecessaryField
         self._hromo_len:       int = NecessaryField
         self._hall_of_fame:    int = 0
+        self._mandatory_new_num:   int = 0
+        
         self._verbose:         bool = False
 
         self._fitness_weights: list = NecessaryField
@@ -480,11 +490,13 @@ class EvoSchemeConfigField(ConfigSection):
     def load(self, cfg: dict) -> None:
         self._dump_dir         = Config.get_optional_value(cfg, 'dump_dir', self._dump_dir)
 
-        self._max_gen_num     = Config.get_necessary_value(cfg, 'max_gen_num', self._max_gen_num)
-        self._population_size = Config.get_necessary_value(cfg, 'population_size', self._population_size)
-        self._rand_seed       = Config.get_necessary_value(cfg, 'rand_seed', self._rand_seed)
-        self._hromo_len       = Config.get_necessary_value(cfg, 'hromo_len', self._hromo_len)
-        self._hall_of_fame    = Config.get_optional_value(cfg, 'hall_of_fame', self._hall_of_fame)
+        self._max_gen_num       = Config.get_necessary_value(cfg, 'max_gen_num', self._max_gen_num)
+        self._population_size   = Config.get_necessary_value(cfg, 'population_size', self._population_size)
+        self._rand_seed         = Config.get_necessary_value(cfg, 'rand_seed', self._rand_seed)
+        self._hromo_len         = Config.get_necessary_value(cfg, 'hromo_len', self._hromo_len)
+        self._hall_of_fame      = Config.get_optional_value(cfg, 'hall_of_fame', self._hall_of_fame)
+        self._mandatory_new_num = Config.get_optional_value(cfg, 'mandatory_new_num', self._mandatory_new_num)
+
         self._verbose         = Config.get_optional_value(cfg, 'verbose', self._verbose)
 
         self._fitness_weights = Config.get_necessary_value(cfg, 'fitness_weights', self._fitness_weights)
@@ -498,7 +510,7 @@ class EvoSchemeConfigField(ConfigSection):
 
     def yaml(self) -> dict:
         return {
-            'dump_dir': self._dump_dir,
+            'dump_dir': self._dump_dir, 'mandatory_new_num': self._mandatory_new_num,
             'max_gen_num': self._max_gen_num, 'population_size': self._population_size, 'rand_seed': self._rand_seed, 'hromo_len': self._hromo_len,
             'hall_of_fame': self._hall_of_fame,'fitness_weights': self._fitness_weights,'verbose': self._verbose,
             'select': self._select.yaml(),'mate': self._mate.yaml(),'mutate': self._mutate.yaml(),

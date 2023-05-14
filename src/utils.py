@@ -125,14 +125,14 @@ def _map_limit_mutate_f(
     name = name.lower()
     if name == 'gaussian':
         def _gaussian(x, mu, sigma, low, up):
-            x += (-1 ** random.randint(1, 2)) * random.gauss(mu, sigma)
-            return min(max(low, x), up)
+            x += (-1 ** np.random.randint(1, 2)) * np.random.gauss(mu, sigma)
+            return boundVaule(x, low, up)
         return _gaussian
     elif name == 'polynomial_bounded':
         def _polynomial_bounded(x, low, up, eta):
             delta_1 = (x - low) / (up - low)
             delta_2 = (up - x) / (up - low)
-            rand = random.random()
+            rand = np.random.random()
             mut_pow = 1.0 / (eta + 1.)
 
             if rand < 0.5:
@@ -145,7 +145,7 @@ def _map_limit_mutate_f(
                 delta_q = 1.0 - val ** mut_pow
 
             x = x + delta_q * (up - low)
-            return min(max(x, low), up)
+            return boundVaule(x, low, up)
         return _polynomial_bounded
     raise f'unknown limit mutate method ({name})'
 
@@ -208,11 +208,12 @@ def gen_gene(
 ) -> Any:
     t = limit_cfg.Type.lower()
     if t in ('int', 'float'):
-        return _gen_num_by_limit(
-            gen_val=0.,
-            limit_cfg=limit_cfg,
-            rand=rand,
-        )
+        # return _gen_num_by_limit(
+        #     gen_val=_gen_num(limit_cfg.Min, limit_cfg.Max, rand, limit_cfg.Type),
+        #     limit_cfg=limit_cfg,
+        #     rand=rand,
+        # )
+        return _gen_num(limit_cfg.Min, limit_cfg.Max, rand, limit_cfg.Type)
     elif t == 'bool':
         return rand.randint(0, 2) == 1
     elif t == 'choice':
