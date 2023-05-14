@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 from multiprocess.managers import SyncManager
 
 from src.evo.graph_callback import GraphCallbackModule
@@ -14,6 +14,7 @@ class DynoEvoEsnHyperParamMultiPopMultiCrit(evo_esn_scheme_multi_pop_multi_crit.
     def __init__(self,
         scheme_cfg: cfg.DynoEvoEsnHyperParamMultiPopConfig,
         asyn_manager: SyncManager=None,
+        job_n: int=-1,
     ) -> None:
         self._cfg: cfg.DynoEvoEsnHyperParamMultiPopConfig = scheme_cfg
 
@@ -25,7 +26,7 @@ class DynoEvoEsnHyperParamMultiPopMultiCrit(evo_esn_scheme_multi_pop_multi_crit.
             esn_cfg=self._cfg.Esn,
             evaluate_cfg=self._cfg.Evaluate,
             esn_creator_by_ind_f=self._esn_creator_by_ind_f,
-            # graph_callback_module=graph_callback_module,
+            job_n=job_n,
         )
 
     # def run(self, **kvargs) -> None:

@@ -28,7 +28,7 @@ class EvoEsnScheme(EvoScheme):
         esn_creator: FunctionType,
         graph_callback_module: GraphCallbackModule=None,
         async_manager: SyncManager=None,
-        job_n: Union[None, int]=None,
+        job_n: int=-1,
     ) -> None:
         # Init configs
         self._esn_cfg: cfg.EsnConfigField = esn_cfg

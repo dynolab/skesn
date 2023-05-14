@@ -759,22 +759,27 @@ class SchemesConfigField(ConfigSection):
     def HyperParamMultiPop(self) -> Union[DynoEvoEsnHyperParamMultiPopConfig, None]: return self._hyper_param_multi_pop
     @property
     def HyperParamMultiPopMultiCrit(self) -> Union[DynoEvoEsnHyperParamMultiPopConfig, None]: return self._hyper_param_multi_pop_multi_crit
+    @property
+    def HyperParamWithReservoirMultiPop(self) -> Union[DynoEvoEsnHyperParamMultiPopConfig, None]: return self._hyper_param_with_reservoir_multi_pop
 
     def __init__(self) -> None:
-        self._hyper_param:           Union[DynoEvoEsnHyperParamConfig, None]         = None
-        self._hyper_param_multi_pop: Union[DynoEvoEsnHyperParamMultiPopConfig, None] = None
-        self._hyper_param_multi_pop_multi_crit: Union[DynoEvoEsnHyperParamMultiPopConfig, None] = None
+        self._hyper_param:                          Union[DynoEvoEsnHyperParamConfig, None]         = None
+        self._hyper_param_multi_pop:                Union[DynoEvoEsnHyperParamMultiPopConfig, None] = None
+        self._hyper_param_multi_pop_multi_crit:     Union[DynoEvoEsnHyperParamMultiPopConfig, None] = None
+        self._hyper_param_with_reservoir_multi_pop: Union[DynoEvoEsnHyperParamMultiPopConfig, None] = None
 
     def load(self, cfg: dict) -> None:
-        self._hyper_param           = _load_optional_config_section(cfg, 'hyper_param', DynoEvoEsnHyperParamConfig)
-        self._hyper_param_multi_pop = _load_optional_config_section(cfg, 'hyper_param_multi_pop', DynoEvoEsnHyperParamMultiPopConfig)
-        self._hyper_param_multi_pop_multi_crit = _load_optional_config_section(cfg, 'hyper_param_multi_pop_multi_crit', DynoEvoEsnHyperParamMultiPopConfig)
+        self._hyper_param                          = _load_optional_config_section(cfg, 'hyper_param', DynoEvoEsnHyperParamConfig)
+        self._hyper_param_multi_pop                = _load_optional_config_section(cfg, 'hyper_param_multi_pop', DynoEvoEsnHyperParamMultiPopConfig)
+        self._hyper_param_multi_pop_multi_crit     = _load_optional_config_section(cfg, 'hyper_param_multi_pop_multi_crit', DynoEvoEsnHyperParamMultiPopConfig)
+        self._hyper_param_with_reservoir_multi_pop = _load_optional_config_section(cfg, 'hyper_param_with_reservoir_multi_pop', DynoEvoEsnHyperParamMultiPopConfig)
 
     def yaml(self) -> dict:
         return {
             'hyper_param': _yaml_optional_config_section(self._hyper_param),
             'hyper_param_multi_pop': _yaml_optional_config_section(self._hyper_param_multi_pop),
             'hyper_param_multi_pop_multi_crit': _yaml_optional_config_section(self._hyper_param_multi_pop_multi_crit),
+            'hyper_param_with_reservoir_multi_pop': _yaml_optional_config_section(self._hyper_param_with_reservoir_multi_pop),
         }
 
 class ModelsConfig(ConfigSection):

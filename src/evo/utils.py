@@ -83,7 +83,7 @@ class DynoExtensions:
     @staticmethod
     def dynoMutGauss(individual, indpb, low, up, sigma):
         for i in range(len(individual)):
-            if np.random.uniform(0, 1) < indpb:
+            if np.random.random() < indpb:
                 individual[i] = random.triangular(up, low, random.gauss(individual[i], sigma))
         return individual,
 
@@ -96,7 +96,7 @@ class DynoExtensions:
     ) -> Tuple:
         n = len(individual)
         for i in range(n):
-            if np.random.uniform(0, 1) < indpb:
+            if np.random.random() < indpb:
                 individual[i] = utils.mut_gene(
                     limits_cfg[i],
                     rand,

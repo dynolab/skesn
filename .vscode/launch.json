@@ -64,7 +64,7 @@
                 "--dump-dir",
                 "dumps",
                 "--job-n",
-                "2",
+                "16",
                 // "--continue-dir",
                 // "dumps/runpool_2023_03_08_15_32_57",
                 // "dumps/evo_srch_lorenz_run_1_2023_03_08_15_11_45"
@@ -92,6 +92,8 @@
                 "dumps",
                 //"--continue-dir",
                 //"dumps/",
+                "--job-n",
+                "1",
             ],
         },
         {

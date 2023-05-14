@@ -1,37 +1,49 @@
 import matplotlib.pyplot as plt
 
-from typing import List, Union
-from multiprocess.managers import SyncManager
+from typing import Any, List, Union
 
 from src.evo.graph_callback import GraphCallbackModule
-
-import src.evo.evo_esn_scheme_multi_pop as evo_esn_scheme_multi_pop
+from src.evo.esn_search_scheme import EsnSearchScheme
 
 import src.config as cfg
 import src.evo.types as evo_types
 
 
-class DynoEvoEsnHyperParamMultiPop(evo_esn_scheme_multi_pop.EvoEsnSchemeMultiPop):
+import deap.algorithms as deap_algo
+from multiprocess.managers import SyncManager
+
+SPECTRAL_RADIUS_IDX = 0
+SPARSITY_IDX = 1
+LAMBDA_R_IDX = 2
+REGULIRIZATION_IDX = 3
+USE_ADDITIVE_NOISE_WHEN_FORECASTING_IDX = 4
+USE_BIAS_IDX = 5
+
+class RandomSearchEsnHyperParam(EsnSearchScheme):
     def __init__(self,
-        scheme_cfg: cfg.DynoEvoEsnHyperParamMultiPopConfig,
+        scheme_cfg: cfg.DynoEvoEsnHyperParamConfig,
         async_manager: SyncManager=None,
-        job_n: int=-1,
+        job_n: Union[None, int]=None,
     ) -> None:
-        self._scheme_cfg: cfg.DynoEvoEsnHyperParamMultiPopConfig = scheme_cfg
+        self._scheme_cfg = scheme_cfg
 
         # graph_callback_module = self._create_graph_callback_module()
         graph_callback_module = None
 
         super().__init__(
             name='hyper_param',
-            evo_cfg=self._scheme_cfg.Evo,
             esn_cfg=self._scheme_cfg.Esn,
             evaluate_cfg=self._scheme_cfg.Evaluate,
             esn_creator=evo_types.HyperParamEsnCreatorByInd(self._scheme_cfg.Esn),
+            search_impl=deap_algo.eaGenerateUpdate,
             graph_callback_module=graph_callback_module,
             async_manager=async_manager,
             job_n=job_n,
         )
+
+    def run(self, **kvargs) -> None:
+        super().run(**kvargs)
+        plt.show()
 
     def _create_graph_callback_module(self) -> GraphCallbackModule:
         ret = GraphCallbackModule(1)

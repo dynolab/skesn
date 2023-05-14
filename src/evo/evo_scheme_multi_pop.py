@@ -344,7 +344,6 @@ def cltex(
     for population in populations:
         if population.HallOfFameSize > 0:
             base_hall_of_fame.update(population.HallOfFame.items)
-            continue
 
     for population in populations:
         population.Inds.sort(key=_cltex_key)

@@ -89,6 +89,7 @@ def _gen_num_by_limit(
             min=limit_cfg.Min,
             max=limit_cfg.Max,
             rand=rand,
+            type=limit_cfg.Type,
         )
     else:
         ret = _gen_log_num(
@@ -156,18 +157,27 @@ def _gen_num_by_method(
     args = _prepare_cfg_args(method_cfg.Args)
     return func(x=gen_val, **args)
 
+def _resolve_type_num_result(
+    type: str,
+    value: Union[int, float],
+):
+    if type.lower() == 'int':
+        return int(value)
+    return value
+
 def _gen_num(
     min: Union[float, int, None],
     max: Union[float, int, None],
     rand: np.random.RandomState,
+    type: str,
 ) -> float:
     if min is not None and max is not None:
-        return rand.uniform(min, max)
+        return _resolve_type_num_result(type, rand.uniform(min, max))
     elif min is None and max is not None:
-        return rand.uniform(0, max)
+        return _resolve_type_num_result(type, rand.uniform(0, max))
     elif min is not None and max is None:
-        return rand.uniform(min)
-    return rand.uniform(0)
+        return _resolve_type_num_result(type, rand.uniform(min))
+    return _resolve_type_num_result(type, rand.uniform(0))
 
 _EPS_FLOAT = 1e-16
 
@@ -324,7 +334,8 @@ def cx_gene(
         for arg in limit_cfg.Mate.Args:
             kvargs[arg.Key] = arg.Val
 
-    return func(p1_gene, p2_gene, rand=rand, **kvargs)
+    ch1, ch2 = func(p1_gene, p2_gene, rand=rand, **kvargs)
+    return _resolve_type_num_result(limit_cfg.Type, ch1), _resolve_type_num_result(limit_cfg.Type, ch2)
 
 def mut_gene(
     limit_cfg: cfg.EvoLimitGenConfigField,
@@ -333,11 +344,11 @@ def mut_gene(
 ) -> Union[int, float, bool, str]:
     t = limit_cfg.Type.lower()
     if t in ('int', 'float'):
-        return _gen_num_by_limit(
+        return _resolve_type_num_result(limit_cfg.Type, _gen_num_by_limit(
             gen_val=cur_gene,
             limit_cfg=limit_cfg,
             rand=rand,
-        )
+        ))
     elif t == 'bool' and isinstance(cur_gene, bool):
         return not cur_gene
     elif t == 'choice':

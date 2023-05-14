@@ -112,3 +112,29 @@ class HyperParamEsnCreatorByInd(object):
             random_state=self._cfg.RandomState,
             use_bias=ind[HyperParamEsnCreatorByInd.USE_BIAS_IDX],
         )
+
+class HyperParamWithReservoirEsnCreatorByInd(object):
+    SPECTRAL_RADIUS_IDX = 0
+    SPARSITY_IDX = 1
+    LAMBDA_R_IDX = 2
+    REGULIRIZATION_IDX = 3
+    USE_ADDITIVE_NOISE_WHEN_FORECASTING_IDX = 4
+    USE_BIAS_IDX = 5
+    RAND_SEED_IDX = 6
+
+    def __init__(self, esn_cfg: cfg.EsnConfigField) -> None:
+        self._cfg = esn_cfg
+
+    def __call__(self, ind: Individual) -> esn.EsnForecaster:
+        return esn.EsnForecaster(
+            n_reservoir=self._cfg.NReservoir,
+            spectral_radius=ind[HyperParamWithReservoirEsnCreatorByInd.SPECTRAL_RADIUS_IDX],
+            sparsity=ind[HyperParamWithReservoirEsnCreatorByInd.SPARSITY_IDX],
+            regularization=ind[HyperParamWithReservoirEsnCreatorByInd.REGULIRIZATION_IDX],
+            lambda_r=ind[HyperParamWithReservoirEsnCreatorByInd.LAMBDA_R_IDX],
+            in_activation=self._cfg.InActivation,
+            out_activation=self._cfg.OutActivation,
+            use_additive_noise_when_forecasting=ind[HyperParamWithReservoirEsnCreatorByInd.USE_ADDITIVE_NOISE_WHEN_FORECASTING_IDX],
+            random_state=ind[HyperParamWithReservoirEsnCreatorByInd.RAND_SEED_IDX],
+            use_bias=ind[HyperParamWithReservoirEsnCreatorByInd.USE_BIAS_IDX],
+        )

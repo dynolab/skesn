@@ -2,6 +2,7 @@ from src.evo.abstract import Scheme
 from src.evo.tasks.dyno_evo_esn_hyper_param import DynoEvoEsnHyperParam
 from src.evo.tasks.duno_evo_esn_hyper_param_multi_pop import DynoEvoEsnHyperParamMultiPop
 from src.evo.tasks.duno_evo_esn_hyper_param_multi_pop_multi_crit import DynoEvoEsnHyperParamMultiPopMultiCrit
+from src.evo.tasks.dyno_evo_esn_huper_param_with_reservoir_multi_pop import DynoEvoEsnHyperParamWithReservoirMultiPop
 
 import src.evo.test.evo_scheme_test as evo_scheme_test
 import src.evo.test.evo_scheme_multi_pop_test as evo_scheme_multi_pop_test
@@ -23,6 +24,7 @@ _MODE_TESTS = 'tests'
 _MODE_HYPER_PARAMS = 'hyper_param'
 _MODE_HYPER_PARAMS_MULTI_POP = 'hyper_param_multi_pop'
 _MODE_HYPER_PARAMS_MULTI_POP_MULTI_CRIT = 'hyper_param_multi_pop_multi_crit'
+_MODE_HYPER_PARAMS_WITH_RESERVOIR_MULTI_POP = 'hyper_param_with_reservoir_multi_pop'
 
 def run_tests(**kvargs):
     # TODO :
@@ -70,6 +72,7 @@ def _create_parser() -> argparse.ArgumentParser:
             _MODE_HYPER_PARAMS,
             _MODE_HYPER_PARAMS_MULTI_POP,
             _MODE_HYPER_PARAMS_MULTI_POP_MULTI_CRIT,
+            _MODE_HYPER_PARAMS_WITH_RESERVOIR_MULTI_POP,
         ],
         help='run mode'
     )
@@ -170,6 +173,8 @@ def main(manager: SyncManager):
         run_scheme(DynoEvoEsnHyperParamMultiPop, cfg.Config.Schemes.HyperParamMultiPop, args=args, async_manager=manager)
     elif mode == _MODE_HYPER_PARAMS_MULTI_POP_MULTI_CRIT:
         run_scheme(DynoEvoEsnHyperParamMultiPopMultiCrit, cfg.Config.Schemes.HyperParamMultiPopMultiCrit, args=args, async_manager=manager)
+    elif mode == _MODE_HYPER_PARAMS_WITH_RESERVOIR_MULTI_POP:
+        run_scheme(DynoEvoEsnHyperParamWithReservoirMultiPop, cfg.Config.Schemes.HyperParamWithReservoirMultiPop, args=args, async_manager=manager)
     else:
         raise('unknown running mode')
 

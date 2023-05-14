@@ -56,7 +56,7 @@ schemes:
     evo:
       dump_dir: dumps
       rand_seed: 2
-      max_gen_num: 3
+      max_gen_num: 30
       population_size: 50
       hall_of_fame: 3
       hromo_len: 6
@@ -164,14 +164,16 @@ schemes:
         - name: avg
           func: mean
           package: numpy
+
   hyper_param_multi_pop:
     evaluate:
-      n: 1
+      n: 55000
       split_n: 50000
       # fit_step: 10
       normalize: true
-      model: chui_moffatt
-      data: model # model or yaml filename with values
+      model: moehlis # chui_moffatt
+      # model: chui_moffatt
+      # data: model # model or yaml filename with values
       metric: mse
       # max_steps: 2000
     esn:
@@ -188,23 +190,15 @@ schemes:
     evo:
       dump_dir: dumps
       rand_seed: 3
-      max_gen_num: 5
+      max_gen_num: 100
 
       hromo_len: 6
       fitness_weights: [ -1.0 ]
 
       verbose: true
 
-      metrics:
-        - name: max
-          func: max
-          package: numpy
-        - name: avg
-          func: mean
-          package: numpy
-
       populations:
-        - size: 40
+        - size: 32
           hall_of_fame: 3
           select:
             method: selTournament
@@ -217,14 +211,14 @@ schemes:
           mutate:
             method: dynoMutGeneByLimit
             probability: 0.2
-            # indpb: 0.25
+            indpb: 0.5
           limits:
             # spectral_radius
             - type: float
               min: 1.e-12
               max: 1.5
               mate:
-                method: cxSimulatedBinaryBoundedGene
+                method: cxGaussianBoundedGene
                 args:
                   - key: up
                     val: 1.5
@@ -246,7 +240,7 @@ schemes:
               min: 1.e-4
               max: 1.
               mate:
-                method: cxSimulatedBinaryBoundedGene
+                method: cxGaussianBoundedGene
                 args:
                   - key: up
                     val: 1.
@@ -268,7 +262,7 @@ schemes:
               min: 1.e-12
               max: 1.
               mate:
-                method: cxSimulatedBinaryBoundedGene
+                method: cxGaussianBoundedGene
                 args:
                   - key: up
                     val: 1.
@@ -299,7 +293,7 @@ schemes:
               mate:
                 method: cxRandChoiceGene
 
-        - size: 40
+        - size: 32
           hall_of_fame: 3
           select:
             method: selTournament
@@ -312,14 +306,14 @@ schemes:
           mutate:
             method: dynoMutGeneByLimit
             probability: 0.2
-            # indpb: 0.25
+            indpb: 0.5
           limits:
             # spectral_radius
             - type: float
               min: 1.e-12
               max: 1.5
               mate:
-                method: cxSimulatedBinaryBoundedGene
+                method: cxGaussianBoundedGene
                 args:
                   - key: up
                     val: 1.5
@@ -341,7 +335,7 @@ schemes:
               min: 1.e-8
               max: 1.
               mate:
-                method: cxSimulatedBinaryBoundedGene
+                method: cxGaussianBoundedGene
                 args:
                   - key: up
                     val: 1.
@@ -363,7 +357,7 @@ schemes:
               min: 1.e-12
               max: 1.
               mate:
-                method: cxSimulatedBinaryBoundedGene
+                method: cxGaussianBoundedGene
                 args:
                   - key: up
                     val: 1.
@@ -394,7 +388,7 @@ schemes:
               mate:
                 method: cxRandChoiceGene
 
-        - size: 40
+        - size: 32
           hall_of_fame: 3
           select:
             method: selTournament
@@ -406,15 +400,15 @@ schemes:
             probability: 0.8
           mutate:
             method: dynoMutGeneByLimit
-            probability: 0.35
-            # indpb: 0.25
+            probability: 0.2
+            indpb: 0.5
           limits:
             # spectral_radius
             - type: float
               min: 1.e-12
               max: 1.5
               mate:
-                method: cxSimulatedBinaryBoundedGene
+                method: cxGaussianBoundedGene
                 args:
                   - key: up
                     val: 1.5
@@ -436,7 +430,7 @@ schemes:
               min: 1.e-8
               max: 1.
               mate:
-                method: cxSimulatedBinaryBoundedGene
+                method: cxGaussianBoundedGene
                 args:
                   - key: up
                     val: 1.
@@ -458,7 +452,7 @@ schemes:
               min: 1.e-12
               max: 1.
               mate:
-                method: cxSimulatedBinaryBoundedGene
+                method: cxGaussianBoundedGene
                 args:
                   - key: up
                     val: 1.
@@ -489,7 +483,7 @@ schemes:
               mate:
                 method: cxRandChoiceGene
 
-        - size: 40
+        - size: 32
           hall_of_fame: 3
           select:
             method: selTournament
@@ -501,15 +495,15 @@ schemes:
             probability: 0.8
           mutate:
             method: dynoMutGeneByLimit
-            probability: 0.4
-            # indpb: 0.25
+            probability: 0.2
+            indpb: 0.5
           limits:
             # spectral_radius
             - type: float
               min: 1.e-12
               max: 1.5
               mate:
-                method: cxSimulatedBinaryBoundedGene
+                method: cxGaussianBoundedGene # cxSimulatedBinaryBoundedGene
                 args:
                   - key: up
                     val: 1.5
@@ -531,7 +525,7 @@ schemes:
               min: 1.e-8
               max: 1.
               mate:
-                method: cxSimulatedBinaryBoundedGene
+                method: cxGaussianBoundedGene # cxSimulatedBinaryBoundedGene
                 args:
                   - key: up
                     val: 1.
@@ -553,7 +547,7 @@ schemes:
               min: 1.e-12
               max: 1.
               mate:
-                method: cxSimulatedBinaryBoundedGene
+                method: cxGaussianBoundedGene # cxSimulatedBinaryBoundedGene
                 args:
                   - key: up
                     val: 1.
@@ -584,73 +578,495 @@ schemes:
               mate:
                 method: cxRandChoiceGene
 
-        # - size: 10
-        #   hall_of_fame: 2
-        #   select:
-        #     method: selTournament
-        #     args:
-        #       - key: tournsize
-        #         val: 2
-        #   mate:
-        #     method: cxOnePoint
-        #     probability: 0.8
-        #   mutate:
-        #     method: dynoMutGeneByLimit
-        #     probability: 0.3
-        #     # indpb: 0.25
-        #   limits:
-        #     # spectral_radius
-        #     - type: float
-        #       min: 1.e-12
-        #       max: 1.5
-        #       mutate:
-        #         method: polynomial_bounded
-        #         args:
-        #           - key: up
-        #             val: 1.5
-        #           - key: low
-        #             val: 1.e-12
-        #           - key: eta
-        #             val: 20
-        #     # sparsity
-        #     - type: float
-        #       min: 1.e-8
-        #       max: 1.
-        #       mutate:
-        #         method: polynomial_bounded
-        #         args:
-        #           - key: up
-        #             val: 1.
-        #           - key: low
-        #             val: 1.e-8
-        #           - key: eta
-        #             val: 20
-        #     # lambda_r
-        #     - type: float
-        #       min: 1.e-12
-        #       max: 1.
-        #       mutate:
-        #         method: polynomial_bounded
-        #         args:
-        #           - key: up
-        #             val: 1.
-        #           - key: low
-        #             val: 1.e-12
-        #           - key: eta
-        #             val: 20
-        #     # regulirization
-        #     - type: choice
-        #       choice: ['noise', 'l2', null]
-        #       mate:
-        #         method: cxRandChoiceGene
-        #     # use_bias
-        #     - type: bool
-        #       mate:
-        #         method: cxRandChoiceGene
-        #     # use_additive_noise_when_forecasting
-        #     - type: bool
-        #       mate:
-        #         method: cxRandChoiceGene
+      metrics:
+        - name: max
+          func: max
+          package: numpy
+        - name: avg
+          func: mean
+          package: numpy
+
+  hyper_param_with_reservoir_multi_pop:
+    evaluate:
+      n: 55000
+      split_n: 50000
+      # fit_step: 10
+      # normalize: true
+      model: moehlis # chui_moffatt
+      # model: chui_moffatt
+      # data: model # model or yaml filename with values
+      metric: mse
+      # max_steps: 2000
+    esn:
+      n_reservoir: 600
+      # random_state: 2
+      # spectral_radius: 0.95 # 0
+      # sparsity: 0.001 # 1
+      # lambda_r: 0.001 # 2
+      # regulirization: l2 # 3
+      in_activation: tanh
+      out_activation: identity
+      # use_bias: True # 4
+      # use_additive_noise_when_forecasting: True # 5
+    evo:
+      dump_dir: dumps
+      rand_seed: 3
+      max_gen_num: 15
+
+      hromo_len: 7
+      fitness_weights: [ -1.0 ]
+
+      verbose: true
+
+      populations:
+        - size: 32
+          hall_of_fame: 3
+          select:
+            method: selTournament
+            args:
+              - key: tournsize
+                val: 2
+          mate:
+            method: dynoCxGeneByLimit
+            probability: 0.8
+          mutate:
+            method: dynoMutGeneByLimit
+            probability: 0.2
+            indpb: 0.5
+          limits:
+            # spectral_radius
+            - type: float
+              min: 1.e-12
+              max: 1.5
+              mate:
+                method: cxGaussianBoundedGene
+                args:
+                  - key: up
+                    val: 1.5
+                  - key: low
+                    val: 1.e-12
+                  - key: eta
+                    val: 20
+              mutate:
+                method: polynomial_bounded
+                args:
+                  - key: up
+                    val: 1.5
+                  - key: low
+                    val: 1.e-12
+                  - key: eta
+                    val: 20
+            # sparsity
+            - type: float
+              min: 1.e-4
+              max: 1.
+              mate:
+                method: cxGaussianBoundedGene
+                args:
+                  - key: up
+                    val: 1.
+                  - key: low
+                    val: 1.e-8
+                  - key: eta
+                    val: 20
+              mutate:
+                method: polynomial_bounded
+                args:
+                  - key: up
+                    val: 1.
+                  - key: low
+                    val: 1.e-8
+                  - key: eta
+                    val: 20
+            # lambda_r
+            - type: float
+              min: 1.e-12
+              max: 1.
+              mate:
+                method: cxGaussianBoundedGene
+                args:
+                  - key: up
+                    val: 1.
+                  - key: low
+                    val: 1.e-12
+                  - key: eta
+                    val: 20
+              mutate:
+                method: polynomial_bounded
+                args:
+                  - key: up
+                    val: 1.
+                  - key: low
+                    val: 1.e-12
+                  - key: eta
+                    val: 20
+            # regulirization
+            - type: choice
+              choice: ['noise', 'l2', null]
+              mate:
+                method: cxRandChoiceGene
+            # use_bias
+            - type: bool
+              mate:
+                method: cxRandChoiceGene
+            # use_additive_noise_when_forecasting
+            - type: bool
+              mate:
+                method: cxRandChoiceGene
+            # rand_seed
+            - type: int
+              min: 0
+              max: 4096
+              mate:
+                method: cxRandChoiceGene
+              mutate:
+                method: polynomial_bounded
+                args:
+                  - key: up
+                    val: 4096
+                  - key: low
+                    val: 0
+                  - key: eta
+                    val: 20
+
+        - size: 32
+          hall_of_fame: 3
+          select:
+            method: selTournament
+            args:
+              - key: tournsize
+                val: 2
+          mate:
+            method: dynoCxGeneByLimit
+            probability: 0.8
+          mutate:
+            method: dynoMutGeneByLimit
+            probability: 0.2
+            indpb: 0.5
+          limits:
+            # spectral_radius
+            - type: float
+              min: 1.e-12
+              max: 1.5
+              mate:
+                method: cxGaussianBoundedGene
+                args:
+                  - key: up
+                    val: 1.5
+                  - key: low
+                    val: 1.e-12
+                  - key: eta
+                    val: 15
+              mutate:
+                method: polynomial_bounded
+                args:
+                  - key: up
+                    val: 1.5
+                  - key: low
+                    val: 1.e-12
+                  - key: eta
+                    val: 15
+            # sparsity
+            - type: float
+              min: 1.e-8
+              max: 1.
+              mate:
+                method: cxGaussianBoundedGene
+                args:
+                  - key: up
+                    val: 1.
+                  - key: low
+                    val: 1.e-8
+                  - key: eta
+                    val: 15
+              mutate:
+                method: polynomial_bounded
+                args:
+                  - key: up
+                    val: 1.
+                  - key: low
+                    val: 1.e-8
+                  - key: eta
+                    val: 15
+            # lambda_r
+            - type: float
+              min: 1.e-12
+              max: 1.
+              mate:
+                method: cxGaussianBoundedGene
+                args:
+                  - key: up
+                    val: 1.
+                  - key: low
+                    val: 1.e-12
+                  - key: eta
+                    val: 15
+              mutate:
+                method: polynomial_bounded
+                args:
+                  - key: up
+                    val: 1.
+                  - key: low
+                    val: 1.e-12
+                  - key: eta
+                    val: 15
+            # regulirization
+            - type: choice
+              choice: ['noise', 'l2', null]
+              mate:
+                method: cxRandChoiceGene
+            # use_bias
+            - type: bool
+              mate:
+                method: cxRandChoiceGene
+            # use_additive_noise_when_forecasting
+            - type: bool
+              mate:
+                method: cxRandChoiceGene
+            # rand_seed
+            - type: int
+              min: 0
+              max: 4096
+              mate:
+                method: cxRandChoiceGene
+              mutate:
+                method: polynomial_bounded
+                args:
+                  - key: up
+                    val: 4096
+                  - key: low
+                    val: 0
+                  - key: eta
+                    val: 15
+
+        - size: 32
+          hall_of_fame: 3
+          select:
+            method: selTournament
+            args:
+              - key: tournsize
+                val: 2
+          mate:
+            method: dynoCxGeneByLimit
+            probability: 0.8
+          mutate:
+            method: dynoMutGeneByLimit
+            probability: 0.2
+            indpb: 0.5
+          limits:
+            # spectral_radius
+            - type: float
+              min: 1.e-12
+              max: 1.5
+              mate:
+                method: cxGaussianBoundedGene
+                args:
+                  - key: up
+                    val: 1.5
+                  - key: low
+                    val: 1.e-12
+                  - key: eta
+                    val: 10
+              mutate:
+                method: polynomial_bounded
+                args:
+                  - key: up
+                    val: 1.5
+                  - key: low
+                    val: 1.e-12
+                  - key: eta
+                    val: 10
+            # sparsity
+            - type: float
+              min: 1.e-8
+              max: 1.
+              mate:
+                method: cxGaussianBoundedGene
+                args:
+                  - key: up
+                    val: 1.
+                  - key: low
+                    val: 1.e-8
+                  - key: eta
+                    val: 10
+              mutate:
+                method: polynomial_bounded
+                args:
+                  - key: up
+                    val: 1.
+                  - key: low
+                    val: 1.e-8
+                  - key: eta
+                    val: 10
+            # lambda_r
+            - type: float
+              min: 1.e-12
+              max: 1.
+              mate:
+                method: cxGaussianBoundedGene
+                args:
+                  - key: up
+                    val: 1.
+                  - key: low
+                    val: 1.e-12
+                  - key: eta
+                    val: 10
+              mutate:
+                method: polynomial_bounded
+                args:
+                  - key: up
+                    val: 1.
+                  - key: low
+                    val: 1.e-12
+                  - key: eta
+                    val: 10
+            # regulirization
+            - type: choice
+              choice: ['noise', 'l2', null]
+              mate:
+                method: cxRandChoiceGene
+            # use_bias
+            - type: bool
+              mate:
+                method: cxRandChoiceGene
+            # use_additive_noise_when_forecasting
+            - type: bool
+              mate:
+                method: cxRandChoiceGene
+            # rand_seed
+            - type: int
+              min: 0
+              max: 4096
+              mate:
+                method: cxRandChoiceGene
+              mutate:
+                method: polynomial_bounded
+                args:
+                  - key: up
+                    val: 4096
+                  - key: low
+                    val: 0
+                  - key: eta
+                    val: 10
+
+        - size: 32
+          hall_of_fame: 3
+          select:
+            method: selTournament
+            args:
+              - key: tournsize
+                val: 2
+          mate:
+            method: dynoCxGeneByLimit
+            probability: 0.8
+          mutate:
+            method: dynoMutGeneByLimit
+            probability: 0.2
+            indpb: 0.5
+          limits:
+            # spectral_radius
+            - type: float
+              min: 1.e-12
+              max: 1.5
+              mate:
+                method: cxGaussianBoundedGene # cxSimulatedBinaryBoundedGene
+                args:
+                  - key: up
+                    val: 1.5
+                  - key: low
+                    val: 1.e-12
+                  - key: eta
+                    val: 5
+              mutate:
+                method: polynomial_bounded
+                args:
+                  - key: up
+                    val: 1.5
+                  - key: low
+                    val: 1.e-12
+                  - key: eta
+                    val: 5
+            # sparsity
+            - type: float
+              min: 1.e-8
+              max: 1.
+              mate:
+                method: cxGaussianBoundedGene # cxSimulatedBinaryBoundedGene
+                args:
+                  - key: up
+                    val: 1.
+                  - key: low
+                    val: 1.e-8
+                  - key: eta
+                    val: 5
+              mutate:
+                method: polynomial_bounded
+                args:
+                  - key: up
+                    val: 1.
+                  - key: low
+                    val: 1.e-8
+                  - key: eta
+                    val: 5
+            # lambda_r
+            - type: float
+              min: 1.e-12
+              max: 1.
+              mate:
+                method: cxGaussianBoundedGene # cxSimulatedBinaryBoundedGene
+                args:
+                  - key: up
+                    val: 1.
+                  - key: low
+                    val: 1.e-12
+                  - key: eta
+                    val: 5
+              mutate:
+                method: polynomial_bounded
+                args:
+                  - key: up
+                    val: 1.
+                  - key: low
+                    val: 1.e-12
+                  - key: eta
+                    val: 5
+            # regulirization
+            - type: choice
+              choice: ['noise', 'l2', null]
+              mate:
+                method: cxRandChoiceGene
+            # use_bias
+            - type: bool
+              mate:
+                method: cxRandChoiceGene
+            # use_additive_noise_when_forecasting
+            - type: bool
+              mate:
+                method: cxRandChoiceGene
+            # rand_seed
+            - type: int
+              min: 0
+              max: 4096
+              mate:
+                method: cxRandChoiceGene
+              mutate:
+                method: polynomial_bounded
+                args:
+                  - key: up
+                    val: 4096
+                  - key: low
+                    val: 0
+                  - key: eta
+                    val: 5
+
+      metrics:
+        - name: max
+          func: max
+          package: numpy
+        - name: avg
+          func: mean
+          package: numpy
+
   hyper_param_multi_pop_multi_crit:
     evaluate:
       n: 1
@@ -1000,31 +1416,3 @@ schemes:
             - type: bool
             # use_additive_noise_when_forecasting
             - type: bool
-
-
-# grid:
-#   verbose: true
-#   scoring: valid_one # train, valid_one or valid_multi. Для valid_multi необходимо задать valid_multi_n > 1
-#   valid_multi_n: 5
-#   params_set:
-#     lorenz:
-#       # n_reservoir:
-#       #   start: 200
-#       #   stop: 800
-#       #   num: 7
-#       spectral_radius:
-#         start: 0.2
-#         stop: 1.2
-#         num: 20
-#       sparsity:
-#         start: 0.001
-#         stop: 0.5
-#         num: 20
-#       noise:
-#         start: 0.00000001
-#         stop: 0.001
-#         num: 20
-#       # lambda_r:
-#       #   start: 0.000001
-#       #   stop: 0.1
-#       #   num: 10
