@@ -85,20 +85,9 @@ def _gen_num_by_limit(
     if limit_cfg.Mutate is not None:
         ret = _gen_num_by_method(gen_val, limit_cfg.Mutate)
     elif limit_cfg.Logspace is None:
-        ret = _gen_num(
-            min=limit_cfg.Min,
-            max=limit_cfg.Max,
-            rand=rand,
-            type=limit_cfg.Type,
-        )
+        ret = _gen_uniform_num(limit_cfg, rand)
     else:
-        ret = _gen_log_num(
-            min=limit_cfg.Min,
-            max=limit_cfg.Max,
-            n=limit_cfg.Logspace.N,
-            power=limit_cfg.Logspace.Power,
-            rand=rand,
-        )
+        ret = _gen_log_uniform_num(limit_cfg, rand)
 
 
     t = limit_cfg.Type.lower()
@@ -122,13 +111,13 @@ def _prepare_cfg_args(
 def _map_limit_mutate_f(
     name: str,
 ) -> FunctionType:
-    name = name.lower()
+    # name = name.lower()
     if name == 'gaussian':
         def _gaussian(x, mu, sigma, low, up):
             x += (-1 ** np.random.randint(1, 2)) * np.random.gauss(mu, sigma)
             return boundVaule(x, low, up)
         return _gaussian
-    elif name == 'polynomial_bounded':
+    elif name == 'polynomialBounded':
         def _polynomial_bounded(x, low, up, eta):
             delta_1 = (x - low) / (up - low)
             delta_2 = (up - x) / (up - low)
@@ -147,6 +136,16 @@ def _map_limit_mutate_f(
             x = x + delta_q * (up - low)
             return boundVaule(x, low, up)
         return _polynomial_bounded
+    elif name == 'commonGenNum':
+        def _common_gen_num(x, low, up):
+            if low is not None and up is not None:
+                np.random.uniform(low, up)
+            elif low is None and up is not None:
+                return np.random.uniform(0, up)
+            elif low is not None and up is None:
+                return np.random.uniform(low)
+            return np.random.uniform(0)
+        return _common_gen_num
     raise f'unknown limit mutate method ({name})'
 
 def _gen_num_by_method(
@@ -165,34 +164,26 @@ def _resolve_type_num_result(
         return int(value)
     return value
 
-def _gen_num(
-    min: Union[float, int, None],
-    max: Union[float, int, None],
+def _gen_uniform_num(
+    limit_cfg: cfg.EvoLimitGenConfigField,
     rand: np.random.RandomState,
-    type: str,
 ) -> float:
-    if min is not None and max is not None:
-        return _resolve_type_num_result(type, rand.uniform(min, max))
-    elif min is None and max is not None:
-        return _resolve_type_num_result(type, rand.uniform(0, max))
-    elif min is not None and max is None:
-        return _resolve_type_num_result(type, rand.uniform(min))
-    return _resolve_type_num_result(type, rand.uniform(0))
+    if limit_cfg.Min is not None and limit_cfg.Max is not None:
+        return _resolve_type_num_result(limit_cfg.Type, rand.uniform(limit_cfg.Min, limit_cfg.Max))
+    elif limit_cfg.Min is None and limit_cfg.Max is not None:
+        return _resolve_type_num_result(limit_cfg.Type, rand.uniform(0, limit_cfg.Max))
+    elif limit_cfg.Min is not None and limit_cfg.Max is None:
+        return _resolve_type_num_result(limit_cfg.Type, rand.uniform(limit_cfg.Min))
+    return _resolve_type_num_result(limit_cfg.Type, rand.uniform(0))
 
 _EPS_FLOAT = 1e-16
 
-def _gen_log_num(
-    min: Union[int, float, None],
-    max: Union[int, float, None],
-    n: int,
-    power: int,
+def _gen_log_uniform_num(
+    limit_cfg: cfg.EvoLimitGenConfigField,
     rand: np.random.RandomState,
 ) -> float:
-    if min == 0:
-        min = _EPS_FLOAT
-    if max == 0:
-        max = _EPS_FLOAT
-
+    min = _EPS_FLOAT if limit_cfg.Min == 0 or limit_cfg.Min is None else limit_cfg.Min
+    max = _EPS_FLOAT if limit_cfg.Max == 0 or limit_cfg.Max is None else limit_cfg.Max
     # TODO : use base and power for generation random point
     if min is not None and max is not None:
         return 10**rand.uniform(np.log10(min), np.log10(max))
@@ -213,7 +204,7 @@ def gen_gene(
         #     limit_cfg=limit_cfg,
         #     rand=rand,
         # )
-        return _gen_num(limit_cfg.Min, limit_cfg.Max, rand, limit_cfg.Type)
+        return _gen_uniform_num(limit_cfg, rand)
     elif t == 'bool':
         return rand.randint(0, 2) == 1
     elif t == 'choice':

@@ -186,3 +186,5 @@ if __name__ == '__main__':
     #     main(pool)
     with SyncManager() as async_manager:
         main(async_manager)
+
+from qiskit.algorithms.optimizers import UMDA

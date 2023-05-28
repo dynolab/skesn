@@ -233,11 +233,11 @@ class LimitLogspaceConfigField(ConfigSection):
     def Power(self) -> int: return self._power
 
     def __init__(self) -> None:
-        self._n:     int = NecessaryField
-        self._power: int = 0
+        self._n:     int = 0
+        self._power: int = 10
 
     def load(self, cfg: dict) -> None:
-        self._n     = Config.get_necessary_value(cfg, 'n', self._n)
+        self._n     = Config.get_optional_value(cfg, 'n', self._n)
         self._power = Config.get_optional_value(cfg, 'power', self._power)
 
     def yaml(self) -> dict:
@@ -475,7 +475,7 @@ class EvoSchemeConfigField(ConfigSection):
         self._hromo_len:       int = NecessaryField
         self._hall_of_fame:    int = 0
         self._mandatory_new_num:   int = 0
-        
+
         self._verbose:         bool = False
 
         self._fitness_weights: list = NecessaryField

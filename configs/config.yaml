@@ -593,6 +593,513 @@ schemes:
           func: mean
           package: numpy
 
+  # hyper_param_with_reservoir_multi_pop:
+  #   evaluate:
+  #     n: 55000
+  #     split_n: 50000
+  #     # fit_step: 10
+  #     # normalize: true
+  #     model: moehlis # chui_moffatt
+  #     # model: chui_moffatt
+  #     # data: model # model or yaml filename with values
+  #     metric: mse
+  #     # max_steps: 2000
+  #   esn:
+  #     n_reservoir: 600
+  #     # random_state: 2
+  #     # spectral_radius: 0.95 # 0
+  #     # sparsity: 0.001 # 1
+  #     # lambda_r: 0.001 # 2
+  #     # regulirization: l2 # 3
+  #     in_activation: tanh
+  #     out_activation: identity
+  #     # use_bias: True # 4
+  #     # use_additive_noise_when_forecasting: True # 5
+  #   evo:
+  #     dump_dir: dumps
+  #     rand_seed: 4
+  #     max_gen_num: 10
+
+  #     hromo_len: 7
+  #     fitness_weights: [ -1.0 ]
+
+  #     verbose: true
+
+  #     populations:
+  #       - size: 32
+  #         hall_of_fame: 3
+  #         mandatory_new_num: 16
+  #         select:
+  #           method: selTournament
+  #           args:
+  #             - key: tournsize
+  #               val: 2
+  #         mate:
+  #           method: dynoCxGeneByLimit
+  #           probability: 0.8
+  #         mutate:
+  #           method: dynoMutGeneByLimit
+  #           probability: 0.2
+  #           indpb: 0.4
+  #         limits:
+  #           # spectral_radius
+  #           - type: float
+  #             # logspace:
+  #             #   power: 10
+  #             min: 1.e-10
+  #             max: 5
+  #             mate:
+  #               method: cxGaussianBoundedGene
+  #               args:
+  #                 - key: up
+  #                   val: 5
+  #                 - key: low
+  #                   val: 1.e-10
+  #                 - key: eta
+  #                   val: 2
+  #             mutate:
+  #               method: polynomial_bounded
+  #               args:
+  #                 - key: up
+  #                   val: 5
+  #                 - key: low
+  #                   val: 1.e-10
+  #                 - key: eta
+  #                   val: 2
+  #           # sparsity
+  #           - type: float
+  #             min: 1.e-4
+  #             max: 1.
+  #             mate:
+  #               method: cxGaussianBoundedGene
+  #               args:
+  #                 - key: up
+  #                   val: 1.
+  #                 - key: low
+  #                   val: 1.e-8
+  #                 - key: eta
+  #                   val: 2
+  #             mutate:
+  #               method: polynomial_bounded
+  #               args:
+  #                 - key: up
+  #                   val: 1.
+  #                 - key: low
+  #                   val: 1.e-8
+  #                 - key: eta
+  #                   val: 2
+  #           # lambda_r
+  #           - type: float
+  #             # logspace:
+  #             #   power: 10
+  #             min: 1.e-12
+  #             max: 1.
+  #             mate:
+  #               method: cxGaussianBoundedGene
+  #               args:
+  #                 - key: up
+  #                   val: 1.
+  #                 - key: low
+  #                   val: 1.e-12
+  #                 - key: eta
+  #                   val: 2
+  #             mutate:
+  #               method: polynomial_bounded
+  #               args:
+  #                 - key: up
+  #                   val: 1.
+  #                 - key: low
+  #                   val: 1.e-12
+  #                 - key: eta
+  #                   val: 2
+  #           # regulirization
+  #           - type: choice
+  #             choice: ['noise', 'l2', null]
+  #             mate:
+  #               method: cxRandChoiceGene
+  #           # use_bias
+  #           - type: bool
+  #             mate:
+  #               method: cxRandChoiceGene
+  #           # use_additive_noise_when_forecasting
+  #           - type: bool
+  #             mate:
+  #               method: cxRandChoiceGene
+  #           # rand_seed
+  #           - type: int
+  #             min: 0
+  #             max: 10000
+  #             mate:
+  #               method: cxRandChoiceGene
+  #             mutate:
+  #               method: polynomial_bounded
+  #               args:
+  #                 - key: up
+  #                   val: 10000
+  #                 - key: low
+  #                   val: 0
+  #                 - key: eta
+  #                   val: 20
+
+  #       - size: 32
+  #         hall_of_fame: 3
+  #         mandatory_new_num: 16
+  #         select:
+  #           method: selTournament
+  #           args:
+  #             - key: tournsize
+  #               val: 2
+  #         mate:
+  #           method: dynoCxGeneByLimit
+  #           probability: 0.8
+  #         mutate:
+  #           method: dynoMutGeneByLimit
+  #           probability: 0.2
+  #           indpb: 0.4
+  #         limits:
+  #           # spectral_radius
+  #           - type: float
+  #             # logspace:
+  #             #   power: 10
+  #             min: 1.e-10
+  #             max: 5
+  #             mate:
+  #               method: cxGaussianBoundedGene
+  #               args:
+  #                 - key: up
+  #                   val: 5
+  #                 - key: low
+  #                   val: 1.e-10
+  #                 - key: eta
+  #                   val: 15
+  #             mutate:
+  #               method: polynomial_bounded
+  #               args:
+  #                 - key: up
+  #                   val: 5
+  #                 - key: low
+  #                   val: 1.e-10
+  #                 - key: eta
+  #                   val: 15
+  #           # sparsity
+  #           - type: float
+  #             # logspace:
+  #             #   power: 10
+  #             min: 1.e-8
+  #             max: 1.
+  #             mate:
+  #               method: cxGaussianBoundedGene
+  #               args:
+  #                 - key: up
+  #                   val: 1.
+  #                 - key: low
+  #                   val: 1.e-8
+  #                 - key: eta
+  #                   val: 15
+  #             mutate:
+  #               method: polynomial_bounded
+  #               args:
+  #                 - key: up
+  #                   val: 1.
+  #                 - key: low
+  #                   val: 1.e-8
+  #                 - key: eta
+  #                   val: 15
+  #           # lambda_r
+  #           - type: float
+  #             # logspace:
+  #             #   power: 10
+  #             min: 1.e-12
+  #             max: 1.
+  #             mate:
+  #               method: cxGaussianBoundedGene
+  #               args:
+  #                 - key: up
+  #                   val: 1.
+  #                 - key: low
+  #                   val: 1.e-12
+  #                 - key: eta
+  #                   val: 15
+  #             mutate:
+  #               method: polynomial_bounded
+  #               args:
+  #                 - key: up
+  #                   val: 1.
+  #                 - key: low
+  #                   val: 1.e-12
+  #                 - key: eta
+  #                   val: 15
+  #           # regulirization
+  #           - type: choice
+  #             choice: ['noise', 'l2', null]
+  #             mate:
+  #               method: cxRandChoiceGene
+  #           # use_bias
+  #           - type: bool
+  #             mate:
+  #               method: cxRandChoiceGene
+  #           # use_additive_noise_when_forecasting
+  #           - type: bool
+  #             mate:
+  #               method: cxRandChoiceGene
+  #           # rand_seed
+  #           - type: int
+  #             min: 0
+  #             max: 10000
+  #             mate:
+  #               method: cxRandChoiceGene
+  #             mutate:
+  #               method: polynomial_bounded
+  #               args:
+  #                 - key: up
+  #                   val: 10000
+  #                 - key: low
+  #                   val: 0
+  #                 - key: eta
+  #                   val: 15
+
+  #       - size: 32
+  #         hall_of_fame: 3
+  #         mandatory_new_num: 16
+  #         select:
+  #           method: selTournament
+  #           args:
+  #             - key: tournsize
+  #               val: 2
+  #         mate:
+  #           method: dynoCxGeneByLimit
+  #           probability: 0.8
+  #         mutate:
+  #           method: dynoMutGeneByLimit
+  #           probability: 0.2
+  #           indpb: 0.4
+  #         limits:
+  #           # spectral_radius
+  #           - type: float
+  #             # logspace:
+  #             #   power: 10
+  #             min: 1.e-10
+  #             max: 5
+  #             mate:
+  #               method: cxGaussianBoundedGene
+  #               args:
+  #                 - key: up
+  #                   val: 5
+  #                 - key: low
+  #                   val: 1.e-10
+  #                 - key: eta
+  #                   val: 10
+  #             mutate:
+  #               method: polynomial_bounded
+  #               args:
+  #                 - key: up
+  #                   val: 5
+  #                 - key: low
+  #                   val: 1.e-10
+  #                 - key: eta
+  #                   val: 10
+  #           # sparsity
+  #           - type: float
+  #             # logspace:
+  #             #   power: 10
+  #             min: 1.e-8
+  #             max: 1.
+  #             mate:
+  #               method: cxGaussianBoundedGene
+  #               args:
+  #                 - key: up
+  #                   val: 1.
+  #                 - key: low
+  #                   val: 1.e-8
+  #                 - key: eta
+  #                   val: 10
+  #             mutate:
+  #               method: polynomial_bounded
+  #               args:
+  #                 - key: up
+  #                   val: 1.
+  #                 - key: low
+  #                   val: 1.e-8
+  #                 - key: eta
+  #                   val: 10
+  #           # lambda_r
+  #           - type: float
+  #             # logspace:
+  #             #   power: 10
+  #             min: 1.e-12
+  #             max: 1.
+  #             mate:
+  #               method: cxGaussianBoundedGene
+  #               args:
+  #                 - key: up
+  #                   val: 1.
+  #                 - key: low
+  #                   val: 1.e-12
+  #                 - key: eta
+  #                   val: 10
+  #             mutate:
+  #               method: polynomial_bounded
+  #               args:
+  #                 - key: up
+  #                   val: 1.
+  #                 - key: low
+  #                   val: 1.e-12
+  #                 - key: eta
+  #                   val: 10
+  #           # regulirization
+  #           - type: choice
+  #             choice: ['noise', 'l2', null]
+  #             mate:
+  #               method: cxRandChoiceGene
+  #           # use_bias
+  #           - type: bool
+  #             mate:
+  #               method: cxRandChoiceGene
+  #           # use_additive_noise_when_forecasting
+  #           - type: bool
+  #             mate:
+  #               method: cxRandChoiceGene
+  #           # rand_seed
+  #           - type: int
+  #             min: 0
+  #             max: 10000
+  #             mate:
+  #               method: cxRandChoiceGene
+  #             mutate:
+  #               method: polynomial_bounded
+  #               args:
+  #                 - key: up
+  #                   val: 10000
+  #                 - key: low
+  #                   val: 0
+  #                 - key: eta
+  #                   val: 10
+
+  #       - size: 32
+  #         hall_of_fame: 3
+  #         mandatory_new_num: 16
+  #         select:
+  #           method: selTournament
+  #           args:
+  #             - key: tournsize
+  #               val: 2
+  #         mate:
+  #           method: dynoCxGeneByLimit
+  #           probability: 0.8
+  #         mutate:
+  #           method: dynoMutGeneByLimit
+  #           probability: 0.2
+  #           indpb: 0.4
+  #         limits:
+  #           # spectral_radius
+  #           - type: float
+  #             # logspace:
+  #             #   power: 10
+  #             min: 1.e-10
+  #             max: 5
+  #             mate:
+  #               method: cxGaussianBoundedGene # cxSimulatedBinaryBoundedGene
+  #               args:
+  #                 - key: up
+  #                   val: 5
+  #                 - key: low
+  #                   val: 1.e-10
+  #                 - key: eta
+  #                   val: 5
+  #             mutate:
+  #               method: polynomial_bounded
+  #               args:
+  #                 - key: up
+  #                   val: 5
+  #                 - key: low
+  #                   val: 1.e-10
+  #                 - key: eta
+  #                   val: 5
+  #           # sparsity
+  #           - type: float
+  #             # logspace:
+  #             #   power: 10
+  #             min: 1.e-8
+  #             max: 1.
+  #             mate:
+  #               method: cxGaussianBoundedGene # cxSimulatedBinaryBoundedGene
+  #               args:
+  #                 - key: up
+  #                   val: 1.
+  #                 - key: low
+  #                   val: 1.e-8
+  #                 - key: eta
+  #                   val: 5
+  #             mutate:
+  #               method: polynomial_bounded
+  #               args:
+  #                 - key: up
+  #                   val: 1.
+  #                 - key: low
+  #                   val: 1.e-8
+  #                 - key: eta
+  #                   val: 5
+  #           # lambda_r
+  #           - type: float
+  #             # logspace:
+  #             #   power: 10
+  #             min: 1.e-12
+  #             max: 1.
+  #             mate:
+  #               method: cxGaussianBoundedGene # cxSimulatedBinaryBoundedGene
+  #               args:
+  #                 - key: up
+  #                   val: 1.
+  #                 - key: low
+  #                   val: 1.e-12
+  #                 - key: eta
+  #                   val: 5
+  #             mutate:
+  #               method: polynomial_bounded
+  #               args:
+  #                 - key: up
+  #                   val: 1.
+  #                 - key: low
+  #                   val: 1.e-12
+  #                 - key: eta
+  #                   val: 5
+  #           # regulirization
+  #           - type: choice
+  #             choice: ['noise', 'l2', null]
+  #             mate:
+  #               method: cxRandChoiceGene
+  #           # use_bias
+  #           - type: bool
+  #             mate:
+  #               method: cxRandChoiceGene
+  #           # use_additive_noise_when_forecasting
+  #           - type: bool
+  #             mate:
+  #               method: cxRandChoiceGene
+  #           # rand_seed
+  #           - type: int
+  #             min: 0
+  #             max: 10000
+  #             mate:
+  #               method: cxRandChoiceGene
+  #             mutate:
+  #               method: polynomial_bounded
+  #               args:
+  #                 - key: up
+  #                   val: 10000
+  #                 - key: low
+  #                   val: 0
+  #                 - key: eta
+  #                   val: 5
+
+  #     metrics:
+  #       - name: max
+  #         func: max
+  #         package: numpy
+  #       - name: avg
+  #         func: mean
+  #         package: numpy
+
   hyper_param_with_reservoir_multi_pop:
     evaluate:
       n: 55000
@@ -617,8 +1124,8 @@ schemes:
       # use_additive_noise_when_forecasting: True # 5
     evo:
       dump_dir: dumps
-      rand_seed: 3
-      max_gen_num: 30
+      rand_seed: 5
+      max_gen_num: 240
 
       hromo_len: 7
       fitness_weights: [ -1.0 ]
@@ -628,7 +1135,7 @@ schemes:
       populations:
         - size: 32
           hall_of_fame: 3
-          mandatory_new_num: 4
+          mandatory_new_num: 16
           select:
             method: selTournament
             args:
@@ -644,70 +1151,193 @@ schemes:
           limits:
             # spectral_radius
             - type: float
-              min: 1.e-10
-              max: 2
+              logspace:
+                power: 10
+              min: 1.e-6
+              max: 1
               mate:
                 method: cxGaussianBoundedGene
                 args:
                   - key: up
-                    val: 2
+                    val: 1
                   - key: low
-                    val: 1.e-10
+                    val: 1.e-6
                   - key: eta
-                    val: 20
+                    val: 5
               mutate:
-                method: polynomial_bounded
+                method: commonGenNum
                 args:
                   - key: up
-                    val: 2
+                    val: 1
                   - key: low
-                    val: 1.e-10
-                  - key: eta
-                    val: 20
+                    val: 1.e-6
+                  # - key: eta
+                  #   val: 2
             # sparsity
             - type: float
+              # logspace:
+              #   power: 10
+              min: 1.e-2
+              max: 1
+              mate:
+                method: cxGaussianBoundedGene
+                args:
+                  - key: up
+                    val: 1
+                  - key: low
+                    val: 1.e-2
+                  - key: eta
+                    val: 5
+              mutate:
+                method: commonGenNum
+                args:
+                  - key: up
+                    val: 1
+                  - key: low
+                    val: 1.e-2
+                  # - key: eta
+                  #   val: 2
+            # lambda_r
+            - type: float
+              logspace:
+                power: 10
+              min: 1.e-8
+              max: 1.
+              mate:
+                method: cxGaussianBoundedGene
+                args:
+                  - key: up
+                    val: 1.
+                  - key: low
+                    val: 1.e-8
+                  - key: eta
+                    val: 5
+              mutate:
+                method: commonGenNum
+                args:
+                  - key: up
+                    val: 1.
+                  - key: low
+                    val: 1.e-8
+                  # - key: eta
+                  #   val: 2
+            # regulirization
+            - type: choice
+              choice: ['noise', 'l2', null]
+              mate:
+                method: cxRandChoiceGene
+            # use_bias
+            - type: bool
+              mate:
+                method: cxRandChoiceGene
+            # use_additive_noise_when_forecasting
+            - type: bool
+              mate:
+                method: cxRandChoiceGene
+            # rand_seed
+            - type: int
+              min: 0
+              max: 10000
+              mate:
+                method: cxRandChoiceGene
+              mutate:
+                method: commonGenNum
+                args:
+                  - key: up
+                    val: 10000
+                  - key: low
+                    val: 0
+                  # - key: eta
+                  #   val: 20
+
+        - size: 32
+          hall_of_fame: 3
+          mandatory_new_num: 16
+          select:
+            method: selTournament
+            args:
+              - key: tournsize
+                val: 2
+          mate:
+            method: dynoCxGeneByLimit
+            probability: 0.8
+          mutate:
+            method: dynoMutGeneByLimit
+            probability: 0.2
+            indpb: 0.4
+          limits:
+            # spectral_radius
+            - type: float
+              logspace:
+                power: 10
+              min: 1.e-6
+              max: 1
+              mate:
+                method: cxGaussianBoundedGene
+                args:
+                  - key: up
+                    val: 1
+                  - key: low
+                    val: 1.e-6
+                  - key: eta
+                    val: 5
+              mutate:
+                method: commonGenNum
+                args:
+                  - key: up
+                    val: 1
+                  - key: low
+                    val: 1.e-6
+                  # - key: eta
+                  #   val: 15
+            # sparsity
+            - type: float
+              logspace:
+                power: 10
               min: 1.e-4
-              max: 1.
+              max: 1.e-2
               mate:
                 method: cxGaussianBoundedGene
                 args:
                   - key: up
-                    val: 1.
+                    val: 1.e-2
                   - key: low
-                    val: 1.e-8
+                    val: 1.e-4
                   - key: eta
-                    val: 20
+                    val: 5
               mutate:
-                method: polynomial_bounded
+                method: commonGenNum
                 args:
                   - key: up
-                    val: 1.
+                    val: 1.e-2
                   - key: low
-                    val: 1.e-8
-                  - key: eta
-                    val: 20
+                    val: 1.e-4
+                  # - key: eta
+                  #   val: 15
             # lambda_r
             - type: float
-              min: 1.e-12
-              max: 1.
+              logspace:
+                power: 10
+              min: 1.e-8
+              max: 1
               mate:
                 method: cxGaussianBoundedGene
                 args:
                   - key: up
-                    val: 1.
+                    val: 1
                   - key: low
-                    val: 1.e-12
+                    val: 1.e-8
                   - key: eta
-                    val: 20
+                    val: 5
               mutate:
-                method: polynomial_bounded
+                method: commonGenNum
                 args:
                   - key: up
-                    val: 1.
+                    val: 1
                   - key: low
-                    val: 1.e-12
-                  - key: eta
-                    val: 20
+                    val: 1.e-8
+                  # - key: eta
+                  #   val: 15
             # regulirization
             - type: choice
               choice: ['noise', 'l2', null]
@@ -724,22 +1354,22 @@ schemes:
             # rand_seed
             - type: int
               min: 0
-              max: 4096
+              max: 10000
               mate:
                 method: cxRandChoiceGene
               mutate:
-                method: polynomial_bounded
+                method: commonGenNum
                 args:
                   - key: up
-                    val: 4096
+                    val: 10000
                   - key: low
                     val: 0
-                  - key: eta
-                    val: 20
+                  # - key: eta
+                  #   val: 15
 
         - size: 32
           hall_of_fame: 3
-          mandatory_new_num: 4
+          mandatory_new_num: 16
           select:
             method: selTournament
             args:
@@ -755,7 +1385,9 @@ schemes:
           limits:
             # spectral_radius
             - type: float
-              min: 1.e-10
+              # logspace:
+              #   power: 10
+              min: 1
               max: 2
               mate:
                 method: cxGaussianBoundedGene
@@ -763,62 +1395,66 @@ schemes:
                   - key: up
                     val: 2
                   - key: low
-                    val: 1.e-10
+                    val: 1
                   - key: eta
-                    val: 15
+                    val: 5
               mutate:
-                method: polynomial_bounded
+                method: commonGenNum
                 args:
                   - key: up
                     val: 2
                   - key: low
-                    val: 1.e-10
-                  - key: eta
-                    val: 15
+                    val: 1
+                  # - key: eta
+                  #   val: 10
             # sparsity
             - type: float
-              min: 1.e-8
-              max: 1.
+              # logspace:
+              #   power: 10
+              min: 1.e-2
+              max: 1
               mate:
                 method: cxGaussianBoundedGene
                 args:
                   - key: up
-                    val: 1.
+                    val: 1
                   - key: low
-                    val: 1.e-8
+                    val: 1.e-2
                   - key: eta
-                    val: 15
+                    val: 5
               mutate:
-                method: polynomial_bounded
+                method: commonGenNum
                 args:
                   - key: up
-                    val: 1.
+                    val: 1
                   - key: low
-                    val: 1.e-8
-                  - key: eta
-                    val: 15
+                    val: 1.e-2
+                  # - key: eta
+                  #   val: 10
             # lambda_r
             - type: float
-              min: 1.e-12
-              max: 1.
+              logspace:
+                power: 10
+              min: 1.e-8
+              max: 1
               mate:
                 method: cxGaussianBoundedGene
                 args:
                   - key: up
-                    val: 1.
+                    val: 1
                   - key: low
-                    val: 1.e-12
+                    val: 1.e-8
                   - key: eta
-                    val: 15
+                    val: 5
               mutate:
-                method: polynomial_bounded
+                method: commonGenNum
                 args:
                   - key: up
                     val: 1.
                   - key: low
-                    val: 1.e-12
-                  - key: eta
-                    val: 15
+                    val: 1.e-8
+                  # - key: eta
+                  #   val: 10
             # regulirization
             - type: choice
               choice: ['noise', 'l2', null]
@@ -835,22 +1471,22 @@ schemes:
             # rand_seed
             - type: int
               min: 0
-              max: 4096
+              max: 10000
               mate:
                 method: cxRandChoiceGene
               mutate:
-                method: polynomial_bounded
+                method: commonGenNum
                 args:
                   - key: up
-                    val: 4096
+                    val: 10000
                   - key: low
                     val: 0
-                  - key: eta
-                    val: 15
+                  # - key: eta
+                  #   val: 10
 
         - size: 32
           hall_of_fame: 3
-          mandatory_new_num: 4
+          mandatory_new_num: 16
           select:
             method: selTournament
             args:
@@ -866,70 +1502,76 @@ schemes:
           limits:
             # spectral_radius
             - type: float
-              min: 1.e-10
+              # logspace:
+              #   power: 10
+              min: 1
               max: 2
               mate:
-                method: cxGaussianBoundedGene
+                method: cxGaussianBoundedGene # cxSimulatedBinaryBoundedGene
                 args:
                   - key: up
                     val: 2
                   - key: low
-                    val: 1.e-10
+                    val: 1
                   - key: eta
-                    val: 10
+                    val: 5
               mutate:
-                method: polynomial_bounded
+                method: commonGenNum
                 args:
                   - key: up
                     val: 2
                   - key: low
-                    val: 1.e-10
-                  - key: eta
-                    val: 10
+                    val: 1
+                  # - key: eta
+                  #   val: 5
             # sparsity
             - type: float
-              min: 1.e-8
-              max: 1.
+              # logspace:
+              #   power: 10
+              min: 1.e-4
+              max: 1.e-2
               mate:
-                method: cxGaussianBoundedGene
+                method: cxGaussianBoundedGene # cxSimulatedBinaryBoundedGene
                 args:
                   - key: up
-                    val: 1.
+                    val: 1.e-2
                   - key: low
-                    val: 1.e-8
+                    val: 1.e-4
                   - key: eta
-                    val: 10
+                    val: 5
               mutate:
-                method: polynomial_bounded
+                method: commonGenNum
                 args:
                   - key: up
-                    val: 1.
+                    val: 1.e-2
                   - key: low
-                    val: 1.e-8
-                  - key: eta
-                    val: 10
+                    val: 1.e-4
+                  # - key: eta
+                  #   val: 5
             # lambda_r
             - type: float
-              min: 1.e-12
-              max: 1.
+              logspace:
+                power: 10
+              min: 1.e-8
+              max: 1
               mate:
-                method: cxGaussianBoundedGene
+                method: cxGaussianBoundedGene # cxSimulatedBinaryBoundedGene
                 args:
                   - key: up
-                    val: 1.
+                    val: 1
                   - key: low
-                    val: 1.e-12
+                    val: 1.e-8
                   - key: eta
-                    val: 10
+                    val: 5
               mutate:
-                method: polynomial_bounded
+                method: commonGenNum
                 args:
                   - key: up
-                    val: 1.
+                    val: 1
                   - key: low
-                    val: 1.e-12
-                  - key: eta
-                    val: 10
+                    val: 1.e-8
+                  # - key: eta
+                  #   val: 5
             # regulirization
             - type: choice
               choice: ['noise', 'l2', null]
@@ -946,129 +1588,18 @@ schemes:
             # rand_seed
             - type: int
               min: 0
-              max: 4096
+              max: 10000
               mate:
                 method: cxRandChoiceGene
               mutate:
-                method: polynomial_bounded
+                method: commonGenNum
                 args:
                   - key: up
-                    val: 4096
+                    val: 10000
                   - key: low
                     val: 0
-                  - key: eta
-                    val: 10
-
-        - size: 32
-          hall_of_fame: 3
-          mandatory_new_num: 4
-          select:
-            method: selTournament
-            args:
-              - key: tournsize
-                val: 2
-          mate:
-            method: dynoCxGeneByLimit
-            probability: 0.8
-          mutate:
-            method: dynoMutGeneByLimit
-            probability: 0.2
-            indpb: 0.4
-          limits:
-            # spectral_radius
-            - type: float
-              min: 1.e-10
-              max: 2
-              mate:
-                method: cxGaussianBoundedGene # cxSimulatedBinaryBoundedGene
-                args:
-                  - key: up
-                    val: 2
-                  - key: low
-                    val: 1.e-10
-                  - key: eta
-                    val: 5
-              mutate:
-                method: polynomial_bounded
-                args:
-                  - key: up
-                    val: 2
-                  - key: low
-                    val: 1.e-10
-                  - key: eta
-                    val: 5
-            # sparsity
-            - type: float
-              min: 1.e-8
-              max: 1.
-              mate:
-                method: cxGaussianBoundedGene # cxSimulatedBinaryBoundedGene
-                args:
-                  - key: up
-                    val: 1.
-                  - key: low
-                    val: 1.e-8
-                  - key: eta
-                    val: 5
-              mutate:
-                method: polynomial_bounded
-                args:
-                  - key: up
-                    val: 1.
-                  - key: low
-                    val: 1.e-8
-                  - key: eta
-                    val: 5
-            # lambda_r
-            - type: float
-              min: 1.e-12
-              max: 1.
-              mate:
-                method: cxGaussianBoundedGene # cxSimulatedBinaryBoundedGene
-                args:
-                  - key: up
-                    val: 1.
-                  - key: low
-                    val: 1.e-12
-                  - key: eta
-                    val: 5
-              mutate:
-                method: polynomial_bounded
-                args:
-                  - key: up
-                    val: 1.
-                  - key: low
-                    val: 1.e-12
-                  - key: eta
-                    val: 5
-            # regulirization
-            - type: choice
-              choice: ['noise', 'l2', null]
-              mate:
-                method: cxRandChoiceGene
-            # use_bias
-            - type: bool
-              mate:
-                method: cxRandChoiceGene
-            # use_additive_noise_when_forecasting
-            - type: bool
-              mate:
-                method: cxRandChoiceGene
-            # rand_seed
-            - type: int
-              min: 0
-              max: 4096
-              mate:
-                method: cxRandChoiceGene
-              mutate:
-                method: polynomial_bounded
-                args:
-                  - key: up
-                    val: 4096
-                  - key: low
-                    val: 0
-                  - key: eta
-                    val: 5
+                  # - key: eta
+                  #   val: 5
 
       metrics:
         - name: max
@@ -1077,6 +1608,7 @@ schemes:
         - name: avg
           func: mean
           package: numpy
+
 
   hyper_param_multi_pop_multi_crit:
     evaluate:
