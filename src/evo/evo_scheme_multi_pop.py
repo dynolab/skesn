@@ -80,7 +80,7 @@ class EvoSchemeMultiPop(Scheme):
         self._logger.info('EvoSchemeMultiPop<%s> is running...', self._name)
 
         if self._graph_callback_module is not None:
-            kvargs['callback'] = self._graph_callback_module.get_deap_callback()
+            kvargs['callback'] = self._graph_callback_module
 
         if len(self._result) == 0:
             self._set_result()
@@ -260,14 +260,16 @@ class EvoSchemeMultiPop(Scheme):
     # Private methods
 
     def _set_result(self) -> None:
-        self._result = [None] * self._pop_len
+        # self._result = [None] * self._pop_len
+        self._result = []
         for i, pop_cfg in enumerate(self._evo_cfg.Populations):
-            if pop_cfg.IncludingCount <= 0:
+            if pop_cfg.IncludingCount < 0:
                 continue
 
-            for _ in range(pop_cfg.IncludingCount):
+            including_count = pop_cfg.IncludingCount if pop_cfg.IncludingCount > 0 else 1
+            for _ in range(including_count):
                 pop = [self._ind_creators[i]() for _ in range(pop_cfg.Size)]
-                self._result[i] = _create_deap_population(
+                deap_pop = _create_deap_population(
                     inds=pop,
                     evaluate_f=self._evaluator,
                     hromo_len=self._evo_cfg.HromoLen,
@@ -275,6 +277,7 @@ class EvoSchemeMultiPop(Scheme):
                     rand=self._rand,
                     pool=self._pool,
                 )
+                self._result.append(deap_pop)
 
     def _create_spec(self) -> dict:
         ret = {

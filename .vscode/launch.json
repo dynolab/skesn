@@ -152,9 +152,11 @@
                 "tests",
                 "--verbose",
                 "--disable-config",
-                "--test-restore-result",
+                // "--test-restore-result",
+                "--test-dump-dir",
+                "dumps/exp/tests",
                 "--log-dir",
-                "logs",
+                "logs/exp",
             ],
         },
         {

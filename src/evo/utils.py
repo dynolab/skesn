@@ -527,6 +527,7 @@ def get_populations_limits(
     ret = []
     for population in scheme_cfg.Populations:
         for _ in range(population.IncludingCount):
+            # if population.Limits: is not None and len(population.Limits) > 0:
             ret.append(population.Limits)
     return ret
 
@@ -580,13 +581,13 @@ def get_evo_scheme_result_last_iter(
     if iter_dir is None or iter_dir == '':
         raise f'no iteration folders (dir: {runpool_dir})'
 
-    if isinstance(scheme_cfg, scheme_cfg.EvoSchemeConfigField):
+    if isinstance(scheme_cfg, cfg.EvoSchemeConfigField):
         return get_evo_scheme_result_from_file(
             ind_type=ind_type,
             scheme_cfg=scheme_cfg,
             filename=iter_dir+'result.yaml',
         )
-    elif isinstance(scheme_cfg, scheme_cfg.EvoSchemeMultiPopConfigField):
+    elif isinstance(scheme_cfg, cfg.EvoSchemeMultiPopConfigField):
         return get_evo_scheme_multi_pop_result_from_file(
             ind_type=ind_type,
             scheme_cfg=scheme_cfg,

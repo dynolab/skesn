@@ -120,7 +120,7 @@ class EvoScheme(Scheme):
         self._logger.info('EvoScheme<%s> is running...', self._name)
 
         if self._graph_callback_module is not None:
-            kvargs['callback'] = self._graph_callback_module.get_deap_callback()
+            kvargs['callback'] = self._graph_callback_module
 
         self._result, self._logbook = algorithms.eaSimple(
             population=self._result,

@@ -138,6 +138,8 @@ def _test1_wrap_evo_callback(
 
         plt.pause(0.01)
 
+    fig.show()
+
     return _evo_callback
 
 # Test 2 implementations
@@ -196,7 +198,7 @@ def _test2_wrap_evo_callback(
 
         halloffame: tools.HallOfFame = kvargs.get('halloffame', None)
 
-        radius = 100.
+        radius = 1.
         utils.radius_iter_points(
             halloffame.items,
             _TEST_2_EXPECTED,
@@ -227,6 +229,8 @@ def _test2_wrap_evo_callback(
         ax.scatter(*zip(*_TEST_2_EXPECTED), marker='X', color='red', zorder=1)
 
         plt.pause(0.0001)
+
+    fig.show()
 
     return _evo_callback
 
@@ -284,7 +288,7 @@ _TESTS = [
             },
             'mutate': {
                 'method': 'mutFlipBit',
-                'probability': 0.1,
+                'probability': 0.2,
                # 'indpb': 0.25,
             },
 
@@ -323,7 +327,7 @@ _TESTS = [
                 'args': [
                     {'key':'low','val':-5},
                     {'key':'up','val':5},
-                    {'key':'eta','val':20},
+                    {'key':'eta','val':10},
                 ],
             },
             'mutate': {
@@ -332,16 +336,16 @@ _TESTS = [
                 'args': [
                     {'key':'low','val':-5},
                     {'key':'up','val':5},
-                    {'key':'eta','val':20},
+                    {'key':'eta','val':10},
                 ],
             },
 
             'limits': [
-                {'min': -5, 'max': 5},
-                {'min': -5, 'max': 5},
+                {'type': 'float', 'min': -5, 'max': 5},
+                {'type': 'float', 'min': -5, 'max': 5},
             ],
             'metrics': [
-                {'name': 'min','func': 'min','package': 'numpy'},
+                {'name': 'max','func': 'max','package': 'numpy'},
                 {'name': 'avg','func': 'mean','package': 'numpy'},
             ],
         },
@@ -376,7 +380,7 @@ _TESTS = [
                 'args': [
                     {'key':'low','val':-512},
                     {'key':'up','val':512},
-                    {'key':'eta','val':20},
+                    {'key':'eta','val':10},
                 ],
             },
             'mutate': {
@@ -385,8 +389,8 @@ _TESTS = [
                 'args': [
                     {'key':'low','val':-512},
                     {'key':'up','val':512},
-                    {'key':'eta','val':5},
-                    {'key':'indpb','val':1.},
+                    {'key':'eta','val':10},
+                    # {'key':'indpb','val':1.},
                 ],
                 # 'method': 'dynoMutGauss',
                 # 'probability': 0.1,
@@ -398,14 +402,14 @@ _TESTS = [
             },
 
             'limits': [
-                {'min': -512, 'max': 512},
-                {'min': -512, 'max': 512},
+                {'type': 'float', 'min': -512, 'max': 512},
+                {'type': 'float', 'min': -512, 'max': 512},
             ],
 
             'metrics': [
                 {
-                    'name':'min',
-                    'func':'min',
+                    'name':'max',
+                    'func':'max',
                     'package':'numpy',
                     'plt_args': [
                         {'key':'color', 'val': 'green'},
@@ -441,10 +445,11 @@ def run_tests(**kvargs):
     if ord(tests_dumpdir[len(tests_dumpdir)-1]) != ord('/'):
         tests_dumpdir += '/'
 
-    tests_dumpdir += 'evo_scheme/'
+    tests_dumpdir += 'evo_scheme'
 
     if not disable_iter_graph:
         plt.ion()
+        plt.show()
 
     active_tests = []
     metricValuesMap = {}
@@ -461,6 +466,7 @@ def run_tests(**kvargs):
         active_tests.append(i)
 
         # Evo scheme prepare
+
         cfg = EvoSchemeConfigField()
         cfg.load(test[utils.TEST_CFG_KEY_CFG])
         name = test[utils.TEST_CFG_KEY_NAME] if utils.TEST_CFG_KEY_NAME in test else f'test_#{i}'
@@ -468,20 +474,20 @@ def run_tests(**kvargs):
         evo_callback = test[utils.TEST_CFG_KEY_WRAP_EVO_CALLBACK](cfg) if not disable_iter_graph and test.get(utils.TEST_CFG_KEY_WRAP_EVO_CALLBACK, None) is not None else None
         toolbox = test[utils.TEST_CFG_KEY_TOOLBOX_SETUP_F](cfg) if test.get(utils.TEST_CFG_KEY_TOOLBOX_SETUP_F, None) is not None else None
 
+        dumpdir = f'{tests_dumpdir}/test_{i}_{name}'
+        cfg._dump_dir = dumpdir
+
         scheme = EvoScheme(
             name,
             cfg,
             test[utils.TEST_CFG_KEY_WRAP_EVALUATR_F](cfg),
-            ind_creator_f,
             toolbox,
+            evo_callback
         )
-
-        dumpdir = f'{tests_dumpdir}/test_{i}_{name}'
 
         if restore_result:
             restored_result = evo_utils.get_evo_scheme_result_last_run_pool(
-                evo_utils.get_evo_scheme_result_from_file,
-                lambda ind: evo_types.Individual(cfg.FitnessWeights, ind),
+                evo_types.Individual,
                 cfg,
                 dumpdir,
                 name,
@@ -497,10 +503,11 @@ def run_tests(**kvargs):
             stop_cond = lambda population, gen, **kvargs: test[utils.TEST_CFG_KEY_VALIDATE_RESULT_F](cfg, population)[0]
 
         # Action
-        scheme.run(callback=evo_callback, stop_cond=stop_cond)
+        scheme.run(stop_cond=stop_cond)
 
         if not disable_dump:
-            scheme.save(dumpdir)
+            scheme.save()
+            plt.savefig(f'{scheme._iter_dir}/graph.png')
 
         if not disable_stat_graph and len(cfg.Metrics) > 0:
             logbook = scheme.get_logbook()
@@ -520,7 +527,7 @@ def run_tests(**kvargs):
     if not disable_iter_graph:
         plt.ioff()
 
-    if not disable_stat_graph and disable_dump:
+    if not disable_stat_graph and not disable_dump:
         len_active_tests = len(active_tests)
         fig, axes = plt.subplots(1, len_active_tests)
         fig.suptitle('evo stats')

@@ -12,6 +12,8 @@ import numpy as np
 
 from ...log import get_logger
 
+import src.evo.types as evo_types
+
 from src.utils import get_optional_arg, kv_config_arr_to_kvargs, get_args_via_kvargs
 from src.config import EvoSchemeMultiPopConfigField
 from src.evo.evo_scheme_multi_pop import EvoSchemeMultiPop
@@ -157,6 +159,8 @@ def _test1_wrap_evo_callback(
 
         plt.pause(0.01)
 
+    fig.show()
+
     return _evo_callback
 
 # Test 2 implementations
@@ -236,7 +240,7 @@ def _test2_wrap_evo_callback(
 
         best = populations[0].HallOfFame[0]
         for i, population in enumerate(populations):
-            radius = 100.
+            radius = 1.
             utils.radius_iter_points(
                 population.HallOfFame.items,
                 _TEST_2_EXPECTED,
@@ -257,6 +261,8 @@ def _test2_wrap_evo_callback(
         ax.text(-600, 650, f'best: ({best[0]};{best[1]}); value: {np.dot(best.fitness.weights, best.fitness.values)}')
 
         plt.pause(0.000001)
+
+    fig.show()
 
     return _evo_callback
 
@@ -335,7 +341,7 @@ _TESTS = [
         utils.TEST_CFG_KEY_WRAP_EVO_CALLBACK: _test0_wrap_evo_callback,
     },
     {
-        utils.TEST_CFG_KEY_DISABLE: True,
+        # utils.TEST_CFG_KEY_DISABLE: True,
         utils.TEST_CFG_KEY_NAME: 'himmelblau',
         utils.TEST_CFG_KEY_CFG: {
             'rand_seed': 3,
@@ -376,8 +382,8 @@ _TESTS = [
                     },
 
                     'limits': [
-                        {'min': -5, 'max': 5},
-                        {'min': -5, 'max': 5},
+                        {'type': 'float', 'min': -5, 'max': 5},
+                        {'type': 'float', 'min': -5, 'max': 5},
                     ],
                 },
                 {
@@ -411,8 +417,8 @@ _TESTS = [
                     },
 
                     'limits': [
-                        {'min': -5, 'max': 5},
-                        {'min': -5, 'max': 5},
+                        {'type': 'float', 'min': -5, 'max': 5},
+                        {'type': 'float', 'min': -5, 'max': 5},
                     ],
                 },
                 {
@@ -446,8 +452,8 @@ _TESTS = [
                     },
 
                     'limits': [
-                        {'min': -5, 'max': 5},
-                        {'min': -5, 'max': 5},
+                        {'type': 'float', 'min': -5, 'max': 5},
+                        {'type': 'float', 'min': -5, 'max': 5},
                     ],
                 },
                 {
@@ -481,14 +487,14 @@ _TESTS = [
                     },
 
                     'limits': [
-                        {'min': -5, 'max': 5},
-                        {'min': -5, 'max': 5},
+                        {'type': 'float', 'min': -5, 'max': 5},
+                        {'type': 'float', 'min': -5, 'max': 5},
                     ],
                 },
             ],
 
             'metrics': [
-                {'name': 'min','func': 'min','package': 'numpy'},
+                {'name': 'max','func': 'max','package': 'numpy'},
                 {'name': 'avg','func': 'mean','package': 'numpy'},
             ],
         },
@@ -547,8 +553,8 @@ _TESTS = [
                     },
 
                     'limits': [
-                        {'min': -512, 'max': 512},
-                        {'min': -512, 'max': 512},
+                        {'type': 'float', 'min': -512, 'max': 512},
+                        {'type': 'float', 'min': -512, 'max': 512},
                     ],
                 },
                 {
@@ -590,8 +596,8 @@ _TESTS = [
                     },
 
                     'limits': [
-                        {'min': -512, 'max': 512},
-                        {'min': -512, 'max': 512},
+                        {'type': 'float', 'min': -512, 'max': 512},
+                        {'type': 'float', 'min': -512, 'max': 512},
                     ],
                 },
                 {
@@ -633,8 +639,8 @@ _TESTS = [
                     },
 
                     'limits': [
-                        {'min': -512, 'max': 512},
-                        {'min': -512, 'max': 512},
+                        {'type': 'float', 'min': -512, 'max': 512},
+                        {'type': 'float', 'min': -512, 'max': 512},
                     ],
                 },
                 {
@@ -676,8 +682,8 @@ _TESTS = [
                     },
 
                     'limits': [
-                        {'min': -512, 'max': 512},
-                        {'min': -512, 'max': 512},
+                        {'type': 'float', 'min': -512, 'max': 512},
+                        {'type': 'float', 'min': -512, 'max': 512},
                     ],
                 },
                 {
@@ -719,8 +725,8 @@ _TESTS = [
                     },
 
                     'limits': [
-                        {'min': -512, 'max': 512},
-                        {'min': -512, 'max': 512},
+                        {'type': 'float', 'min': -512, 'max': 512},
+                        {'type': 'float', 'min': -512, 'max': 512},
                     ],
                 },
                 {
@@ -762,16 +768,16 @@ _TESTS = [
                     },
 
                     'limits': [
-                        {'min': -512, 'max': 512},
-                        {'min': -512, 'max': 512},
+                        {'type': 'float', 'min': -512, 'max': 512},
+                        {'type': 'float', 'min': -512, 'max': 512},
                     ],
                 },
             ],
 
             'metrics': [
                 {
-                    'name':'min',
-                    'func':'min',
+                    'name':'max',
+                    'func':'max',
                     'package':'numpy',
                     'plt_args': [
                         {'key':'color', 'val': 'green'},
@@ -807,7 +813,7 @@ def run_tests(**kvargs):
     if ord(tests_dumpdir[len(tests_dumpdir)-1]) != ord('/'):
         tests_dumpdir += '/'
 
-    tests_dumpdir += 'evo_scheme_multi_pop/'
+    tests_dumpdir += 'evo_scheme_multi_pop'
 
     if not disable_iter_graph:
         plt.ion()
@@ -833,22 +839,23 @@ def run_tests(**kvargs):
         ind_creator_f = test[utils.TEST_CFG_KEY_WRAP_IND_CRATOR_F](cfg) if test.get(utils.TEST_CFG_KEY_WRAP_IND_CRATOR_F, None) is not None else None
         evo_callback = test[utils.TEST_CFG_KEY_WRAP_EVO_CALLBACK](cfg) if not disable_iter_graph and test.get(utils.TEST_CFG_KEY_WRAP_EVO_CALLBACK, None) is not None else None
         evaluate_f = test[utils.TEST_CFG_KEY_WRAP_EVALUATR_F](cfg)
-        scheme = EvoSchemeMultiPop(
-            name,
-            cfg,
-            evaluate_f,
-            ind_creator_f,
-        )
 
         dumpdir = tests_dumpdir
         if ord(dumpdir[len(dumpdir)-1]) != ord('/'):
             dumpdir += '/'
+
         dumpdir += f'test_{i}_{name}'
+        cfg._dump_dir = dumpdir
+
+        scheme = EvoSchemeMultiPop(
+            name,
+            cfg,
+            evaluate_f,
+        )
 
         if restore_result:
             restored_result = evo_utils.get_evo_scheme_result_last_run_pool(
-                evo_utils.get_evo_scheme_multi_pop_result_from_file,
-                lambda ind: evo_utils.create_ind_by_list(ind, evaluate_f),
+                evo_types.Individual,
                 cfg,
                 dumpdir,
                 name,
@@ -867,7 +874,7 @@ def run_tests(**kvargs):
         scheme.run(callback=evo_callback, stop_cond=stop_cond)
 
         if not disable_dump:
-            scheme.save(dumpdir)
+            scheme.save()
 
         if not disable_stat_graph and len(cfg.Metrics) > 0:
             logbook = scheme.get_logbook()
