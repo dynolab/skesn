@@ -33,7 +33,7 @@ schemes:
       dump_dir: dumps/exp
 
       rand_seed: 5
-      max_gen_num: 60
+      max_gen_num: 10
       population_size: 128
       hall_of_fame: 8
       hromo_len: 6

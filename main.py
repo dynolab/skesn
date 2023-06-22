@@ -1,5 +1,7 @@
 from src.evo.abstract import Scheme
+from src.evo.tasks.grid_search_hyper_param import GridSearchHyperParam
 from src.evo.tasks.dyno_evo_esn_hyper_param import DynoEvoEsnHyperParam
+from src.evo.tasks.random_search_hyper_param import RandomSearchHyperParam
 from src.evo.tasks.duno_evo_esn_hyper_param_multi_pop import DynoEvoEsnHyperParamMultiPop
 from src.evo.tasks.duno_evo_esn_hyper_param_multi_pop_multi_crit import DynoEvoEsnHyperParamMultiPopMultiCrit
 from src.evo.tasks.dyno_evo_esn_huper_param_with_reservoir_multi_pop import DynoEvoEsnHyperParamWithReservoirMultiPop
@@ -23,6 +25,8 @@ _MODE_TESTS = 'tests'
 # _MODE_GRID = 'grid'
 _MODE_HYPER_PARAMS = 'hyper_param'
 _MODE_HYPER_PARAMS_MULTI_POP = 'hyper_param_multi_pop'
+_MODE_HYPER_PARAMS_GRID_SEARCH = 'hyper_param_grid_search'
+_MODE_HYPER_PARAMS_RANDOM_SEARCH = 'hyper_param_random_search'
 _MODE_HYPER_PARAMS_MULTI_POP_MULTI_CRIT = 'hyper_param_multi_pop_multi_crit'
 _MODE_HYPER_PARAMS_WITH_RESERVOIR_MULTI_POP = 'hyper_param_with_reservoir_multi_pop'
 
@@ -71,6 +75,8 @@ def _create_parser() -> argparse.ArgumentParser:
             _MODE_TESTS,
             _MODE_HYPER_PARAMS,
             _MODE_HYPER_PARAMS_MULTI_POP,
+            _MODE_HYPER_PARAMS_GRID_SEARCH,
+            _MODE_HYPER_PARAMS_RANDOM_SEARCH,
             _MODE_HYPER_PARAMS_MULTI_POP_MULTI_CRIT,
             _MODE_HYPER_PARAMS_WITH_RESERVOIR_MULTI_POP,
         ],
@@ -175,6 +181,10 @@ def main(manager: SyncManager):
         run_scheme(DynoEvoEsnHyperParamMultiPopMultiCrit, cfg.Config.Schemes.HyperParamMultiPopMultiCrit, args=args, async_manager=manager)
     elif mode == _MODE_HYPER_PARAMS_WITH_RESERVOIR_MULTI_POP:
         run_scheme(DynoEvoEsnHyperParamWithReservoirMultiPop, cfg.Config.Schemes.HyperParamWithReservoirMultiPop, args=args, async_manager=manager)
+    elif mode == _MODE_HYPER_PARAMS_RANDOM_SEARCH:
+        run_scheme(RandomSearchHyperParam, cfg.Config.Schemes.HyperParamRandomSearch, args=args, async_manager=manager)
+    elif mode == _MODE_HYPER_PARAMS_GRID_SEARCH:
+        run_scheme(GridSearchHyperParam, cfg.Config.Schemes.HyperParamGridSearch, args=args, async_manager=manager)
     else:
         raise('unknown running mode')
 

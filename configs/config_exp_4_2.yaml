@@ -36,7 +36,7 @@ schemes:
     evo:
       dump_dir: dumps/exp
       rand_seed: 3
-      max_gen_num: 20
+      max_gen_num: 10
 
       hromo_len: 6
       fitness_weights: [ -1.0 ]
@@ -62,50 +62,52 @@ schemes:
             # spectral_radius
             - type: float
               min: 1.e-4
-              max: 2
+              max: 1
               mate:
                 method: cxGaussianBoundedGene
                 args:
                   - key: up
-                    val: 2
+                    val: 1
                   - key: low
                     val: 1.e-4
                   - key: eta
-                    val: 20
+                    val: 5
               mutate:
                 method: polynomialBounded
                 args:
                   - key: up
-                    val: 2
+                    val: 1
                   - key: low
                     val: 1.e-4
                   - key: eta
-                    val: 20
+                    val: 5
             # sparsity
             - type: float
+              # logspace:
+              #   power: 10
               min: 1.e-4
-              max: 1.
+              max: 1.e-2
               mate:
                 method: cxGaussianBoundedGene
                 args:
                   - key: up
-                    val: 1.
+                    val: 1.e-2
                   - key: low
                     val: 1.e-4
                   - key: eta
-                    val: 20
+                    val: 5
               mutate:
                 method: polynomialBounded
                 args:
                   - key: up
-                    val: 1.
+                    val: 1.e-2
                   - key: low
                     val: 1.e-4
                   - key: eta
-                    val: 20
+                    val: 5
             # lambda_r
             - type: float
-              min: 1.e-12
+              min: 1.e-8
               max: 1.
               mate:
                 method: cxGaussianBoundedGene
@@ -113,18 +115,18 @@ schemes:
                   - key: up
                     val: 1.
                   - key: low
-                    val: 1.e-12
+                    val: 1.e-8
                   - key: eta
-                    val: 20
+                    val: 5
               mutate:
                 method: polynomialBounded
                 args:
                   - key: up
                     val: 1.
                   - key: low
-                    val: 1.e-12
+                    val: 1.e-8
                   - key: eta
-                    val: 20
+                    val: 5
             # regulirization
             - type: choice
               choice: ['noise', 'l2', null]
@@ -157,69 +159,71 @@ schemes:
             # spectral_radius
             - type: float
               min: 1.e-4
-              max: 2
+              max: 1
               mate:
                 method: cxGaussianBoundedGene
                 args:
                   - key: up
-                    val: 2
+                    val: 1
                   - key: low
                     val: 1.e-4
                   - key: eta
-                    val: 15
+                    val: 5
               mutate:
                 method: polynomialBounded
                 args:
                   - key: up
-                    val: 2
+                    val: 1
                   - key: low
                     val: 1.e-4
                   - key: eta
-                    val: 15
+                    val: 5
             # sparsity
             - type: float
-              min: 1.e-4
-              max: 1.
+              logspace:
+                power: 10
+              min: 1.e-2
+              max: 1
               mate:
                 method: cxGaussianBoundedGene
                 args:
                   - key: up
-                    val: 1.
+                    val: 1
                   - key: low
-                    val: 1.e-4
+                    val: 1.e-2
                   - key: eta
-                    val: 15
+                    val: 5
               mutate:
                 method: polynomialBounded
                 args:
                   - key: up
-                    val: 1.
+                    val: 1
                   - key: low
-                    val: 1.e-4
+                    val: 1.e-2
                   - key: eta
-                    val: 15
+                    val: 5
             # lambda_r
             - type: float
-              min: 1.e-12
-              max: 1.
+              min: 1.e-8
+              max: 1
               mate:
                 method: cxGaussianBoundedGene
                 args:
                   - key: up
-                    val: 1.
+                    val: 1
                   - key: low
-                    val: 1.e-12
+                    val: 1.e-8
                   - key: eta
-                    val: 15
+                    val: 5
               mutate:
                 method: polynomialBounded
                 args:
                   - key: up
-                    val: 1.
+                    val: 1
                   - key: low
-                    val: 1.e-12
+                    val: 1.e-8
                   - key: eta
-                    val: 15
+                    val: 5
             # regulirization
             - type: choice
               choice: ['noise', 'l2', null]
@@ -251,7 +255,7 @@ schemes:
           limits:
             # spectral_radius
             - type: float
-              min: 1.e-4
+              min: 1
               max: 2
               mate:
                 method: cxGaussianBoundedGene
@@ -259,62 +263,62 @@ schemes:
                   - key: up
                     val: 2
                   - key: low
-                    val: 1.e-4
+                    val: 1
                   - key: eta
-                    val: 10
+                    val: 5
               mutate:
                 method: polynomialBounded
                 args:
                   - key: up
                     val: 2
                   - key: low
-                    val: 1.e-4
+                    val: 1
                   - key: eta
-                    val: 10
+                    val: 5
             # sparsity
             - type: float
               min: 1.e-4
-              max: 1.
+              max: 1.e-2
               mate:
                 method: cxGaussianBoundedGene
                 args:
                   - key: up
-                    val: 1.
+                    val: 1.e-2
                   - key: low
                     val: 1.e-4
                   - key: eta
-                    val: 10
+                    val: 5
               mutate:
                 method: polynomialBounded
                 args:
                   - key: up
-                    val: 1.
+                    val: 1.e-2
                   - key: low
                     val: 1.e-4
                   - key: eta
-                    val: 10
+                    val: 5
             # lambda_r
             - type: float
-              min: 1.e-12
-              max: 1.
+              min: 1.e-8
+              max: 1
               mate:
                 method: cxGaussianBoundedGene
                 args:
                   - key: up
-                    val: 1.
+                    val: 1
                   - key: low
-                    val: 1.e-12
+                    val: 1.e-8
                   - key: eta
-                    val: 10
+                    val: 5
               mutate:
                 method: polynomialBounded
                 args:
                   - key: up
                     val: 1.
                   - key: low
-                    val: 1.e-12
+                    val: 1.e-8
                   - key: eta
-                    val: 10
+                    val: 5
             # regulirization
             - type: choice
               choice: ['noise', 'l2', null]
@@ -346,7 +350,7 @@ schemes:
           limits:
             # spectral_radius
             - type: float
-              min: 1.e-4
+              min: 1
               max: 2
               mate:
                 method: cxGaussianBoundedGene # cxSimulatedBinaryBoundedGene
@@ -354,7 +358,7 @@ schemes:
                   - key: up
                     val: 2
                   - key: low
-                    val: 1.e-4
+                    val: 1
                   - key: eta
                     val: 5
               mutate:
@@ -363,51 +367,51 @@ schemes:
                   - key: up
                     val: 2
                   - key: low
-                    val: 1.e-4
+                    val: 1
                   - key: eta
                     val: 5
             # sparsity
             - type: float
-              min: 1.e-4
-              max: 1.
+              min: 1.e-2
+              max: 1
               mate:
                 method: cxGaussianBoundedGene # cxSimulatedBinaryBoundedGene
                 args:
                   - key: up
-                    val: 1.
+                    val: 1
                   - key: low
-                    val: 1.e-4
+                    val: 1.e-2
                   - key: eta
                     val: 5
               mutate:
                 method: polynomialBounded
                 args:
                   - key: up
-                    val: 1.
+                    val: 1
                   - key: low
-                    val: 1.e-4
+                    val: 1.e-2
                   - key: eta
                     val: 5
             # lambda_r
             - type: float
-              min: 1.e-12
-              max: 1.
+              min: 1.e-8
+              max: 1
               mate:
                 method: cxGaussianBoundedGene # cxSimulatedBinaryBoundedGene
                 args:
                   - key: up
-                    val: 1.
+                    val: 1
                   - key: low
-                    val: 1.e-12
+                    val: 1.e-8
                   - key: eta
                     val: 5
               mutate:
                 method: polynomialBounded
                 args:
                   - key: up
-                    val: 1.
+                    val: 1
                   - key: low
-                    val: 1.e-12
+                    val: 1.e-8
                   - key: eta
                     val: 5
             # regulirization

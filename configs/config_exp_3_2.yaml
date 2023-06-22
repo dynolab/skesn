@@ -1,5 +1,5 @@
 global_props:
-  rand_seed: 1
+  rand_seed: 10
 
 logging:
   # file: logs/log
@@ -8,17 +8,17 @@ logging:
 
 dump:
   user: pavel
-  title: exp_2
+  title: exp_3_2
 
 models:
   chui_moffatt:
-    rand_seed: 50
+    rand_seed: 11
     dt: 0.001
     alpha: 1.5
     omega: 1
     eta: 4
     kappa: 4
-    xi: 36 # [2;40] ?
+    xi: 40 # [2;40] ?
 
 schemes:
   hyper_param:
@@ -37,11 +37,11 @@ schemes:
       dump_dir: dumps/exp
 
       rand_seed: 1
-      max_gen_num: 20
+      max_gen_num: 10
       population_size: 128
       hall_of_fame: 8
       hromo_len: 6
-      # mandatory_new_num: 16
+      mandatory_new_num: 16
 
       verbose: true
 
@@ -101,7 +101,7 @@ schemes:
               - key: up
                 val: 1.
               - key: low
-                val: 1.e-4
+                val: 1.e-8
               - key: eta
                 val: 7
         # lambda_r

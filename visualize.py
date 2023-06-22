@@ -1,4 +1,7 @@
 import argparse
+from typing import Tuple
+import numpy as np
+import matplotlib.pyplot as plt
 
 def _create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
@@ -73,8 +76,98 @@ def _create_parser() -> argparse.ArgumentParser:
 
     return parser
 
+def cx_gaussian_bounded_gene(
+    p1_gene: float,
+    p2_gene: float,
+    eta: float,
+    low: float,
+    up: float,
+) -> Tuple[float, float]:
+    # This epsilon should probably be changed for 0 since
+    # floating point arithmetic in Python is safer
+    if abs(p1_gene - p2_gene) < 1e-14:
+        return p1_gene, p2_gene
+
+    beta = 0
+    u = np.random.random()
+    if u <= 0.5:
+        beta = np.power(2 * u, 1 / (eta + 1))
+    else:
+        beta = np.power(0.5 / (1 - u), 1 / (eta + 1))
+
+    x1 = bound_vaule(0.5 * ((1 + beta) * p1_gene + (1 - beta) * p2_gene), low, up)
+    x2 = bound_vaule(0.5 * ((1 - beta) * p1_gene + (1 + beta) * p2_gene), low, up)
+
+    return x1, x2
+
+def bound_vaule(
+    value: float,
+    low: float,
+    up: float,
+) -> float:
+    if value < low:
+        return low
+    if value > up:
+        return up
+    return value
+
+def polynomial_bounded(x, low, up, eta):
+    delta_1 = (x - low) / (up - low)
+    delta_2 = (up - x) / (up - low)
+    rand = np.random.random()
+    mut_pow = 1.0 / (eta + 1.)
+
+    if rand < 0.5:
+        xy = 1.0 - delta_1
+        val = 2.0 * rand + (1.0 - 2.0 * rand) * xy ** (eta + 1)
+        delta_q = val ** mut_pow - 1.0
+    else:
+        xy = 1.0 - delta_2
+        val = 2.0 * (1.0 - rand) + 2.0 * (rand - 0.5) * xy ** (eta + 1)
+        delta_q = 1.0 - val ** mut_pow
+
+    x = x + delta_q * (up - low)
+    return bound_vaule(x, low, up)
+
+def mut():
+    fig, ax = plt.subplots(1)
+    ticks = [i for i in range(N)]
+    for eta in ETAS:
+        vals = [polynomial_bounded(X, MIN, MAX, eta) for _ in range(N)]
+        ax.scatter(ticks, vals, label=f'eta={eta}')
+    ax.set_xlabel('Номер пробы')
+    ax.set_ylabel('Значение мутировавшего гена')
+    fig.legend()
+    fig.savefig('visualize_mut.png')
+
+P1 = -0.25
+P2 = 0.25
+
+def cx():
+    fig, ax = plt.subplots(1)
+    ticks = [i for i in range(N)]
+    for eta in ETAS:
+        i = 0
+        vals = [0] * N
+        while i < N:
+            vals[i], vals[i+1] = cx_gaussian_bounded_gene(P1, P2, eta, MIN, MAX)
+            i += 2
+        ax.scatter(ticks, vals, label=f'eta={eta}')
+    ax.set_xlabel('Номер пробы')
+    ax.set_ylabel('Значение гена потомка')
+    fig.legend()
+    fig.savefig('visualize_cx.png')
+
+
+N = 10000
+X = 0
+MIN = -1
+MAX = 1
+ETAS = [2, 5, 10, 15, 20, 30]
+
 def main():
-    pass
+    mut()
+    cx()
 
 if __name__ == '__main__':
     main()

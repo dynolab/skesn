@@ -1,0 +1,84 @@
+global_props:
+  rand_seed: 10
+
+logging:
+  # file: logs/log
+  dir: logs/exp
+  level: info
+
+dump:
+  user: pavel
+  title: exp_7
+
+models:
+  lorenz:
+    rand_seed: 10
+    dt: 0.001
+    ro: 80
+  chui_moffatt:
+    rand_seed: 50
+    dt: 0.001
+    alpha: 1.5
+    omega: 1
+    eta: 4
+    kappa: 4
+    xi: 40 # [2;40] ?
+
+schemes:
+  hyper_param_random_search:
+    evaluate:
+      n: 60000
+      split_n: 50000
+      normalize: true
+      # model: lorenz
+      model: chui_moffatt
+      metric: mse
+    esn:
+      n_reservoir: 600
+      random_state: 3
+      in_activation: tanh
+      out_activation: identity
+    random_search:
+      dump_dir: dumps/exp
+
+      rand_seed: 5
+      max_gen_num: 30
+      population_size: 128
+      hall_of_fame: 8
+      hromo_len: 6
+
+      verbose: true
+
+      fitness_weights: [ -1.0 ]
+
+      limits:
+        # spectral_radius
+        - type: float
+          min: 1.e-8
+          max: 2
+        # sparsity
+        - type: float
+          min: 1.e-4
+          max: 1.
+        # lambda_r
+        - type: float
+          min: 1.e-12
+          max: 1.
+        # regulirization
+        - type: choice
+          choice: ['noise', 'l2', null]
+          mate:
+            method: cxRandChoiceGene
+        # use_bias
+        - type: bool
+          mate:
+            method: cxRandChoiceGene
+        # use_additive_noise_when_forecasting
+        - type: bool
+          mate:
+            method: cxRandChoiceGene
+
+      metrics:
+        - name: max
+          func: max
+          package: numpy

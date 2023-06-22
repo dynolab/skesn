@@ -517,6 +517,143 @@ class EvoSchemeConfigField(ConfigSection):
             'limits': _yaml_config_section_arr(self._limits),'metrics': _yaml_config_section_arr(self._metrics),
         }
 
+class RandomSearchSchemeSchemeConfigField(ConfigSection):
+    @property
+    def DumpDir(self) -> str: return self._dump_dir
+
+    @property
+    def MaxGenNum(self) -> int: return self._max_gen_num
+    @property
+    def PopulationSize(self) -> int: return self._population_size
+    @property
+    def RandSeed(self) -> int: return self._rand_seed
+    @property
+    def HromoLen(self) -> int: return self._hromo_len
+    @property
+    def HallOfFame(self) -> int: return self._hall_of_fame
+
+    @property
+    def Verbose(self) -> bool: return self._verbose
+
+    @property
+    def FitnessWeights(self) -> List[float]: return self._fitness_weights
+
+    @property
+    def Limits(self) -> List[EvoLimitGenConfigField]: return self._limits
+    @property
+    def Metrics(self) -> List[EvoMetricConfigField]: return self._metrics
+
+    def __init__(self) -> None:
+        self._dump_dir: str = str(pathlib.Path().resolve())
+
+        self._max_gen_num:       int = NecessaryField
+        self._population_size:   int = NecessaryField
+        self._rand_seed:         int = NecessaryField
+        self._hromo_len:         int = NecessaryField
+        self._hall_of_fame:      int = 0
+
+        self._verbose:         bool = False
+
+        self._fitness_weights: list = NecessaryField
+
+        self._limits: List[EvoLimitGenConfigField] = []
+        self._metrics: List[EvoMetricConfigField] = []
+
+    def load(self, cfg: dict) -> None:
+        self._dump_dir         = Config.get_optional_value(cfg, 'dump_dir', self._dump_dir)
+
+        self._max_gen_num       = Config.get_necessary_value(cfg, 'max_gen_num', self._max_gen_num)
+        self._population_size   = Config.get_necessary_value(cfg, 'population_size', self._population_size)
+        self._rand_seed         = Config.get_necessary_value(cfg, 'rand_seed', self._rand_seed)
+        self._hromo_len         = Config.get_necessary_value(cfg, 'hromo_len', self._hromo_len)
+
+        self._hall_of_fame    = Config.get_optional_value(cfg, 'hall_of_fame', self._hall_of_fame)
+        self._verbose         = Config.get_optional_value(cfg, 'verbose', self._verbose)
+
+        self._fitness_weights = Config.get_necessary_value(cfg, 'fitness_weights', self._fitness_weights)
+
+        self._limits = Config.get_optional_arr_value(cfg, 'limits', EvoLimitGenConfigField, self._limits)
+        self._metrics = Config.get_optional_arr_value(cfg, 'metrics', EvoMetricConfigField, self._metrics)
+
+    def yaml(self) -> dict:
+        return {
+            'dump_dir': self._dump_dir, 'hall_of_fame': self._hall_of_fame,
+            'max_gen_num': self._max_gen_num, 'population_size': self._population_size, 'rand_seed': self._rand_seed, 'hromo_len': self._hromo_len,
+            'fitness_weights': self._fitness_weights,'verbose': self._verbose,
+            'limits': _yaml_config_section_arr(self._limits),'metrics': _yaml_config_section_arr(self._metrics),
+        }
+
+class GridSearchSchemeSchemeConfigField(ConfigSection):
+    @property
+    def DumpDir(self) -> str: return self._dump_dir
+
+    @property
+    def MaxGenNum(self) -> int: return self._max_gen_num
+    @property
+    def PopulationSize(self) -> int: return self._population_size
+    @property
+    def RandSeed(self) -> int: return self._rand_seed
+    @property
+    def HromoLen(self) -> int: return self._hromo_len
+    @property
+    def HallOfFame(self) -> int: return self._hall_of_fame
+
+    @property
+    def Verbose(self) -> bool: return self._verbose
+
+    @property
+    def FitnessWeights(self) -> List[float]: return self._fitness_weights
+
+    @property
+    def Limits(self) -> List[EvoLimitGenConfigField]: return self._limits
+    @property
+    def Metrics(self) -> List[EvoMetricConfigField]: return self._metrics
+
+    @property
+    def GridSplitNum(self) -> List[int]: return self._grid_split_num
+
+    def __init__(self) -> None:
+        self._dump_dir: str = str(pathlib.Path().resolve())
+
+        self._max_gen_num:       int = NecessaryField
+        self._population_size:   int = NecessaryField
+        self._rand_seed:         int = NecessaryField
+        self._hromo_len:         int = NecessaryField
+        self._hall_of_fame:      int = 0
+
+        self._verbose:         bool = False
+
+        self._fitness_weights: list = NecessaryField
+
+        self._limits:         List[EvoLimitGenConfigField] = NecessaryField
+        self._metrics:        List[EvoMetricConfigField]   = []
+        self._grid_split_num: List[int]                    = NecessaryField
+
+    def load(self, cfg: dict) -> None:
+        self._dump_dir         = Config.get_optional_value(cfg, 'dump_dir', self._dump_dir)
+
+        self._max_gen_num       = Config.get_necessary_value(cfg, 'max_gen_num', self._max_gen_num)
+        self._population_size   = Config.get_necessary_value(cfg, 'population_size', self._population_size)
+        self._rand_seed         = Config.get_necessary_value(cfg, 'rand_seed', self._rand_seed)
+        self._hromo_len         = Config.get_necessary_value(cfg, 'hromo_len', self._hromo_len)
+
+        self._hall_of_fame    = Config.get_optional_value(cfg, 'hall_of_fame', self._hall_of_fame)
+        self._verbose         = Config.get_optional_value(cfg, 'verbose', self._verbose)
+
+        self._fitness_weights = Config.get_necessary_value(cfg, 'fitness_weights', self._fitness_weights)
+        self._grid_split_num  = Config.get_necessary_value(cfg, 'grid_split_num', self._grid_split_num)
+
+        self._limits         = Config.get_necessary_arr_value(cfg, 'limits', EvoLimitGenConfigField, self._limits)
+        self._metrics        = Config.get_optional_arr_value(cfg, 'metrics', EvoMetricConfigField, self._metrics)
+
+    def yaml(self) -> dict:
+        return {
+            'dump_dir': self._dump_dir, 'hall_of_fame': self._hall_of_fame,
+            'max_gen_num': self._max_gen_num, 'population_size': self._population_size, 'rand_seed': self._rand_seed, 'hromo_len': self._hromo_len,
+            'fitness_weights': self._fitness_weights,'verbose': self._verbose,
+            'limits': _yaml_config_section_arr(self._limits),'metrics': _yaml_config_section_arr(self._metrics),'grid_split_num': self._grid_split_num,
+        }
+
 class ParamLorenzPropField(ConfigSection):
     @property
     def Start(self): return self._start
@@ -740,7 +877,6 @@ class DynoEvoEsnHyperParamMultiPopConfig(ConfigSection):
             'esn': self._esn.yaml(),'evo': self._evo.yaml(),'evaluate': self._evaluate.yaml(),
         }
 
-
 class DynoEvoEsnHyperParamConfig(ConfigSection):
     @property
     def Esn(self) -> EsnConfigField: return self._esn
@@ -764,6 +900,52 @@ class DynoEvoEsnHyperParamConfig(ConfigSection):
             'esn': self._esn.yaml(),'evo': self._evo.yaml(),'evaluate': self._evaluate.yaml(),
         }
 
+class HyperParamRandomSearchConfig(ConfigSection):
+    @property
+    def Esn(self) -> EsnConfigField: return self._esn
+    @property
+    def RandomSearch(self) -> RandomSearchSchemeSchemeConfigField: return self._random_search
+    @property
+    def Evaluate(self) -> EsnEvaluateConfigField: return self._evaluate
+
+    def __init__(self) -> None:
+        self._esn:           EsnConfigField                      = EsnConfigField()
+        self._random_search: RandomSearchSchemeSchemeConfigField = RandomSearchSchemeSchemeConfigField()
+        self._evaluate:      EsnEvaluateConfigField              = EsnEvaluateConfigField()
+
+    def load(self, cfg: dict) -> None:
+        self._esn.load(Config.get_necessary_value(cfg, 'esn', self._esn))
+        self._random_search.load(Config.get_necessary_value(cfg, 'random_search', self._random_search))
+        self._evaluate.load(Config.get_necessary_value(cfg, 'evaluate', self._evaluate))
+
+    def yaml(self) -> dict:
+        return {
+            'esn': self._esn.yaml(),'random_search': self._random_search.yaml(),'evaluate': self._evaluate.yaml(),
+        }
+
+class HyperParamGridSearchConfig(ConfigSection):
+    @property
+    def Esn(self) -> EsnConfigField: return self._esn
+    @property
+    def GridSearch(self) -> GridSearchSchemeSchemeConfigField: return self._grid_search
+    @property
+    def Evaluate(self) -> EsnEvaluateConfigField: return self._evaluate
+
+    def __init__(self) -> None:
+        self._esn:           EsnConfigField                      = EsnConfigField()
+        self._grid_search: GridSearchSchemeSchemeConfigField   = GridSearchSchemeSchemeConfigField()
+        self._evaluate:      EsnEvaluateConfigField              = EsnEvaluateConfigField()
+
+    def load(self, cfg: dict) -> None:
+        self._esn.load(Config.get_necessary_value(cfg, 'esn', self._esn))
+        self._grid_search.load(Config.get_necessary_value(cfg, 'grid_search', self._grid_search))
+        self._evaluate.load(Config.get_necessary_value(cfg, 'evaluate', self._evaluate))
+
+    def yaml(self) -> dict:
+        return {
+            'esn': self._esn.yaml(),'grid_search': self._grid_search.yaml(),'evaluate': self._evaluate.yaml(),
+        }
+
 class SchemesConfigField(ConfigSection):
     @property
     def HyperParam(self) -> Union[DynoEvoEsnHyperParamConfig, None]: return self._hyper_param
@@ -774,17 +956,26 @@ class SchemesConfigField(ConfigSection):
     @property
     def HyperParamWithReservoirMultiPop(self) -> Union[DynoEvoEsnHyperParamMultiPopConfig, None]: return self._hyper_param_with_reservoir_multi_pop
 
+    @property
+    def HyperParamRandomSearch(self) -> Union[HyperParamRandomSearchConfig, None]: return self._hyper_param_random_search
+    @property
+    def HyperParamGridSearch(self) -> Union[HyperParamGridSearchConfig, None]: return self._hyper_param_grid_search
+
     def __init__(self) -> None:
         self._hyper_param:                          Union[DynoEvoEsnHyperParamConfig, None]         = None
         self._hyper_param_multi_pop:                Union[DynoEvoEsnHyperParamMultiPopConfig, None] = None
         self._hyper_param_multi_pop_multi_crit:     Union[DynoEvoEsnHyperParamMultiPopConfig, None] = None
         self._hyper_param_with_reservoir_multi_pop: Union[DynoEvoEsnHyperParamMultiPopConfig, None] = None
+        self._hyper_param_random_search:            Union[HyperParamRandomSearchConfig, None]       = None
+        self._hyper_param_grid_search:              Union[HyperParamGridSearchConfig, None]         = None
 
     def load(self, cfg: dict) -> None:
         self._hyper_param                          = _load_optional_config_section(cfg, 'hyper_param', DynoEvoEsnHyperParamConfig)
         self._hyper_param_multi_pop                = _load_optional_config_section(cfg, 'hyper_param_multi_pop', DynoEvoEsnHyperParamMultiPopConfig)
         self._hyper_param_multi_pop_multi_crit     = _load_optional_config_section(cfg, 'hyper_param_multi_pop_multi_crit', DynoEvoEsnHyperParamMultiPopConfig)
         self._hyper_param_with_reservoir_multi_pop = _load_optional_config_section(cfg, 'hyper_param_with_reservoir_multi_pop', DynoEvoEsnHyperParamMultiPopConfig)
+        self._hyper_param_random_search            = _load_optional_config_section(cfg, 'hyper_param_random_search', HyperParamRandomSearchConfig)
+        self._hyper_param_grid_search              = _load_optional_config_section(cfg, 'hyper_param_grid_search', HyperParamGridSearchConfig)
 
     def yaml(self) -> dict:
         return {
@@ -792,6 +983,8 @@ class SchemesConfigField(ConfigSection):
             'hyper_param_multi_pop': _yaml_optional_config_section(self._hyper_param_multi_pop),
             'hyper_param_multi_pop_multi_crit': _yaml_optional_config_section(self._hyper_param_multi_pop_multi_crit),
             'hyper_param_with_reservoir_multi_pop': _yaml_optional_config_section(self._hyper_param_with_reservoir_multi_pop),
+            'hyper_param_random_search': _yaml_optional_config_section(self._hyper_param_random_search),
+            'hyper_param_grid_search': _yaml_optional_config_section(self._hyper_param_grid_search),
         }
 
 class ModelsConfig(ConfigSection):
