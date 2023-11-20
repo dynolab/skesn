@@ -72,8 +72,7 @@ class InjectedController(Controller):
         """
         if(sig is None): return None
         self.esn = esn
-        self.W_c = esn.random_state_.uniform(-1, 1, (esn.n_reservoir, sig.shape[-1]))
-        self.W_c[esn.random_state_.rand(*self.W_c.shape) < 0.3] = 0
+        self.W_c = esn.random_state_.randn(esn.n_reservoir, sig.shape[-1]) / np.sqrt(sig.shape[-1]*3)
 
     def preact(self, pre, sig):
         """The function adds a linear transformation of 
@@ -81,7 +80,8 @@ class InjectedController(Controller):
         """
         return pre + np.dot(self.W_c, sig)
 
-    def prereg(self, hiddens, targets, sig): return hiddens
+    def prereg(self, hiddens, targets, sig): 
+        return hiddens
 
 class HomotopyController(Controller):
     """Controller that controls ESN with Homotopy.

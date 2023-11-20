@@ -2,7 +2,7 @@ from contextlib import contextmanager
 from urllib.parse import non_hierarchical
 
 import numpy as np
-import pandas as pd
+# import pandas as pd
 from sklearn.base import BaseEstimator as _BaseEstimator
 
 
@@ -60,7 +60,7 @@ class BaseForecaster(BaseEstimator):
 
         super(BaseForecaster, self).__init__()
 
-    def fit(self, y, X=None):
+    def fit(self, y, X=None, **kwargs):
         """Fit forecaster to training data.
 
         State change:
@@ -94,7 +94,7 @@ class BaseForecaster(BaseEstimator):
         self._is_fitted = False
 
         # Pass to inner fit
-        self._fit(y=y, X=X)
+        self._fit(y=y, X=X, **kwargs)
 
         # this should happen last
         self._is_fitted = True

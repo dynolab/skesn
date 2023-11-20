@@ -4,7 +4,8 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 
-def standart_weights_generator(random_state, n_reservoir: int, sparsity: float, spectral_radius: float, endo_states: np.ndarray, exo_states: any):
+def standart_weights_generator(random_state, n_reservoir: int, sparsity: float, spectral_radius: float, 
+                               endo_states: np.ndarray, exo_states: any, controller_inst = None, use_bias=False):
     n_endo = endo_states.shape[2]
     n_exo = 0 if exo_states is None else exo_states.shape[-1]
 
@@ -22,8 +23,52 @@ def standart_weights_generator(random_state, n_reservoir: int, sparsity: float, 
 
     return W_in, W
 
+def optimal_weights_generator_v2(random_state, n_reservoir: int, sparsity: float, spectral_radius: any, 
+        endo_states: np.ndarray, exo_states: any = None, controller_inst = None, use_bias=False):
+    def _gen_rnd_matrix(m, n, cond=1):
+        A = random_state.randn(m, n)
+        U, S, V = np.linalg.svd(A)
+        sMin, sMax = S.min(), S.max()
+        nu = sMin*cond/sMax 
+        alpha = (sMax*nu-sMin)/(sMax-sMin+1e-6)
+        S = (S-sMin)*alpha+sMin 
+        Smat = np.zeros((m, n))
+        Smat[:n,:m] = np.diag(S)
+        B = U @ Smat @ V
+        
+        return B / B.std()
+    
+    n_endo = endo_states.shape[2]
+    n_exo = 0 if exo_states is None else exo_states.shape[-1]
+    
+    if(use_bias): n_endo -= 1
+    
+    W_in = _gen_rnd_matrix(n_endo, n_reservoir)/np.sqrt(n_endo*2)
+    W = _gen_rnd_matrix(n_reservoir, n_reservoir)/np.sqrt(n_reservoir*2)
+    
+    ids = np.random.choice(endo_states.shape[1], endo_states.shape[1]//8, False)
+    data = endo_states[:, ids].reshape(-1,n_endo+1 if use_bias else n_endo)
+    if(n_exo): data_exo = exo_states[:, ids].reshape(-1,n_exo)
+    if(use_bias): data = data[:, 1:]
+    P = np.zeros((data.shape[0], n_reservoir))
+    b = 0
+    for _ in range(5):
+        P = data @ W_in + np.tanh(P) @ W + b
+        # if(exo_states is not None and controller_inst is not None):
+        #     P = controller_inst.preact(P.T, data_exo.T).T
+        W = W * 2 / (P.max(axis=0) - P.min(axis=0)) / np.sqrt(2)
+        W_in = W_in * 2 / (P.max(axis=0) - P.min(axis=0)) / np.sqrt(2)
+        if(use_bias): b = -np.mean(P, axis=0)
+    
+    W *= spectral_radius
+    if(use_bias): W_in = np.concatenate((b[None], W_in), axis=0)
+    
+    return W_in.T, W.T
+    
+    
+
 def optimal_weights_generator(verbose = 2, range_generator = np.linspace, 
-    steps = 100, hidden_std = 0.5, find_optimal_input = True, thinning_step = 10):
+    steps = 100, hidden_std = 0.5, find_optimal_input = True, thinning_step = 10, use_bias=False):
     def _generator(random_state, n_reservoir: int, sparsity: float, spectral_radius: any, 
         endo_states: np.ndarray, exo_states: any = None, controller_inst = None):
         # Preparing 

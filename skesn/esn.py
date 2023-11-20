@@ -183,7 +183,9 @@ class EsnForecaster(BaseForecaster):
                                     self.sparsity,
                                     self.spectral_radius,
                                     endo_states,
-                                    exo_states=exo_states)
+                                    exo_states=exo_states,
+                                    controller_inst=self.controller,
+                                    use_bias=self.use_bias)
         
         return self._update_via_refit(endo_states, exo_states, inspect)
 
@@ -286,11 +288,11 @@ class EsnForecaster(BaseForecaster):
         -------
         self
         """
-        if mode == update_modes.synchronization:
+        if mode == UpdateModes.synchronization:
             return self._update_via_synchronization(y, X)
-        elif mode == update_modes.transfer_learning:
+        elif mode == UpdateModes.transfer_learning:
             return self._update_via_transfer_learning(y, X, mu=1e-8, inspect=inspect)
-        elif mode == update_modes.refit:
+        elif mode == UpdateModes.refit:
             endo_states, exo_states = \
                 self._treat_dimensions_and_bias(y, X, representation='3D')
             return self._update_via_refit(endo_states, exo_states, inspect)
